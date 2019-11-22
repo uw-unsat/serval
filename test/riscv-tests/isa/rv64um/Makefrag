@@ -1,0 +1,8 @@
+#=======================================================================
+# Makefrag for rv64um tests
+#-----------------------------------------------------------------------
+
+rv64um_sc_tests = \
+	div divu divuw divw \
+	mul mulh mulhsu mulhu mulw \
+	rem remu remuw remw \
