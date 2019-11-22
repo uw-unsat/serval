@@ -24,16 +24,28 @@
   (define h (make-hash))
   (for ([cu dies])
     (update-offset-die! h cu))
-  ; scan for top-level variables
-  (for*/list ([cu dies]
-              [e (die-children cu)]
-              #:when (and (equal? (die-tag e) 'DW_TAG_variable)
-                          (attribute-has-key? e 'DW_AT_name)))
-    (define name (attribute-name e))
-    (define type (read-type h (attribute-type e)))
-    (with-syntax ([t type]
-                  [n name])
-      #'(cons 'n (lambda () t)))))
+  (flatten
+    (for*/list ([cu dies])
+      (read-globals-ns cu h))))
+
+(define (read-globals-ns ns h)
+  (for/list ([e (die-children ns)]
+             #:when (member (die-tag e) '(DW_TAG_namespace DW_TAG_variable)))
+    (define tag (die-tag e))
+    (cond
+      ; recursively look into namespaces
+      [(equal? tag 'DW_TAG_namespace)
+       (read-globals-ns e h)]
+      ; scan for top-level variables
+      [(and (equal? tag 'DW_TAG_variable)
+            (attribute-has-key? e 'DW_AT_name))
+       (define name (attribute-name e))
+       (define type (read-type h (attribute-type e)))
+       (with-syntax ([t type]
+                     [n name])
+         #'(cons 'n (lambda () t)))]
+      [else
+       null])))
 
 ; build offset->die lookup table
 (define (update-offset-die! h e)
@@ -83,8 +95,9 @@
 (define (attribute-has-key? e key)
   (dict-has-key? (die-attributes e) key))
 
-(define (attribute-ref e key)
-  (dict-ref (die-attributes e) key #f))
+(define (attribute-ref e . keys)
+  (define attrs (die-attributes e))
+  (ormap (lambda (key) (dict-ref attrs key #f)) keys))
 
 (define (attribute-number-ref e key)
   (define s (attribute-ref e key))
@@ -106,7 +119,8 @@
   (attribute-number-ref e 'DW_AT_upper_bound))
 
 (define (attribute-name e)
-  (define s (attribute-ref e 'DW_AT_name))
+  ; try mangled name first
+  (define s (attribute-ref e 'DW_AT_linkage_name 'DW_AT_name))
   (string->symbol
     (match s
       ; indirect name
