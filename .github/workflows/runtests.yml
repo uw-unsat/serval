@@ -7,13 +7,13 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        racket: [7.5-cs]
+        racket-vm: [racket,cs]
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
       env:
-        RACKET_VERSION: ${{matrix.racket}}
+        RACKET_VM: ${{matrix.racket-vm}}
       run: ./scripts/install-deps.sh
     - name: Install Serval
       run: raco pkg install --auto -i ./serval
