@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 brew tap riscv/riscv
-brew install llvm riscv-tools
+brew install llvm riscv-tools unicorn
 
 case $RACKET_VM in
     cs )
@@ -12,5 +12,4 @@ case $RACKET_VM in
         ;;
 esac
 
-git clone 'https://github.com/emina/rosette.git'
-raco pkg install --auto -i --no-setup ./rosette && raco setup -Dl rosette
+raco pkg install --auto -i --no-setup rosette && raco setup -Dl rosette
