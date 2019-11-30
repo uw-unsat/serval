@@ -619,19 +619,3 @@
       [_ #f]))
 
   (func symbols 0))
-
-
-; pointer
-
-; A pointer is a pair (base, offset).  There are two types of pointers:
-; a global pointer (where base is a symbol) and a stack pointer (where
-; base is an mblock).
-(struct pointer (base offset) #:transparent)
-
-(define (make-pointer base [offset (bvpointer 0)])
-  (pointer base offset))
-
-(define (pointer-add ptr off)
-  (pointer (pointer-base ptr)
-           (bvadd (pointer-offset ptr)
-                  (sign-extend off (bvpointer?)))))

@@ -273,10 +273,10 @@
   (core:bug-on #t #:msg "inttoptr: not supported"))
 
 (define (ptrtoint ptr type)
-  (define mr (core:find-mregion-by-name (current-mregions) (core:pointer-base ptr)))
+  (define mr (core:find-mregion-by-name (current-mregions) (pointer-base ptr)))
   (@bug-on (not mr) (format "ptrtoint: mregion not found: ~a" ptr))
   (define start (core:bvpointer (core:mregion-start mr)))
-  (bvadd start (core:pointer-offset ptr)))
+  (bvadd start (pointer-offset ptr)))
 
 
 ; vector operations
@@ -301,8 +301,16 @@
 
 ; memory operations
 
+; A pointer is a pair (base, offset).  There are two types of pointers:
+; a global pointer (where base is a symbol) and a stack pointer (where
+; base is an mblock).
+(struct pointer (base offset) #:transparent)
+
+(define (make-pointer base [offset (core:bvpointer 0)])
+  (pointer base offset))
+
 (define (pointer-block ptr)
-  (define base (core:pointer-base ptr))
+  (define base (pointer-base ptr))
   (if (core:mblock? base)
       base
       (symbol->block base)))
@@ -316,7 +324,7 @@
   (string->symbol (substring (symbol->string s) 1)))
 
 (define-syntax-rule (define-global x)
-  (define x (core:pointer (global->symbol 'x) (core:bvpointer 0))))
+  (define x (pointer (global->symbol 'x) (core:bvpointer 0))))
 
 (define (array-offset index size)
   ; sign-extend index as it may be 32-bit
@@ -326,11 +334,11 @@
   (core:bvpointer size))
 
 (define (getelementptr ptr . offsets)
-  (core:pointer (core:pointer-base ptr) (apply bvadd (cons (core:pointer-offset ptr) offsets))))
+  (pointer (pointer-base ptr) (apply bvadd (cons (pointer-offset ptr) offsets))))
 
 (define (load ptr type #:align alignment)
   (define mblock (pointer-block ptr))
-  (define offset (core:pointer-offset ptr))
+  (define offset (pointer-offset ptr))
   (define size (core:bvpointer (/ (bitvector-size type) 8)))
   (define path (core:mblock-path mblock offset size #:dbg (current-pc)))
   (core:spectre-bug-on (not (core:mblock-inbounds? mblock offset size)) #:dbg (current-pc)
@@ -339,7 +347,7 @@
 
 (define (store value ptr type #:align alignment)
   (define mblock (pointer-block ptr))
-  (define offset (core:pointer-offset ptr))
+  (define offset (pointer-offset ptr))
   (define size (core:bvpointer (/ (bitvector-size type) 8)))
   (define path (core:mblock-path mblock offset size #:dbg (current-pc)))
   (core:mblock-istore! mblock value path))
@@ -349,11 +357,11 @@
   ; add the block to the allocas list of the current frame
   (define frame (current-frame))
   (set-frame-allocas! frame (cons block (frame-allocas frame)))
-  (core:pointer block (core:bvpointer 0)))
+  (pointer block (core:bvpointer 0)))
 
 (define (memset ptr c size)
   (define mblock (pointer-block ptr))
-  (define offset (core:pointer-offset ptr))
+  (define offset (pointer-offset ptr))
   (core:mblock-memset! mblock (extract 7 0 c) offset size #:dbg (current-pc))
   ptr)
 

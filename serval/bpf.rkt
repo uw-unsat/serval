@@ -14,6 +14,12 @@
 
 (struct insn (code dst src off imm) #:transparent)
 
+(struct pointer (base offset) #:transparent)
+
+(define (pointer-add ptr off)
+  (pointer (pointer-base ptr)
+           (bvadd (pointer-offset ptr)
+                  (sign-extend off (core:bvpointer?)))))
 
 ; strict check: allow a pointer to be from 0 to one past the end of a block
 ; thus offset <= size (rather than offset < size)
@@ -22,7 +28,7 @@
     (let ([size (core:mblock-size base)])
       (core:bug-on (bvugt offset (bv size (core:bv-size offset))) #:dbg current-pc-debug
        #:msg (format "invalid pointer offset out of block size ~e: ~e\n" size offset))))
-  (core:pointer base offset))
+  (pointer base offset))
 
 
 ; maps
@@ -267,7 +273,7 @@
 
 
 (define (reg-set! cpu reg val)
-  (core:bug-on (! (|| (bv? val) (core:pointer? val)))
+  (core:bug-on (! (|| (bv? val) (pointer? val)))
    #:msg (format "reg-set!: not a bitvector/pointer: ~e" val) #:dbg current-pc-debug)
   (core:bug-on (equal? reg BPF_REG_10)
    #:msg (format "reg-set!: R10 is read-only") #:dbg current-pc-debug)
@@ -290,20 +296,20 @@
      (cond
        [(bv? v1)
         (bvadd v1 v2)]
-       [(core:pointer? v1)
-        (bpf-pointer (core:pointer-base v1) (bvadd (core:pointer-offset v1) v2))]
+       [(pointer? v1)
+        (bpf-pointer (pointer-base v1) (bvadd (pointer-offset v1) v2))]
        [else (core:bug-on #t #:dbg current-pc-debug
               #:msg (format "unknown BPF_ADD operands: ~e ~e\n" v1 v2))])]
     [(BPF_SUB)
      (cond
        [(&& (bv? v1) (bv? v2))
         (bvsub v1 v2)]
-       [(&& (core:pointer? v1) (bv? v2))
-        (bpf-pointer (core:pointer-base v1) (bvsub (core:pointer-offset v1) v2))]
-       [(&& (core:pointer? v1) (core:pointer? v2))
-        (core:bug-on (! (equal? (core:pointer-base v1) (core:pointer-base v2))) #:dbg current-pc-debug
+       [(&& (pointer? v1) (bv? v2))
+        (bpf-pointer (pointer-base v1) (bvsub (pointer-offset v1) v2))]
+       [(&& (pointer? v1) (pointer? v2))
+        (core:bug-on (! (equal? (pointer-base v1) (pointer-base v2))) #:dbg current-pc-debug
          #:msg (format "BPF_SUB: pointers of different blocks: ~e ~e\n" v1 v2))
-        (bvsub (core:pointer-offset v1) (core:pointer-offset v2))]
+        (bvsub (pointer-offset v1) (pointer-offset v2))]
        [else (core:bug-on #t #:dbg current-pc-debug
               #:msg (format "unknown BPF_SUB operands: ~e ~e\n" v1 v2))])]
     [(BPF_MUL) (bvmul v1 v2)]
@@ -333,9 +339,9 @@
     [(BPF_JEQ)
      (cond
        ; short-circuit bvzero? if v2 is not bv
-       [(&& (core:pointer? v1) (if (bv? v2) (core:bvzero? v2) #f)) #f]
+       [(&& (pointer? v1) (if (bv? v2) (core:bvzero? v2) #f)) #f]
        [(&& (bv? v1) (bv? v2)) (bveq v1 v2)]
-       [(&& (core:pointer? v1) (core:pointer? v2)) (equal? v1 v2)]
+       [(&& (pointer? v1) (pointer? v2)) (equal? v1 v2)]
        [else (core:bug-on #t #:dbg current-pc-debug
               #:msg (format "invalid ~e: ~e ~e\n" op v1 v2))])]
     [(BPF_JNE) (! (evaluate-cond 'BPF_JEQ v1 v2))]
@@ -380,8 +386,8 @@
 
 ; n must be a constant
 (define (load-bytes ptr n)
-  (define block (core:pointer-base ptr))
-  (define offset (core:pointer-offset ptr))
+  (define block (pointer-base ptr))
+  (define offset (pointer-offset ptr))
   (core:bug-on (not (core:bvaligned? offset n)) #:dbg current-pc-debug
    #:msg (format "load-bytes: ~a not ~a-byte aligned\n" ptr n))
   (core:spectre-bug-on (not (core:mblock-inbounds? block offset (core:bvpointer n))) #:dbg current-pc-debug
@@ -391,8 +397,8 @@
     (core:mblock-iload block path)))
 
 (define (store-bytes! ptr data)
-  (define block (core:pointer-base ptr))
-  (define offset (core:pointer-offset ptr))
+  (define block (pointer-base ptr))
+  (define offset (pointer-offset ptr))
   (define n (length data))
   (core:bug-on (not (core:bvaligned? offset n)) #:dbg current-pc-debug
            #:msg (format "store-bytes: ~a not ~a-byte aligned\n" ptr n))
@@ -498,30 +504,30 @@
 
     ; load operations
     [(list 'BPF_LDX size 'BPF_MEM)
-     (let ([data (load-bytes (core:pointer-add (reg-ref cpu src) off)
+     (let ([data (load-bytes (pointer-add (reg-ref cpu src) off)
                              (bpf-size->integer size))])
        (reg-set! cpu dst (zero-extend (list->bitvector data) (bitvector 64))))]
 
     ; store operations
     [(list 'BPF_ST size 'BPF_MEM)
-     (store-bytes! (core:pointer-add (reg-ref cpu dst) off)
+     (store-bytes! (pointer-add (reg-ref cpu dst) off)
                    (take (bitvector->list (sign-imm64 imm))
                          (bpf-size->integer size)))]
 
     [(list 'BPF_STX size 'BPF_MEM)
-     (store-bytes! (core:pointer-add (reg-ref cpu dst) off)
+     (store-bytes! (pointer-add (reg-ref cpu dst) off)
                    (take (bitvector->list (reg-ref cpu src))
                          (bpf-size->integer size)))]
 
     ; xadd operations
     [(list 'BPF_STX 'BPF_W 'BPF_XADD)
-     (define ptr (core:pointer-add (reg-ref cpu dst) off))
+     (define ptr (pointer-add (reg-ref cpu dst) off))
      (define old (list->bitvector (load-bytes ptr 4)))
      (define new (bvadd old (extract 31 0 (reg-ref cpu src))))
      (store-bytes! ptr (bitvector->list new))]
 
     [(list 'BPF_STX 'BPF_DW 'BPF_XADD)
-     (define ptr (core:pointer-add (reg-ref cpu dst) off))
+     (define ptr (pointer-add (reg-ref cpu dst) off))
      (define old (list->bitvector (load-bytes ptr 8)))
      (define new (bvadd old (reg-ref cpu src)))
      (store-bytes! ptr (bitvector->list new))]
@@ -567,7 +573,7 @@
 (define (verbose fmt . args)
   (define out (bpf-verbose))
   (when out
-    (core:bug-on (&& (not (bpf-allow-leak-pointer)) (ormap core:pointer? args))
+    (core:bug-on (&& (not (bpf-allow-leak-pointer)) (ormap pointer? args))
      #:msg (format "verbose: pointer not allowed: ~e\n" args) #:dbg current-pc-debug)
     (displayln (apply format (cons fmt args)) out)))
 
