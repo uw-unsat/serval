@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     python \
     python-pip \
     python3 \
+    python3-pip \
     texinfo \
     vim \
     wget \
