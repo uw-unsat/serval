@@ -14,6 +14,13 @@
      #:date 2017
      #:location (proceedings-location "SOSP")))
 
+@(define nelson:serval
+   (make-bib
+     #:title @hyperlink["https://unsat.cs.washington.edu/papers/nelson-serval.pdf"]{Scaling symbolic evaluation for automated verification of systems code with Serval}
+     #:author (authors "Luke Nelson" "James Bornholt" "Ronghui Gu" "Andrew Baumann" "Emina Torlak" "Xi Wang")
+     #:date 2019
+     #:location (proceedings-location "SOSP")))
+
 @(define sigurbjarnarson:nickel
    (make-bib
      #:title @hyperlink["https://unsat.cs.washington.edu/papers/sigurbjarnarson-nickel.pdf"]{Nickel: A Framework for Design and Verification of Information Flow Control Systems}

@@ -9,7 +9,7 @@
 @title{Serval}
 
 
-Serval is a framework written in Rosette for creating automated
+Serval@~cite[nelson:serval] is a framework written in Rosette for creating automated
 verifiers for low-level systems code.  Serval comes with
 verifiers for the RISC-V, x86-32, LLVM, BPF instruction sets.
 Serval provides a library for writing system specifications,
@@ -24,14 +24,15 @@ is a good starting point.
 
 The easiest way to play with Serval is using a Docker image.
 Follow the instructions
-on the @hyperlink["https://unsat.cs.washington.edu/projects/serval/sosp19-artifact.html"]{artifact page}.
+on the @hyperlink["https://unsat.cs.washington.edu/projects/serval/sosp19-artifact.html"]{SOSP'19 artifact page}.
 
-@;{
-Alternatively, you can install Serval from source using Racket's @tt{raco} tool:
+You may also be interested in the @hyperlink["https://github.com/uw-unsat/serval-tutorial-sosp19"]{SOSP'19 tutorial} on how to verify a toy security monitor using Serval.
+
+Alternatively, you can install @hyperlink["https://github.com/uw-unsat/serval"](actively developed version) of Serval from source using Racket's @tt{raco} tool:
 
 @itemlist[
-  @item{Download and install @hyperlink["http://racket-lang.org"]{Racket} (version 7.3 or later).}
-  @item{Unpack the source code in the ``serval'' directory.}
+  @item{Download and install @hyperlink["http://racket-lang.org"]{Racket} (version 7.5 or later).}
+  @item{Git clone the source code in the ``serval'' directory.}
   @item{Uninstall any previous versions of Serval:
     @nested{
             @verbatim|{> raco pkg remove serval}|}}
@@ -39,7 +40,6 @@ Alternatively, you can install Serval from source using Racket's @tt{raco} tool:
     @nested{
             @verbatim|{> cd serval
                        > raco pkg install}|}}]
-}
 
 @section{References}
 
