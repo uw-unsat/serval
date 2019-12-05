@@ -43,6 +43,8 @@ Alternatively, you can install Serval from source using Racket's @tt{raco} tool:
 
 @section{References}
 
+@defmodule[serval/lib/core #:use-sources (serval/lib/core)]
+
 Serval provides a library for writing verifiers and specifications.
 This includes support for bug reporting, overflow checking for bitvectors, 
 a memory model for low-level systems, symbolic optimizations, and common specifications.
@@ -100,6 +102,13 @@ To read and write with an offset into a block, one first invokes
 @racket[mblock-path] to convert an offset to a list of indices, or a @italic{path};
 @racket[mblock-iload] and @racket[mblock-istore!] use a path to access the leaf cell.
 
+@defthing[gen:mblock mblock?]{
+  A generic interface that specifies the procedures provided by a block.
+}
+
+@defproc[(mblock? [v any/c]) boolean?]{
+Returns true if @racket[v] is a block that implements the @racket[gen:mblock] interface.}
+
 @defproc[(mblock-size [mblock mblock?]) integer?]{
 Returns the size of a given block in bytes.
 }
@@ -116,7 +125,7 @@ Resolves an offset and size to a path for a given block.
 Returns the value at the given path of a memory block.
 }
 
-@defproc[(mblock-iload [mblock mblock?] [value any/c] [path list]) void?]{
+@defproc[(mblock-istore! [mblock mblock?] [value any/c] [path list]) void?]{
 Stores the value at the given path of a memory block.
 }
 
