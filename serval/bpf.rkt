@@ -202,11 +202,17 @@
 (define-syntax-rule (BPF_JMP_REG OP DST SRC OFF)
   (make-insn '(BPF_JMP OP BPF_X) DST SRC OFF #f))
 
+(define-syntax-rule (BPF_JMP32_REG OP DST SRC OFF)
+  (make-insn '(BPF_JMP32 OP BPF_X) DST SRC OFF #f))
+
 
 ; Conditional jumps against immediates, if (dst_reg 'op' imm32) goto pc + off16
 
 (define-syntax-rule (BPF_JMP_IMM OP DST IMM OFF)
   (make-insn '(BPF_JMP OP BPF_K) DST #f OFF IMM))
+
+(define-syntax-rule (BPF_JMP32_IMM OP DST IMM OFF)
+  (make-insn '(BPF_JMP32 OP BPF_K) DST #f OFF IMM))
 
 
 ; Function call
@@ -492,6 +498,14 @@
 
     [(list 'BPF_JMP op 'BPF_X)
      (when (evaluate-cond op (reg-ref cpu dst) (reg-ref cpu src))
+       (cpu-next! cpu (sign-imm64 off)))]
+
+    [(list 'BPF_JMP32 op 'BPF_K)
+     (when (evaluate-cond op (extract 31 0 (reg-ref cpu dst)) imm)
+       (cpu-next! cpu (sign-imm64 off)))]
+
+    [(list 'BPF_JMP32 op 'BPF_X)
+     (when (evaluate-cond op (extract 31 0 (reg-ref cpu dst)) (extract 31 0 (reg-ref cpu src)))
        (cpu-next! cpu (sign-imm64 off)))]
 
     ; call
