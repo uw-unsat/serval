@@ -488,7 +488,7 @@
         (reg-set! cpu dst (evaluate-alu32 op (reg-ref cpu dst) (reg-ref cpu src)))])]
 
     ; unconditional branching
-    [(list 'BPF_JMP 'BPF_JA 'BPF_K)
+    [(or (list 'BPF_JMP 'BPF_JA 'BPF_K) (list 'BPF_JMP 'BPF_JA))
      (cpu-next! cpu (sign-imm64 off))]
 
     ; conditional branching
