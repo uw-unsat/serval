@@ -18,3 +18,7 @@
 (struct struct-offset (value) #:transparent)
 
 (struct asm (template constraint) #:transparent)
+
+(struct nullptr () #:transparent)
+
+(struct undef (type) #:transparent)

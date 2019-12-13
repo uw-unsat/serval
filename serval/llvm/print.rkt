@@ -108,6 +108,10 @@
      (format "(array-offset ~a ~a)" (array-offset-index v) (array-offset-size v))]
     [(struct-offset? v)
      (format "(struct-offset ~a)" (struct-offset-value v))]
+    [(nullptr? v)
+     "nullptr"]
+    [(undef? v)
+     (format "(undef ~a)" (undef-type v))]
     [(core:marray? v)
      (format "(marray ~a ~a)" (core:marray-length v) (operand->string (core:marray-elements v) insn))]
     [(core:mstruct? v)

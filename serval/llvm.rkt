@@ -169,10 +169,10 @@
 ; comparisons
 
 (define (icmp/eq x y)
-  (core:bool->bitvector (bveq x y)))
+  (core:bool->bitvector (equal? x y)))
 
 (define (icmp/ne x y)
-  (core:bool->bitvector (not (bveq x y))))
+  (core:bool->bitvector (not (equal? x y))))
 
 (define (icmp/ugt x y)
   (core:bool->bitvector (bvugt x y)))
@@ -308,6 +308,8 @@
 
 (define (make-pointer base [offset (core:bvpointer 0)])
   (pointer base offset))
+
+(define nullptr (make-pointer #f))
 
 (define (pointer-block ptr)
   (define base (pointer-base ptr))

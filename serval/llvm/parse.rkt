@@ -256,6 +256,14 @@
     [(constant-int)
      (bv (LLVMConstIntGetSExtValue (value-> v _LLVMConstantIntRef)) (typeof-ref v))]
 
+    ; null
+    [(constant-pointer-null)
+     (nullptr)]
+
+    ; undef
+    [(undef-value)
+     (undef (typeof-ref v))]
+
     ; constant expressions
     [(constant-expr)
      (let* ([v (value-> v _LLVMConstantExprRef)]
