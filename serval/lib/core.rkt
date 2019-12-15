@@ -109,24 +109,21 @@
   (not (bvzero? x)))
 
 ; list of (bitvector 8) -> (bitvector N), big endian
-(define (list->bitvector/be data)
-  (apply concat data))
+(define (list->bitvector/be lst)
+  (apply concat lst))
+
+; list of (bitvector 8) -> (bitvector N), little endian
+(define (list->bitvector/le lst)
+  (list->bitvector/be (reverse lst)))
 
 ; (bitvector N) -> list of (bitvector 8), big endian
 (define (bitvector->list/be x)
-  (define n (bv-size x))
-  (if (= n 8)
-      (list x)
-      (cons (extract (sub1 n) (- n 8) x)
-            (bitvector->list/be (extract (- n 9) 0 x)))))
-
-; list of (bitvector 8) -> (bitvector N), little endian
-(define (list->bitvector/le data)
-  (list->bitvector/be (reverse data)))
+  (reverse (bitvector->list/le x)))
 
 ; (bitvector N) -> list of (bitvector 8), little endian
 (define (bitvector->list/le x)
-  (reverse (bitvector->list/be x)))
+  (define n (bv-size x))
+  (map (lambda (i) (extract (+ i 7) i x)) (range 0 n 8)))
 
 (define (bv8 x)
   (bv x 8))
