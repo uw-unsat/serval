@@ -91,7 +91,7 @@
     [(slliw slli sllw sll) (bvshl v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(srliw srli srlw srl) (bvlshr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(sraiw srai sraw sra) (bvashr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
-    [(muli mulw mul) (bvmul v1 v2)]
+    [(mulw mul) (bvmul v1 v2)]
     ; our code doesn't really use divisions - just add for completeness
     ; smtlib seems to have a different div-by-zero semantics for bvsdiv
     ; (bvsdiv -1 0) returns 1, while riscv returns -1
@@ -278,7 +278,7 @@
         (cpu-next! cpu size))]
 
     ; Binary operation with immediate
-    [(addi subi muli ori andi xori srli srai slli)
+    [(addi subi ori andi xori srli srai slli)
       (check-imm-size 12 imm)
       (gpr-set! cpu dst (evaluate-binary-op op (gpr-ref cpu src) (sign-extend imm (bitvector (XLEN)))))
       (cpu-next! cpu size)]
