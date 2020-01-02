@@ -18,6 +18,12 @@
 (define target-pointer-bitwidth (make-parameter 64))
 (define enable-struct-crunch (make-parameter (if (getenv "DISABLE_STRUCT_CRUNCH") #f #t)))
 
+(define bvmul-proc (make-parameter bvmul))
+(define bvsdiv-proc (make-parameter bvsdiv))
+(define bvsrem-proc (make-parameter bvsrem))
+(define bvudiv-proc (make-parameter bvudiv))
+(define bvurem-proc (make-parameter bvurem))
+
 ; case splitting
 
 (define (split-cases value cases func)

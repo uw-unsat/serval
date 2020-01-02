@@ -318,15 +318,15 @@
         (bvsub (pointer-offset v1) (pointer-offset v2))]
        [else (core:bug-on #t #:dbg current-pc-debug
               #:msg (format "unknown BPF_SUB operands: ~e ~e\n" v1 v2))])]
-    [(BPF_MUL) (bvmul v1 v2)]
+    [(BPF_MUL) ((core:bvmul-proc) v1 v2)]
     [(BPF_DIV)
      (core:bug-on (core:bvzero? v2) #:dbg current-pc-debug
       #:msg "division by zero\n")
-     (bvudiv v1 v2)]
+     ((core:bvudiv-proc) v1 v2)]
     [(BPF_MOD)
      (core:bug-on (core:bvzero? v2) #:dbg current-pc-debug
       #:msg "division by zero\n")
-     (bvurem v1 v2)]
+     ((core:bvurem-proc) v1 v2)]
     [(BPF_OR) (bvor v1 v2)]
     [(BPF_AND) (bvand v1 v2)]
     [(BPF_XOR) (bvxor v1 v2)]

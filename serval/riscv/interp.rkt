@@ -81,6 +81,24 @@
 
 ; ALU
 
+(define bvmulh-proc
+  (make-parameter
+    (lambda (x y)
+      (let ([dw (* 2 (XLEN))])
+        (extract (sub1 dw) (XLEN) ((core:bvmul-proc) (sign-extend x (bitvector dw)) (sign-extend y (bitvector dw))))))))
+
+(define bvmulhu-proc
+  (make-parameter
+    (lambda (x y)
+      (let ([dw (* 2 (XLEN))])
+        (extract (sub1 dw) (XLEN) ((core:bvmul-proc) (zero-extend x (bitvector dw)) (zero-extend y (bitvector dw))))))))
+
+(define bvmulhsu-proc
+  (make-parameter
+    (lambda (x y)
+      (let ([dw (* 2 (XLEN))])
+        (extract (sub1 dw) (XLEN) ((core:bvmul-proc) (sign-extend x (bitvector dw)) (zero-extend y (bitvector dw))))))))
+
 (define (evaluate-binary-op type v1 v2)
   (case type
     [(addi addw add) (bvadd v1 v2)]
@@ -91,14 +109,17 @@
     [(slliw slli sllw sll) (bvshl v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(srliw srli srlw srl) (bvlshr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(sraiw srai sraw sra) (bvashr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
-    [(mulw mul) (bvmul v1 v2)]
+    [(mulw mul) ((core:bvmul-proc) v1 v2)]
+    [(mulh) ((bvmulh-proc) v1 v2)]
+    [(mulhu) ((bvmulhu-proc) v1 v2)]
+    [(mulhsu) ((bvmulhsu-proc) v1 v2)]
     ; our code doesn't really use divisions - just add for completeness
     ; smtlib seems to have a different div-by-zero semantics for bvsdiv
     ; (bvsdiv -1 0) returns 1, while riscv returns -1
-    [(divw div) (if (core:bvzero? v2) (bv -1 (core:bv-size v1)) (bvsdiv v1 v2))]
-    [(remw rem) (if (core:bvzero? v2) v1 (bvsrem v1 v2))]
-    [(divuw divu) (bvudiv v1 v2)]
-    [(remuw remu) (bvurem v1 v2)]
+    [(divw div) (if (core:bvzero? v2) (bv -1 (core:bv-size v1)) ((core:bvsdiv-proc) v1 v2))]
+    [(remw rem) (if (core:bvzero? v2) v1 ((core:bvsrem-proc) v1 v2))]
+    [(divuw divu) ((core:bvudiv-proc) v1 v2)]
+    [(remuw remu) ((core:bvurem-proc) v1 v2)]
     [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such binary op ~e\n" type))]))
 
 ; jumps
@@ -284,26 +305,8 @@
       (cpu-next! cpu size)]
 
     ; Binary operation two registers
-    [(add sub or and xor srl sra sll mul div rem divu remu)
+    [(add sub or and xor srl sra sll mul mulh mulhu mulhsu div rem divu remu)
       (gpr-set! cpu dst (evaluate-binary-op op (gpr-ref cpu src1) (gpr-ref cpu src2)))
-      (cpu-next! cpu size)]
-
-    ; Wide multiplication operations
-    [(mulh mulhu mulhsu)
-      (define a
-        ((case op
-          [(mulh mulhsu) sign-extend]
-          [(mulhu) zero-extend])
-        (gpr-ref cpu src1)
-        (bitvector (* 2 (XLEN)))))
-      (define b
-        ((case op
-          [(mulh) sign-extend]
-          [(mulhu mulhsu) zero-extend])
-        (gpr-ref cpu src2)
-        (bitvector (* 2 (XLEN)))))
-      (gpr-set! cpu dst
-        (extract (- (* 2 (XLEN)) 1) (XLEN) (bvmul a b)))
       (cpu-next! cpu size)]
 
     ; Binary operation two registers (32-bit ops on 64-bit only)
