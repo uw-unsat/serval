@@ -25,7 +25,7 @@
   (define data `((key      . ,key)
                  (location . ,dbg)
                  (message  . ,msg-proc)))
-  (when x
+  (when (! x)
     (hash-set! (assert-db) expr (cons data (hash-ref! (assert-db) expr null))))
   ; show a concrete message if this is trivially false
   (define msg-str (bug-format data (sat)))
