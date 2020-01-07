@@ -8,9 +8,9 @@
   (&& (null? (asserts))
       (equal? #t (pc))))
 
-(define assert-db (make-hash))
+(define assert-db (make-parameter (make-hash)))
 
-(define (bug-clear!) (hash-clear! assert-db))
+(define (bug-clear!) (assert-db (make-hash)))
 
 (define (bug-format data sol)
   (define key (dict-ref data 'key #f))
@@ -19,22 +19,23 @@
   (define (fmt v) (if v (~a v) "<unknown>"))
   (string-join (map fmt (list key location message)) ": "))
 
-; bug-on is for bugs in the program under symbolic evaluation.
-; Verification will fail unless the bug is not reachable.
-(define (bug-on x #:key [key #f] #:dbg [dbg #f] #:msg [msg "Unknown assert"])
+(define (bug-assert x #:key [key #f] #:dbg [dbg #f] #:msg [msg "Unknown assert"])
   (define msg-proc (if (procedure? msg) msg (thunk* msg)))
-  (define expr (=> (pc) (! x)))
+  (define expr (=> (pc) x))
   (define data `((key      . ,key)
                  (location . ,dbg)
                  (message  . ,msg-proc)))
   (when x
-    (hash-set! assert-db expr (cons data (hash-ref! assert-db expr null))))
-  ; show a concrete message if this is trivially true
+    (hash-set! (assert-db) expr (cons data (hash-ref! (assert-db) expr null))))
+  ; show a concrete message if this is trivially false
   (define msg-str (bug-format data (sat)))
-  (assert (not x) msg-str))
+  (assert x msg-str))
+
+(define (bug-on x #:key [key #f] #:dbg [dbg #f] #:msg [msg "Unknown assert"])
+  (bug-assert (! x) #:key key #:dbg dbg #:msg msg))
 
 (define (bug-ref expr #:key [key #f])
-  (hash-ref assert-db expr null))
+  (hash-ref (assert-db) expr null))
 
 (define (simplify-asserts asserted)
   (filter-not (lambda (expr) (unsat? (verify (assert expr)))) asserted))

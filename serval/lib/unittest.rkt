@@ -19,10 +19,10 @@
       (parameterize ([current-bitwidth (current-bitwidth)]
                      [term-cache (hash-copy (term-cache))]
                      [current-solver (current-solver)]
-                     [current-oracle (oracle (current-oracle))])
+                     [current-oracle (oracle (current-oracle))]
+                     [assert-db (hash-copy (assert-db))])
         (check-asserts-only (begin body ...))
         (check-equal? (asserts) null))))
-    (bug-clear!)
     (printf "Finished test ~v\n" name))))
 
 (define-syntax-rule (check-asserts expr)
