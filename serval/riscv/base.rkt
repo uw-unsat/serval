@@ -46,7 +46,45 @@
 (struct gprs
   (x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16
    x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31)
-  #:mutable)
+  #:mutable
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc a b equal?-recur)
+    (&&
+      (equal?-recur (gprs-x1 a) (gprs-x1 b))
+      (equal?-recur (gprs-x2 a) (gprs-x2 b))
+      (equal?-recur (gprs-x3 a) (gprs-x3 b))
+      (equal?-recur (gprs-x4 a) (gprs-x4 b))
+      (equal?-recur (gprs-x5 a) (gprs-x5 b))
+      (equal?-recur (gprs-x6 a) (gprs-x6 b))
+      (equal?-recur (gprs-x7 a) (gprs-x7 b))
+      (equal?-recur (gprs-x8 a) (gprs-x8 b))
+      (equal?-recur (gprs-x9 a) (gprs-x9 b))
+      (equal?-recur (gprs-x10 a) (gprs-x10 b))
+      (equal?-recur (gprs-x11 a) (gprs-x11 b))
+      (equal?-recur (gprs-x12 a) (gprs-x12 b))
+      (equal?-recur (gprs-x13 a) (gprs-x13 b))
+      (equal?-recur (gprs-x14 a) (gprs-x14 b))
+      (equal?-recur (gprs-x15 a) (gprs-x15 b))
+      (equal?-recur (gprs-x16 a) (gprs-x16 b))
+      (equal?-recur (gprs-x17 a) (gprs-x17 b))
+      (equal?-recur (gprs-x18 a) (gprs-x18 b))
+      (equal?-recur (gprs-x19 a) (gprs-x19 b))
+      (equal?-recur (gprs-x20 a) (gprs-x20 b))
+      (equal?-recur (gprs-x21 a) (gprs-x21 b))
+      (equal?-recur (gprs-x22 a) (gprs-x22 b))
+      (equal?-recur (gprs-x23 a) (gprs-x23 b))
+      (equal?-recur (gprs-x24 a) (gprs-x24 b))
+      (equal?-recur (gprs-x25 a) (gprs-x25 b))
+      (equal?-recur (gprs-x26 a) (gprs-x26 b))
+      (equal?-recur (gprs-x27 a) (gprs-x27 b))
+      (equal?-recur (gprs-x28 a) (gprs-x28 b))
+      (equal?-recur (gprs-x29 a) (gprs-x29 b))
+      (equal?-recur (gprs-x30 a) (gprs-x30 b))
+      (equal?-recur (gprs-x31 a) (gprs-x31 b))))
+   (define (hash-proc a hash-recur) 1)
+   (define (hash2-proc a hash2-recur) 22)])
+
 
 (define (init-csrs)
   (define-symbolic*
