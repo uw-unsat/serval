@@ -42,6 +42,12 @@
     mcycle minstret)
   #:mutable #:transparent)
 
+; General-purpose registers
+(struct gprs
+  (x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16
+   x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31)
+  #:mutable)
+
 (define (init-csrs)
   (define-symbolic*
    sedeleg sideleg stvec scounteren sscratch sepc scause stval satp
@@ -69,8 +75,8 @@
   (hash-set! (cpu-shims cpu) addr shim))
 
 (define (init-cpu [symbols null] [globals null])
-  (define-symbolic* x (bitvector (XLEN)) [32])
-  (define gprs (apply vector x))
+  (define-symbolic* x (bitvector (XLEN)) [31])
+  (define gpr-vals (apply gprs x))
 
   (define csrs (init-csrs))
 
@@ -80,7 +86,7 @@
   ; Reset vector is where PC will be set upon CPU reset
   (define reset-vector (bv #x0000000080000000 (XLEN)))
 
-  (cpu reset-vector gprs csrs mregions shims))
+  (cpu reset-vector gpr-vals csrs mregions shims))
 
 
 (define (cpu-equal? cpu1 cpu2)
@@ -207,6 +213,8 @@
 
     [else (core:bug-on #t #:msg (format "csr-ref: unknown csr ~e" csr) #:dbg current-pc-debug)]))
 
+; Convert GPR name to integer index.
+; Useful for encoding RISC-V instructions.
 (define (gpr->idx gpr)
   (case gpr
     [(zero x0) 0]
@@ -248,8 +256,42 @@
 
 (define (gpr-set! cpu gpr val)
   (core:bug-on (not (bv? val)) #:msg (format "gpr-set!: not a bitvector: ~e" val) #:dbg current-pc-debug)
-  (when (! (= (gpr->idx gpr) 0))
-    (vector-set! (cpu-gprs cpu) (gpr->idx gpr) val)))
+  (define r (cpu-gprs cpu))
+  (case gpr
+    [(x0 zero) (void)] ; Drop writes to x0
+    [(x1 ra) (set-gprs-x1! r val)]
+    [(x2 sp) (set-gprs-x2! r val)]
+    [(x3 gp) (set-gprs-x3! r val)]
+    [(x4 tp) (set-gprs-x4! r val)]
+    [(x5 t0) (set-gprs-x5! r val)]
+    [(x6 t1) (set-gprs-x6! r val)]
+    [(x7 t2) (set-gprs-x7! r val)]
+    [(x8 s0 fp) (set-gprs-x8! r val)]
+    [(x9 s1) (set-gprs-x9! r val)]
+    [(x10 a0) (set-gprs-x10! r val)]
+    [(x11 a1) (set-gprs-x11! r val)]
+    [(x12 a2) (set-gprs-x12! r val)]
+    [(x13 a3) (set-gprs-x13! r val)]
+    [(x14 a4) (set-gprs-x14! r val)]
+    [(x15 a5) (set-gprs-x15! r val)]
+    [(x16 a6) (set-gprs-x16! r val)]
+    [(x17 a7) (set-gprs-x17! r val)]
+    [(x18 s2) (set-gprs-x18! r val)]
+    [(x19 s3) (set-gprs-x19! r val)]
+    [(x20 s4) (set-gprs-x20! r val)]
+    [(x21 s5) (set-gprs-x21! r val)]
+    [(x22 s6) (set-gprs-x22! r val)]
+    [(x23 s7) (set-gprs-x23! r val)]
+    [(x24 s8) (set-gprs-x24! r val)]
+    [(x25 s9) (set-gprs-x25! r val)]
+    [(x26 s10) (set-gprs-x26! r val)]
+    [(x27 s11) (set-gprs-x27! r val)]
+    [(x28 t3) (set-gprs-x28! r val)]
+    [(x29 t4) (set-gprs-x29! r val)]
+    [(x30 t5) (set-gprs-x30! r val)]
+    [(x31 t6) (set-gprs-x31! r val)]
+    [else (core:bug-on #t #:msg (format "gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]
+  ))
 
 (define (gpr-havoc! cpu gpr)
   (define-symbolic* havoc (bitvector (XLEN)))
@@ -260,6 +302,39 @@
     (gpr-havoc! cpu gpr)))
 
 (define (gpr-ref cpu gpr)
-  (if (= 0 (gpr->idx gpr))
-      (bv 0 (XLEN))
-      (vector-ref (cpu-gprs cpu) (gpr->idx gpr))))
+  (define r (cpu-gprs cpu))
+  (case gpr
+    [(x0 zero) (bv 0 (XLEN))]
+    [(x1 ra) (gprs-x1 r)]
+    [(x2 sp) (gprs-x2 r)]
+    [(x3 gp) (gprs-x3 r)]
+    [(x4 tp) (gprs-x4 r)]
+    [(x5 t0) (gprs-x5 r)]
+    [(x6 t1) (gprs-x6 r)]
+    [(x7 t2) (gprs-x7 r)]
+    [(x8 s0 fp) (gprs-x8 r)]
+    [(x9 s1) (gprs-x9 r)]
+    [(x10 a0) (gprs-x10 r)]
+    [(x11 a1) (gprs-x11 r)]
+    [(x12 a2) (gprs-x12 r)]
+    [(x13 a3) (gprs-x13 r)]
+    [(x14 a4) (gprs-x14 r)]
+    [(x15 a5) (gprs-x15 r)]
+    [(x16 a6) (gprs-x16 r)]
+    [(x17 a7) (gprs-x17 r)]
+    [(x18 s2) (gprs-x18 r)]
+    [(x19 s3) (gprs-x19 r)]
+    [(x20 s4) (gprs-x20 r)]
+    [(x21 s5) (gprs-x21 r)]
+    [(x22 s6) (gprs-x22 r)]
+    [(x23 s7) (gprs-x23 r)]
+    [(x24 s8) (gprs-x24 r)]
+    [(x25 s9) (gprs-x25 r)]
+    [(x26 s10) (gprs-x26 r)]
+    [(x27 s11) (gprs-x27 r)]
+    [(x28 t3) (gprs-x28 r)]
+    [(x29 t4) (gprs-x29 r)]
+    [(x30 t5) (gprs-x30 r)]
+    [(x31 t6) (gprs-x31 r)]
+    [else (core:bug-on #t #:msg (format "gpr-ref: unknown gpr ~e" gpr) #:dbg current-pc-debug)]
+  ))
