@@ -184,6 +184,16 @@
       (gpr-set! cpu dst (sign-extend (concat imm (bv 0 12)) (bitvector (XLEN))))
       (cpu-next! cpu size)]
 
+    ; Set if less than immediate (signed)
+    [(slti)
+      (check-imm-size 12 imm)
+      (gpr-set! cpu dst
+        (if (bvslt (gpr-ref cpu src) (sign-extend imm (bitvector (XLEN))))
+          (bv 1 (XLEN))
+          (bv 0 (XLEN))))
+      (cpu-next! cpu size)]
+
+    ; Set if less than immediate unsigned
     [(sltiu)
       (check-imm-size 12 imm)
       (gpr-set! cpu dst
@@ -192,6 +202,15 @@
           (bv 0 (XLEN))))
       (cpu-next! cpu size)]
 
+    ; Set if less than (signed)
+    [(slt)
+      (gpr-set! cpu dst
+        (if (bvslt (gpr-ref cpu src1) (gpr-ref cpu src2))
+          (bv 1 (XLEN))
+          (bv 0 (XLEN))))
+      (cpu-next! cpu size)]
+
+    ; Set if less than unsigned
     [(sltu)
       (gpr-set! cpu dst
         (if (bvult (gpr-ref cpu src1) (gpr-ref cpu src2))

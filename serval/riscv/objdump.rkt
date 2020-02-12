@@ -118,11 +118,11 @@
       (instr op dst #f #f (bv off 20) size)]
 
     ; dst + src + 12-bit imm
-    [(list (and op (or 'sltiu 'addiw 'slliw 'srliw 'sraiw 'addi 'subi 'muli 'ori 'andi 'xori 'srli 'srai 'slli)) dst src imm)
+    [(list (and op (or 'slti 'sltiu 'addiw 'slliw 'srliw 'sraiw 'addi 'subi 'muli 'ori 'andi 'xori 'srli 'srai 'slli)) dst src imm)
       (instr op dst src #f (bv imm 12) size)]
 
     ; dst + src + src
-    [(list (and op (or 'sltu 'addw 'add 'subw 'sub 'or 'and 'xor 'srlw 'srl 'sraw 'sra 'sllw 'sll 'mulw 'mul 'mulh 'mulhu 'mulhsu 'divw 'div 'remw 'rem 'divuw 'divu 'remuw 'remu)) dst src1 src2)
+    [(list (and op (or 'slt 'sltu 'addw 'add 'subw 'sub 'or 'and 'xor 'srlw 'srl 'sraw 'sra 'sllw 'sll 'mulw 'mul 'mulh 'mulhu 'mulhsu 'divw 'div 'remw 'rem 'divuw 'divu 'remuw 'remu)) dst src1 src2)
       (instr op dst src1 src2 #f size)]
 
     [(list 'jal dst abs-addr)
