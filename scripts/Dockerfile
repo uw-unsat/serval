@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     bison \
     build-essential \
     clang \
+    cmake \
     curl \
     flex \
     gawk \
@@ -55,7 +56,7 @@ RUN git clone 'https://github.com/boolector/boolector.git' && \
     ./contrib/setup-lingeling.sh && \
     ./contrib/setup-btor2tools.sh && \
     ./configure.sh --prefix /opt/boolector/3.2.0 && cd build && make -j4 && make install && \
-    cd .. && rm -rfv boolector
+    cd /code && rm -rfv ./boolector
 
 # Install Z3 v4.8.7
 RUN git clone 'https://github.com/Z3Prover/z3.git' && \
