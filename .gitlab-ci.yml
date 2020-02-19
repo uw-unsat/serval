@@ -8,4 +8,6 @@ before_script:
 
 run-tests:
   script:
+    # Add /usr/lib64 for libunicorn
+    - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/lib64"
     - make -C test all
