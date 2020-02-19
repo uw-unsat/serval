@@ -31,10 +31,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /code
 
-RUN wget 'https://mirror.racket-lang.org/installers/7.5/racket-7.5-x86_64-linux-cs.sh' && \
-    chmod +x ./racket-7.5-x86_64-linux-cs.sh && \
-    echo 'yes\n1' | ./racket-7.5-x86_64-linux-cs.sh && \
-	rm -f racket-7.5-x86_64-linux-cs.sh
+# Install Racket v7.6
+RUN wget 'https://mirror.racket-lang.org/installers/7.6/racket-7.6-x86_64-linux.sh' && \
+    chmod +x ./racket-7.6-x86_64-linux.sh && \
+    echo 'yes\n1' | ./racket-7.6-x86_64-linux.sh && \
+	rm -f racket-7.6-x86_64-linux.sh
 
 # Install Unicorn
 RUN git clone 'https://github.com/unicorn-engine/unicorn.git' && \
@@ -43,13 +44,30 @@ RUN git clone 'https://github.com/unicorn-engine/unicorn.git' && \
     env UNICORN_ARCHS="x86" ./make.sh install && \
     cd /code && rm -rfv unicorn
 
-# Install Rosette
+# Install HEAD Rosette
 RUN git clone 'https://github.com/emina/rosette.git' && \
     cd rosette && \
     raco pkg install --auto -i --no-setup && raco setup -Dl rosette
 
+# Install Boolector version v3.2.0
+RUN git clone 'https://github.com/boolector/boolector.git' && \
+    cd boolector && git checkout '365eaab616562eedb1680ebbf8784cf8ecb25d1a' && \
+    ./contrib/setup-lingeling.sh && \
+    ./contrib/setup-btor2tools.sh && \
+    ./configure.sh --prefix /opt/boolector/3.2.0 && cd build && make -j4 && make install && \
+    cd .. && rm -rfv boolector
+
+# Install Z3 v4.8.7
+RUN git clone 'https://github.com/Z3Prover/z3.git' && \
+    cd z3 && \
+    git checkout 'z3-4.8.7' && \
+    python scripts/mk_make.py --prefix '/opt/z3/4.8.7' && \
+    cd build && \
+    make -j4 && make install && \
+    cd .. && rm -rfv z3
+
 ADD . /serval
 
-RUN raco pkg install /serval/serval
+# RUN raco pkg install /serval/serval
 
 WORKDIR /serval
