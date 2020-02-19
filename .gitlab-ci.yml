@@ -1,0 +1,11 @@
+image: unsat/serval-tools:latest
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+before_script:
+  - raco pkg install --auto
+
+run-tests:
+  script:
+    - make -C test all
