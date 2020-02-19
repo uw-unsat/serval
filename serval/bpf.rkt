@@ -551,29 +551,34 @@
       (define old (reg-ref cpu dst))
       (define new
         (cond
-
           [(equal? imm (bv 16 32))
             (zero-extend
               (concat (extract 7 0 old) (extract 15 8 old))
               (bitvector 64))]
-
           [(equal? imm (bv 32 32))
             (zero-extend
               (concat (extract 7 0 old) (extract 15 8 old) (extract 23 16 old) (extract 31 24 old))
               (bitvector 64))]
-
           [(equal? imm (bv 64 32))
             (zero-extend
               (concat (extract 7 0 old) (extract 15 8 old) (extract 23 16 old) (extract 31 24 old)
                       (extract 39 32 old) (extract 47 40 old) (extract 55 48 old) (extract 63 56 old))
               (bitvector 64))]
-
           [#t (core:bug-on #t)]))
         (reg-set! cpu dst new)]
 
     [(list 'BPF_ALU 'BPF_END 'BPF_FROM_LE)
-     (reg-set! cpu dst (zero-extend (core:list->bitvector/le (take (bitvector->list (reg-ref cpu dst)) (endian-size imm)))
-                                    (bitvector 64)))]
+      (define old (reg-ref cpu dst))
+      (define new
+        (cond
+          [(equal? imm (bv 16 32))
+            (zero-extend (extract 15 0 old) (bitvector 64))]
+          [(equal? imm (bv 32 32))
+            (zero-extend (extract 31 0 old) (bitvector 64))]
+          [(equal? imm (bv 64 32))
+            old]
+          [#t (core:bug-on #t)]))
+      (reg-set! cpu dst new)]
 
     ; default
     [_ (core:bug-on #t #:dbg current-pc-debug
