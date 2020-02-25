@@ -3,7 +3,7 @@
 (define collection 'use-pkg-name)
 
 (define scribblings
-  '(("doc/guide/scribble/serval.scrbl"
+  '(("guide/scribble/serval.scrbl"
 	 (multi-page)
 	 (experimental))))
 
