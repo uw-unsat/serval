@@ -70,18 +70,17 @@
 
 ; register numbers
 
-(define BPF_REG_0  0)
-(define BPF_REG_1  1)
-(define BPF_REG_2  2)
-(define BPF_REG_3  3)
-(define BPF_REG_4  4)
-(define BPF_REG_5  5)
-(define BPF_REG_6  6)
-(define BPF_REG_7  7)
-(define BPF_REG_8  8)
-(define BPF_REG_9  9)
-(define BPF_REG_10 10)
-(define MAX_BPF_REG 11)
+(define BPF_REG_0  'r0)
+(define BPF_REG_1  'r1)
+(define BPF_REG_2  'r2)
+(define BPF_REG_3  'r3)
+(define BPF_REG_4  'r4)
+(define BPF_REG_5  'r5)
+(define BPF_REG_6  'r6)
+(define BPF_REG_7  'r7)
+(define BPF_REG_8  'r8)
+(define BPF_REG_9  'r9)
+(define BPF_REG_10 'r10)
 
 ; ArgX, context and stack frame pointer register positions. Note,
 ; Arg1, Arg2, Arg3, etc are used as argument mappings of function
@@ -254,20 +253,44 @@
      (define fdtable (cpu-fdtable cpu))
      (fprintf port "(cpu")
      (fprintf port "\n  pc . ~a" (cpu-pc cpu))
-     (for ([i (in-range (vector-length regs))])
-       (fprintf port "\n  r~a . ~a" i (vector-ref regs i)))
+     (fprintf port "\n  ~a" regs)
      (for ([i (in-range (vector-length fdtable))])
        (fprintf port "\n  fd~a . ~a" i (vector-ref fdtable i)))
      (fprintf port ")"))])
 
+(struct regs (r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10) #:transparent #:mutable)
+
+(define (regs->vector regs)
+  (vector (regs-r0 regs) (regs-r1 regs) (regs-r2 regs) (regs-r3 regs)
+          (regs-r4 regs) (regs-r5 regs) (regs-r6 regs) (regs-r7 regs)
+          (regs-r8 regs) (regs-r9 regs) (regs-r10 regs)))
+
+(define (reg-idx reg)
+  (case reg
+    [(r0) 0]
+    [(r1) 1]
+    [(r2) 2]
+    [(r3) 3]
+    [(r4) 4]
+    [(r5) 5]
+    [(r6) 6]
+    [(r7) 7]
+    [(r8) 8]
+    [(r9) 9]
+    [(r10 fp) 0]
+    [else (core:bug-on #t #:msg (format "reg-idx: Unknown reg ~v" reg))]))
+
+(define (make-regs [value #f])
+  (apply regs (make-list 11 value)))
+
 (define (init-cpu [ctx #f] [fdtable (vector)])
   ; initially regs are uninitialized and must be written before read
-  (define regs (make-vector MAX_BPF_REG #f))
+  (define regs (make-regs))
   ; R1 points to context
-  (vector-set! regs BPF_REG_1 ctx)
+  (set-regs-r1! regs ctx)
   ; R10 points to the stack, which is uninitialized
   (define stack (core:marray MAX_BPF_STACK (core:mcell 1)))
-  (vector-set! regs BPF_REG_FP (bpf-pointer stack (bv MAX_BPF_STACK 64)))
+  (set-regs-r10! regs (bpf-pointer stack (bv MAX_BPF_STACK 64)))
   (cpu (bv 0 64) regs fdtable null))
 
 
@@ -283,15 +306,43 @@
    #:msg (format "reg-set!: not a bitvector/pointer: ~e" val) #:dbg current-pc-debug)
   (core:bug-on (equal? reg BPF_REG_10)
    #:msg (format "reg-set!: R10 is read-only") #:dbg current-pc-debug)
-  (vector-set! (cpu-regs cpu) reg val))
+  (define regs (cpu-regs cpu))
+  (case reg
+    [(r0) (set-regs-r0! regs val)]
+    [(r1) (set-regs-r1! regs val)]
+    [(r2) (set-regs-r2! regs val)]
+    [(r3) (set-regs-r3! regs val)]
+    [(r4) (set-regs-r4! regs val)]
+    [(r5) (set-regs-r5! regs val)]
+    [(r6) (set-regs-r6! regs val)]
+    [(r7) (set-regs-r7! regs val)]
+    [(r8) (set-regs-r8! regs val)]
+    [(r9) (set-regs-r9! regs val)]
+    [(r10 fp) (core:bug-on #t #:msg "reg-set!: R10/FP is read-only"
+                              #:dbg current-pc-debug)]
+    [else (core:bug-on #t #:msg (format "reg-set!: Unknown register ~v" reg)
+                          #:dbg current-pc-debug)]))
 
 (define (reg-havoc! cpu reg)
   (core:bug-on (equal? reg BPF_REG_10)
    #:msg (format "reg-havoc!: R10 is read-only") #:dbg current-pc-debug)
-  (vector-set! (cpu-regs cpu) reg #f))
+  (reg-set! cpu reg #f))
 
 (define (reg-ref cpu reg)
-  (define val (vector-ref (cpu-regs cpu) reg))
+  (define regs (cpu-regs cpu))
+  (define val
+    (case reg
+      [(r0) (regs-r0 regs)]
+      [(r1) (regs-r1 regs)]
+      [(r2) (regs-r2 regs)]
+      [(r3) (regs-r3 regs)]
+      [(r4) (regs-r4 regs)]
+      [(r5) (regs-r5 regs)]
+      [(r6) (regs-r6 regs)]
+      [(r7) (regs-r7 regs)]
+      [(r8) (regs-r8 regs)]
+      [(r9) (regs-r9 regs)]
+      [(r10 fp) (regs-r10 regs)]))
   (core:bug-on (boolean? val) #:dbg current-pc-debug
    #:msg (format "reg-ref: uninitialized register: ~e" reg))
   val)
