@@ -4,17 +4,17 @@
 
 (provide (all-defined-out))
 
+(struct gprs (eax ecx edx ebx esp ebp esi edi) #:mutable #:transparent)
+(struct flags (cf pf af zf sf of) #:mutable #:transparent)
 
 (struct cpu (pc gprs flags mregions) #:mutable #:transparent)
 
 (define (init-cpu [symbols null] [globals null])
-  (define-symbolic* gprs (bitvector 32) [8])
+  (define-symbolic* eax ecx edx ebx esp ebp esi edi (bitvector 32))
   (define-symbolic* cf pf af zf sf of boolean?)
-  (define flags (vector cf #t pf #f af #f zf sf #f #f #f of #f #f #f #f
-                        #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
   (define mregions (core:create-mregions symbols globals))
   (define reset-vector (bv 0 32))
-  (cpu reset-vector (apply vector gprs) flags mregions))
+  (cpu reset-vector (gprs eax ecx edx ebx esp ebp esi edi) (flags cf pf af zf sf of) mregions))
 
 (define (cpu-next! cpu size)
   (set-cpu-pc! cpu (bvadd size (cpu-pc cpu))))
@@ -54,30 +54,84 @@
     [else gpr]))
 
 (define (gpr-set! cpu gpr val)
-  (define gprs (cpu-gprs cpu))
-  (define idx (gpr->idx (gpr-full gpr)))
-  (define oldval (vector-ref gprs idx))
-  (define newval
-    (case gpr
-      [(ax cx dx bx sp bp si di)
-       (concat (extract 31 16 oldval) val)]
-      [(ah ch dh bh)
-       (concat (extract 31 16 oldval) val (extract 7 0 oldval))]
-      [(al cl dl bl spl bpl sil dil)
-       (concat (extract 31 8 oldval) val)]
-      [else val]))
-  (core:bug-on (not ((bitvector 32) newval))
-   #:msg (format "gpr-set! ~a mismatch: ~a" gpr val)
-   #:dbg current-pc-debug)
-  (vector-set! gprs idx newval))
+  (define (gpr-update-16 old new) (concat (extract 31 16 old) new))
+  (define (gpr-update-8h old new) (concat (extract 31 16 old) new (extract 7 0 old)))
+  (define (gpr-update-8l old new) (concat (extract 31 8 old) new))
+  (define rs (cpu-gprs cpu))
+  (case gpr
+    [(eax) (set-gprs-eax! rs val)]
+    [(ecx) (set-gprs-ecx! rs val)]
+    [(edx) (set-gprs-edx! rs val)]
+    [(ebx) (set-gprs-ebx! rs val)]
+    [(esp) (set-gprs-esp! rs val)]
+    [(ebp) (set-gprs-ebp! rs val)]
+    [(esi) (set-gprs-esi! rs val)]
+    [(edi) (set-gprs-edi! rs val)]
+    ;
+    [(ax) (set-gprs-eax! rs (gpr-update-16 (gprs-eax rs) val))]
+    [(cx) (set-gprs-ecx! rs (gpr-update-16 (gprs-ecx rs) val))]
+    [(dx) (set-gprs-edx! rs (gpr-update-16 (gprs-edx rs) val))]
+    [(bx) (set-gprs-ebx! rs (gpr-update-16 (gprs-ebx rs) val))]
+    [(sp) (set-gprs-esp! rs (gpr-update-16 (gprs-esp rs) val))]
+    [(bp) (set-gprs-ebp! rs (gpr-update-16 (gprs-ebp rs) val))]
+    [(si) (set-gprs-esi! rs (gpr-update-16 (gprs-esi rs) val))]
+    [(di) (set-gprs-edi! rs (gpr-update-16 (gprs-edi rs) val))]
+    ;
+    [(ah) (set-gprs-eax! rs (gpr-update-8h (gprs-eax rs) val))]
+    [(ch) (set-gprs-ecx! rs (gpr-update-8h (gprs-ecx rs) val))]
+    [(dh) (set-gprs-edx! rs (gpr-update-8h (gprs-edx rs) val))]
+    [(bh) (set-gprs-ebx! rs (gpr-update-8h (gprs-ebx rs) val))]
+    ;
+    [(al) (set-gprs-eax! rs (gpr-update-8l (gprs-eax rs) val))]
+    [(cl) (set-gprs-ecx! rs (gpr-update-8l (gprs-ecx rs) val))]
+    [(dl) (set-gprs-edx! rs (gpr-update-8l (gprs-edx rs) val))]
+    [(bl) (set-gprs-ebx! rs (gpr-update-8l (gprs-ebx rs) val))]
+    [(spl) (set-gprs-esp! rs (gpr-update-8l (gprs-esp rs) val))]
+    [(bpl) (set-gprs-ebp! rs (gpr-update-8l (gprs-ebp rs) val))]
+    [(sil) (set-gprs-esi! rs (gpr-update-8l (gprs-esi rs) val))]
+    [(dil) (set-gprs-edi! rs (gpr-update-8l (gprs-edi rs) val))]
+    ;
+    [else (core:bug-on #t #:msg (format "gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
 
 (define (gpr-ref cpu gpr)
-  (define val (vector-ref (cpu-gprs cpu) (gpr->idx (gpr-full gpr))))
+  (define (gpr-ref-16 x) (extract 15 0 x))
+  (define (gpr-ref-8h x) (extract 15 8 x))
+  (define (gpr-ref-8l x) (extract 7 0 x))
+  (define rs (cpu-gprs cpu))
   (case gpr
-    [(ax cx dx bx sp bp si di) (extract 15 0 val)]
-    [(ah ch dh bh) (extract 15 8 val)]
-    [(al cl dl bl spl bpl sil dil) (extract 7 0 val)]
-    [else val]))
+    [(eax) (gprs-eax rs)]
+    [(ecx) (gprs-ecx rs)]
+    [(edx) (gprs-edx rs)]
+    [(ebx) (gprs-ebx rs)]
+    [(esp) (gprs-esp rs)]
+    [(ebp) (gprs-ebp rs)]
+    [(esi) (gprs-esi rs)]
+    [(edi) (gprs-edi rs)]
+    ;
+    [(ax) (gpr-ref-16 (gprs-eax rs))]
+    [(cx) (gpr-ref-16 (gprs-ecx rs))]
+    [(dx) (gpr-ref-16 (gprs-edx rs))]
+    [(bx) (gpr-ref-16 (gprs-ebx rs))]
+    [(sp) (gpr-ref-16 (gprs-esp rs))]
+    [(bp) (gpr-ref-16 (gprs-ebp rs))]
+    [(si) (gpr-ref-16 (gprs-esi rs))]
+    [(di) (gpr-ref-16 (gprs-edi rs))]
+    ;
+    [(ah) (gpr-ref-8h (gprs-eax rs))]
+    [(ch) (gpr-ref-8h (gprs-ecx rs))]
+    [(dh) (gpr-ref-8h (gprs-edx rs))]
+    [(bh) (gpr-ref-8h (gprs-ebx rs))]
+    ;
+    [(al) (gpr-ref-8l (gprs-eax rs))]
+    [(cl) (gpr-ref-8l (gprs-ecx rs))]
+    [(dl) (gpr-ref-8l (gprs-edx rs))]
+    [(bl) (gpr-ref-8l (gprs-ebx rs))]
+    [(spl) (gpr-ref-8l (gprs-esp rs))]
+    [(bpl) (gpr-ref-8l (gprs-ebp rs))]
+    [(sil) (gpr-ref-8l (gprs-esi rs))]
+    [(dil) (gpr-ref-8l (gprs-edi rs))]
+    ;
+    [else (core:bug-on #t #:msg (format "gpr-ref: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
 
 (define (flag->idx flag)
   (case flag
@@ -96,7 +150,18 @@
   (core:bug-on (not (boolean? val))
    #:msg (format "flag-set!: not boolean: ~e" val)
    #:dbg current-pc-debug)
-  (vector-set! (cpu-flags cpu) (flag->idx flag) val))
+  (define fs (cpu-flags cpu))
+  (case flag
+    [(CF) (set-flags-cf! fs val)]
+    [(PF) (set-flags-pf! fs val)]
+    [(AF) (set-flags-af! fs val)]
+    [(ZF) (set-flags-zf! fs val)]
+    [(SF) (set-flags-sf! fs val)]
+    [(OF) (set-flags-of! fs val)]
+    [else
+     (core:bug-on #t
+      #:msg (format "flag->set!: unknown flag: ~e" flag)
+      #:dbg current-pc-debug)]))
 
 (define (flag-clear! cpu flag)
   (flag-set! cpu flag #f))
@@ -116,9 +181,33 @@
   (define-symbolic* havoc boolean?)
   (flag-set! cpu flag havoc))
 
-(define (flag-ref cpu flag)
-  (vector-ref (cpu-flags cpu) (flag->idx flag)))
+(define (@flag-ref fs flag)
+  (case flag
+    [(CF) (flags-cf fs)]
+    [(PF) (flags-pf fs)]
+    [(AF) (flags-af fs)]
+    [(ZF) (flags-zf fs)]
+    [(SF) (flags-sf fs)]
+    [(OF) (flags-of fs)]
+    [else
+     (core:bug-on #t
+      #:msg (format "flag->ref: unknown flag: ~e" flag)
+      #:dbg current-pc-debug)]))
 
+(define (flag-ref cpu flag)
+  (@flag-ref (cpu-flags cpu) flag))
+
+(define (flags->bitvector fs)
+  (define (flag->bv32 flag)
+    (if (@flag-ref fs flag) (bv (arithmetic-shift 1 (flag->idx flag)) 32) (bv 0 32)))
+  (apply bvor (map flag->bv32 '(CF PF AF ZF SF OF))))
+
+(define (bitvector->flags v)
+  (define lst
+    (for/list ([flag '(CF PF AF ZF SF OF)])
+      (define i (flag->idx flag))
+      (core:bitvector->bool (extract i i v))))
+  (apply flags lst))
 
 (struct ModOpcodeR/M (mod+opcode r/m) #:transparent)
 (struct ModR/M (mod r/m reg) #:transparent)

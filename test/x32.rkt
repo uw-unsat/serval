@@ -21,9 +21,6 @@
 (define choose-r32
   (choose 'eax 'ecx 'edx 'ebx 'esp 'ebp 'esi 'edi))
 
-(define (eflags-ref cpu)
-  (apply concat (map core:bool->bitvector (reverse (vector->list (x32:cpu-flags cpu))))))
-
 (define (cpu->uc cpu addr code)
   (define uc (uc-open 'x86 'x86-32))
   ; allocate memory
@@ -34,19 +31,16 @@
   (for ([gpr '(eax ecx edx ebx esp ebp esi edi)])
     (uc-reg-write uc gpr (bitvector->natural (x32:gpr-ref cpu gpr))))
   ; set eflags
-  (uc-reg-write uc 'eflags (bitvector->natural (eflags-ref cpu)))
+  (uc-reg-write uc 'eflags (bitvector->natural (x32:flags->bitvector (x32:cpu-flags cpu))))
   uc)
 
 (define (uc->cpu uc)
   (define pc (bv (uc-reg-read uc 'eip) 32))
   (define regs
-    (for/vector ([gpr '(eax ecx edx ebx esp ebp esi edi)])
+    (for/list ([gpr '(eax ecx edx ebx esp ebp esi edi)])
       (bv (uc-reg-read uc gpr) 32)))
   (define eflags (bv (uc-reg-read uc 'eflags) 32))
-  (define flags
-    (for/vector ([i (in-range 32)])
-      (core:bitvector->bool (extract i i eflags))))
-  (x32:cpu pc regs flags null))
+  (x32:cpu pc (apply x32:gprs regs) (x32:bitvector->flags eflags) null))
 
 (define (check-insn #:fixup [fixup void] ctor . generators)
   (define args (map arbitrary generators))
@@ -72,14 +66,14 @@
   (x32:interpret-instr cpu insn)
 
   ; no symbolic register values
-  (for ([v (x32:cpu-gprs cpu)])
-    (check-false (term? v)))
+  (for ([r '(eax ecx edx ebx esp ebp esi edi)])
+    (check-false (term? (x32:gpr-ref cpu r))))
 
   ; if the spec sets a symbolic flag, replace it with a concrete one from the emulator
   ; this is faster than invoking the solver
-  (for ([i (in-range 32)] [v (x32:cpu-flags cpu)])
-    (when (constant? v)
-      (vector-set! (x32:cpu-flags cpu) i (vector-ref (x32:cpu-flags uc-cpu) i))))
+  (for ([flag '(CF PF AF ZF SF OF)])
+    (when (constant? (x32:flag-ref cpu flag))
+      (x32:flag-set! cpu flag (x32:flag-ref uc-cpu flag))))
 
   ; check if the final states match
   (check-equal? cpu uc-cpu))
