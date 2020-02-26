@@ -18,6 +18,7 @@
     (define cpu (init-cpu))
 
     (define (handle-failure e)
+      (displayln e)
       (define s (format "FAILURE --> Test ~e failed in ~e\n" (bitvector->integer (gpr-ref cpu 'x21)) testfile))
       (assert #f s))
 
