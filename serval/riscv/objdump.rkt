@@ -109,21 +109,27 @@
   (define insn
    (match i
 
-    ; No arguments
-    [(list (and op (or 'c.unimp 'unimp 'mret 'nop 'wfi 'sfence.vma 'fence.i 'fence 'ecall 'ebreak)) _ ...)
-      (instr op #f #f #f #f size)]
+    [(list (and op (or 'wfi 'sfence.vma 'unimp 'mret)) _ ...)
+      (assert (equal? size 4))
+      (rv_r_insn op #f #f #f)]
+
+    [(list (and op (or 'fence.i 'fence)) _ ...)
+      (assert (equal? size 4))
+      (rv_i_insn op #f #f #f)]
 
     ; Dst + 20-bit imm
-    [(list (and op (or 'auipc 'lui)) dst off)
-      (instr op dst #f #f (bv off 20) size)]
+    [(list (and op (or 'auipc 'lui)) rd off)
+      (rv_u_insn op rd (bv off 20))]
 
     ; dst + src + 12-bit imm
     [(list (and op (or 'slti 'sltiu 'addiw 'slliw 'srliw 'sraiw 'addi 'subi 'muli 'ori 'andi 'xori 'srli 'srai 'slli)) dst src imm)
-      (instr op dst src #f (bv imm 12) size)]
+      (assert (equal? size 4))
+      (rv_i_insn op dst src (bv imm 12))]
 
     ; dst + src + src
     [(list (and op (or 'slt 'sltu 'addw 'add 'subw 'sub 'or 'and 'xor 'srlw 'srl 'sraw 'sra 'sllw 'sll 'mulw 'mul 'mulh 'mulhu 'mulhsu 'divw 'div 'remw 'rem 'divuw 'divu 'remuw 'remu)) dst src1 src2)
-      (instr op dst src1 src2 #f size)]
+      (assert (equal? size 4))
+      (rv_r_insn op dst src1 src2)]
 
     [(list 'jal dst abs-addr)
 
@@ -133,26 +139,30 @@
                  (bvadd i-addr (bvshl (sign-extend off (bitvector (XLEN))) (bv 1 (XLEN))))))
         #:msg (format "Relinking failed:\n i-addr ~e\n off ~e" i-addr off))
 
-      (instr 'jal dst #f #f off size)]
+      (assert (equal? size 4))
+      (rv_u_insn 'jal dst off)]
 
     [(list 'jalr dst (list 'offset imm src))
-      (instr 'jalr dst src #f (bv imm 12) size)]
+      (assert (equal? size 4))
+      (rv_i_insn 'jalr dst src (bv imm 12))]
 
     [(list (and op (or 'ld 'ldu 'lw 'lwu 'lh 'lhu 'lb 'lbu))
            dst
            (list 'offset off reg))
-      (instr op dst reg #f (bv off 12) size)]
+      (assert (equal? size 4))
+      (rv_i_insn op dst reg (bv off 12))]
 
     [(list (and op (or 'sd 'sw 'sh 'sb))
            src
            (list 'offset off reg))
-      (instr op #f reg src (bv off 12) size)]
+      (assert (equal? size 4))
+      (rv_s_insn op reg src (bv off 12))]
 
-    [(list (and op (or 'amoor.w.aq))
-           dst
-           src
-           (list addr))
-      (instr op dst src addr #f size)]
+    ; [(list (and op (or 'amoor.w.aq))
+    ;        dst
+    ;        src
+    ;        (list addr))
+    ;   (instr op dst src addr #f size)]
 
     [(list (and op (or 'bge 'blt 'bgeu 'bltu 'bne 'beq)) reg1 reg2 abs-addr)
       (define off (extract 12 1 (bvsub (bv abs-addr (XLEN)) i-addr)))
@@ -160,14 +170,16 @@
         (! (bveq (bv abs-addr (XLEN))
                  (bvadd i-addr (bvshl (sign-extend off (bitvector (XLEN))) (bv 1 (XLEN))))))
         #:msg (format "Relinking failed:\n i-addr ~e\n off ~e" i-addr off))
-
-    (instr op #f reg1 reg2 off size)]
+      (assert (equal? size 4))
+      (rv_s_insn op reg1 reg2 off)]
 
     [(list (and op (or 'csrrw 'csrrs 'csrrc)) dst csr src)
-      (instr op dst csr src #f size)]
+      (assert (equal? size 4))
+      (rv_i_insn op dst src csr)]
 
     [(list (and op (or 'csrrwi 'csrrsi 'csrrci)) dst csr imm)
-      (instr op dst csr #f (bv imm 5) size)]
+      (assert (equal? size 4))
+      (rv_i_insn op dst (bv imm 5) csr)]
 
     [else (core:bug-on #t #:msg (format "Bad parse ~e" i))]))
 

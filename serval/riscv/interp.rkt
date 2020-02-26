@@ -11,17 +11,17 @@
 ; (in bytes) of the encoded form of the instruction.
 ; All except opcode and size are optional, and can be replaced with #f if not used for that particular
 ; instruction.
-(struct instr (op dst src1 src2 imm size)
-  #:methods gen:custom-write
-  [(define (write-proc instr port mode)
-     (fprintf port "(instr")
-     (fprintf port " ~a" (instr-op instr))
-     (fprintf port " ~a" (instr-dst instr))
-     (fprintf port " ~a" (instr-src1 instr))
-     (fprintf port " ~a" (instr-src2 instr))
-     (fprintf port " ~a" (instr-imm instr))
-     (fprintf port " ~a)" (instr-size instr))
-     (fprintf port ")"))])
+; (struct instr (op dst src1 src2 imm size)
+;   #:methods gen:custom-write
+;   [(define (write-proc instr port mode)
+;      (fprintf port "(instr")
+;      (fprintf port " ~a" (instr-op instr))
+;      (fprintf port " ~a" (instr-dst instr))
+;      (fprintf port " ~a" (instr-src1 instr))
+;      (fprintf port " ~a" (instr-src2 instr))
+;      (fprintf port " ~a" (instr-imm instr))
+;      (fprintf port " ~a)" (instr-size instr))
+;      (fprintf port ")"))])
 
 (struct program (base instructions) #:transparent)
 
@@ -47,9 +47,10 @@
     [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such load ~e\n" op))]))
 
 (define (resolve-mem-path cpu instr)
-  (define type (instr-op instr))
-  (define off (instr-imm instr))
-  (define reg (instr-src1 instr))
+  (define-values (type off reg)
+    (cond
+      [(rv_s_insn? instr) (values (rv_s_insn-op instr) (rv_s_insn-imm12 instr) (rv_s_insn-rs1 instr))]
+      [(rv_i_insn? instr) (values (rv_i_insn-op instr) (rv_i_insn-imm12 instr) (rv_i_insn-rs1 instr))]))
 
   (define mr (core:guess-mregion-from-addr #:dbg current-pc-debug (cpu-mregions cpu) (gpr-ref cpu reg) off))
   (define start (core:mregion-start mr))
@@ -153,67 +154,58 @@
                #:msg (format "Bad immediate size: Expected ~e got ~e" (bitvector size) imm)
                #:dbg current-pc-debug))
 
-; interpret one instr
-(define (interpret-instr cpu instr)
-  (define op (instr-op instr))
-  (define dst (instr-dst instr))
-  (define src1 (instr-src1 instr))
-  (define src (instr-src1 instr))
-  (define src2 (instr-src2 instr))
-  (define imm (instr-imm instr))
-  (define off (instr-imm instr))
-  (define addr (instr-imm instr))
-  (define size (instr-size instr))
+
+(define (interpret-rv_i_insn cpu insn)
+  (define op (rv_i_insn-op insn))
+  (define rd (rv_i_insn-rd insn))
+  (define rs1 (rv_i_insn-rs1 insn))
+  (define imm12 (rv_i_insn-imm12 insn))
+  (define size 4)
+
   (case op
-    [(nop wfi sfence.vma fence.i fence ecall ebreak)
+
+    ; Encoded as I-type instruction
+    [(fence.i fence)
       (cpu-next! cpu size)]
 
-    ; AUIPC appends 12 low-order zero bits to the 20-bit U-immediate, sign-extends
-    ; the result to 64 bits, then adds it to the pc and places the result in register rd.
-    [(auipc)
-      (check-imm-size 20 imm)
-      (gpr-set! cpu dst (bvadd
-                        (sign-extend (concat off (bv 0 12)) (bitvector (XLEN)))
-                        (cpu-pc cpu)))
+    ; CSR reg
+    [(csrrw csrrs csrrc)
+      ; imm12 is really a csr name
+      (do-csr-op cpu op rd imm12 (gpr-ref cpu rs1))
       (cpu-next! cpu size)]
 
-    ; LUI places the 20-bit U-immediate into bits 31–12 of register rd and places
-    ; zero in the lowest 12 bits. The 32-bit result is sign-extended to 64 bits.
-    [(lui)
-      (check-imm-size 20 imm)
-      (gpr-set! cpu dst (sign-extend (concat imm (bv 0 12)) (bitvector (XLEN))))
+    ; CSR imm
+    [(csrrwi csrrsi csrrci)
+      ; This is the most irregular encoding. Here rs1 is actually a 5-bit immediate
+      ; and not an actual register name.
+      ; In addition, imm12 is actually a CSR name and not an immediate.
+      (check-imm-size 5 rs1)
+      (do-csr-op cpu op rd imm12 (zero-extend rs1 (bitvector (XLEN))))
+      (cpu-next! cpu size)]
+
+    ; ecall/ebreak are encoded as I-type instructions
+    [(ecall ebreak)
+      (cpu-next! cpu size)]
+
+    [(addi subi ori andi xori srli srai slli)
+      (check-imm-size 12 imm12)
+      (gpr-set! cpu rd (evaluate-binary-op op (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (XLEN)))))
       (cpu-next! cpu size)]
 
     ; Set if less than immediate (signed)
     [(slti)
-      (check-imm-size 12 imm)
-      (gpr-set! cpu dst
-        (if (bvslt (gpr-ref cpu src) (sign-extend imm (bitvector (XLEN))))
+      (check-imm-size 12 imm12)
+      (gpr-set! cpu rd
+        (if (bvslt (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (XLEN))))
           (bv 1 (XLEN))
           (bv 0 (XLEN))))
       (cpu-next! cpu size)]
 
     ; Set if less than immediate unsigned
     [(sltiu)
-      (check-imm-size 12 imm)
-      (gpr-set! cpu dst
-        (if (bvult (gpr-ref cpu src) (sign-extend imm (bitvector (XLEN))))
-          (bv 1 (XLEN))
-          (bv 0 (XLEN))))
-      (cpu-next! cpu size)]
-
-    ; Set if less than (signed)
-    [(slt)
-      (gpr-set! cpu dst
-        (if (bvslt (gpr-ref cpu src1) (gpr-ref cpu src2))
-          (bv 1 (XLEN))
-          (bv 0 (XLEN))))
-      (cpu-next! cpu size)]
-
-    ; Set if less than unsigned
-    [(sltu)
-      (gpr-set! cpu dst
-        (if (bvult (gpr-ref cpu src1) (gpr-ref cpu src2))
+      (check-imm-size 12 imm12)
+      (gpr-set! cpu rd
+        (if (bvult (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (XLEN))))
           (bv 1 (XLEN))
           (bv 0 (XLEN))))
       (cpu-next! cpu size)]
@@ -224,80 +216,118 @@
     ; result sign-extended to 64 bits. Note, ADDIW rd, rs1, 0 writes the
     ; sign-extension of the lower 32 bits of register rs1 into register rd
     [(addiw)
-      (check-imm-size 12 imm)
+      (check-imm-size 12 imm12)
       (core:bug-on (! (= (XLEN) 64)) #:msg "addiw: (XLEN) != 64" #:dbg current-pc-debug)
-      (gpr-set! cpu dst
+      (gpr-set! cpu rd
         (sign-extend
-          (bvadd (extract 31 0 (gpr-ref cpu src))
-                 (sign-extend imm (bitvector 32)))
+          (bvadd (extract 31 0 (gpr-ref cpu rs1))
+                 (sign-extend imm12 (bitvector 32)))
         (bitvector 64)))
       (cpu-next! cpu size)]
 
     [(slliw srliw sraiw)
-      (check-imm-size 12 imm)
+      (check-imm-size 12 imm12)
       (core:bug-on (! (= (XLEN) 64)) #:msg "slliw/srliw/sraiw: (XLEN) != 64" #:dbg current-pc-debug)
-      (gpr-set! cpu dst
+      (gpr-set! cpu rd
         (sign-extend
           (evaluate-binary-op op
-            (extract 31 0 (gpr-ref cpu src))
-            (bvand (sign-extend imm (bitvector 32)) (bv #b11111 32)))
+            (extract 31 0 (gpr-ref cpu rs1))
+            (bvand (sign-extend imm12 (bitvector 32)) (bv #b11111 32)))
           (bitvector 64)))
       (cpu-next! cpu size)]
 
-
-    ; The jump and link (JAL) instruction uses the J-type format, where the J-immediate encodes a
-    ; signed offset in multiples of 2 bytes. The offset is sign-extended and added to the address of
-    ; the jump instruction to form the jump target address.
-    [(jal)
-      (check-imm-size 20 imm)
-      (jump-and-link cpu dst addr #:size size)]
+    [(ld ldu lw lwu lh lhu lb lbu)
+      (check-imm-size 12 imm12)
+      (define ptr (resolve-mem-path cpu insn))
+      (define block (ptr-block ptr))
+      (define path (ptr-path ptr))
+      (define extend (if (load-signed? op) sign-extend zero-extend))
+      (gpr-set! cpu rd (extend (core:mblock-iload block path) (bitvector (XLEN))))
+      (cpu-next! cpu size)]
 
     ; The indirect jump instruction JALR (jump and link register) uses the I-type encoding.
     ; The target address is obtained by adding the sign-extended 12-bit I-immediate to the register
     ; rs1, then setting the least-significant bit of the result to zero. The address of the
     ; instruction following the jump (pc+4) is written to register rd.
     [(jalr)
-      (check-imm-size 12 off)
-      (gpr-set! cpu dst (bvadd (bv size (XLEN)) (cpu-pc cpu)))
+      (check-imm-size 12 imm12)
+      (gpr-set! cpu rd (bvadd (bv size (XLEN)) (cpu-pc cpu)))
       (define target
-        (for/all ([src (gpr-ref cpu src) #:exhaustive])
+        (for/all ([src (gpr-ref cpu rs1) #:exhaustive])
           (bvand
             (bvnot (bv 1 (XLEN)))
-            (bvadd src (sign-extend off (bitvector (XLEN)))))))
+            (bvadd src (sign-extend imm12 (bitvector (XLEN)))))))
       (set-cpu-pc! cpu target)]
 
-    [(ld ldu lw lwu lh lhu lb lbu)
-      (check-imm-size 12 imm)
-      (define ptr (resolve-mem-path cpu instr))
-      (define block (ptr-block ptr))
-      (define path (ptr-path ptr))
-      (define extend (if (load-signed? op) sign-extend zero-extend))
-      (gpr-set! cpu dst (extend (core:mblock-iload block path) (bitvector (XLEN))))
+    [else (core:bug-on #t #:msg (format "No such rv_i_insn: ~v" insn) #:dbg current-pc-debug)]
+
+  ))
+
+
+(define (interpret-rv_r_insn cpu insn)
+  (define op (rv_r_insn-op insn))
+  (define rd (rv_r_insn-rd insn))
+  (define rs1 (rv_r_insn-rs1 insn))
+  (define rs2 (rv_r_insn-rs2 insn))
+  (define size 4)
+
+  (case op
+
+    ; wfi and sfence.vma are encoded as R-type instructions
+    [(wfi sfence.vma)
       (cpu-next! cpu size)]
 
+    ; Set if less than (signed)
+    [(slt)
+      (gpr-set! cpu rd
+        (if (bvslt (gpr-ref cpu rs1) (gpr-ref cpu rs2))
+          (bv 1 (XLEN))
+          (bv 0 (XLEN))))
+      (cpu-next! cpu size)]
+
+    ; Set if less than unsigned
+    [(sltu)
+      (gpr-set! cpu rd
+        (if (bvult (gpr-ref cpu rs1) (gpr-ref cpu rs2))
+          (bv 1 (XLEN))
+          (bv 0 (XLEN))))
+      (cpu-next! cpu size)]
+
+    ; Binary operation two registers
+    [(add sub or and xor srl sra sll mul mulh mulhu mulhsu div rem divu remu)
+      (gpr-set! cpu rd (evaluate-binary-op op (gpr-ref cpu rs1) (gpr-ref cpu rs2)))
+      (cpu-next! cpu size)]
+
+    ; Binary operation two registers (32-bit ops on 64-bit only)
+    [(addw subw sllw srlw sraw mulw divw remw divuw remuw)
+      (core:bug-on (! (= (XLEN) 64)) #:msg "*w: (XLEN) != 64" #:dbg current-pc-debug)
+      (gpr-set! cpu rd (sign-extend (evaluate-binary-op op (extract 31 0 (gpr-ref cpu rs1)) (extract 31 0 (gpr-ref cpu rs2))) (bitvector 64)))
+      (cpu-next! cpu size)]
+
+    [else (core:bug-on #t #:msg (format "No such rv_r_insn: ~v" insn) #:dbg current-pc-debug)]
+
+  ))
+
+(define (interpret-rv_s_insn cpu insn)
+  (define op (rv_s_insn-op insn))
+  (define rs1 (rv_s_insn-rs1 insn))
+  (define rs2 (rv_s_insn-rs2 insn))
+  (define imm12 (rv_s_insn-imm12 insn))
+  (define size 4)
+
+  (case op
     [(sd sw sh sb)
-      (check-imm-size 12 imm)
-      (define ptr (resolve-mem-path cpu instr))
+      (check-imm-size 12 imm12)
+      (define ptr (resolve-mem-path cpu insn))
       (define block (ptr-block ptr))
       (define path (ptr-path ptr))
-      (define value (extract (- (* 8 (memop->size op)) 1) 0 (gpr-ref cpu src2)))
+      (define value (extract (- (* 8 (memop->size op)) 1) 0 (gpr-ref cpu rs2)))
       (core:mblock-istore! block value path)
       (cpu-next! cpu size)]
 
-    ; CSR reg
-    [(csrrw csrrs csrrc)
-      (do-csr-op cpu op dst src1 (gpr-ref cpu src2))
-      (cpu-next! cpu size)]
-
-    ; CSR imm
-    [(csrrwi csrrsi csrrci)
-      (check-imm-size 5 imm)
-      (do-csr-op cpu op dst src1 (zero-extend imm (bitvector (XLEN))))
-      (cpu-next! cpu size)]
-
-    ; ; Binary conditional branch
+    ; Binary conditional branch
     [(bge blt bgeu bltu bne beq)
-      (check-imm-size 12 addr)
+      (check-imm-size 12 imm12)
 
       (define (simplify-condition expr)
         (match expr
@@ -313,28 +343,56 @@
           newexpr]
           [_ expr]))
 
-      (if (simplify-condition (evaluate-binary-conditional op (gpr-ref cpu src1) (gpr-ref cpu src2)))
-        (jump-and-link cpu 'x0 addr #:size size)
+      (if (simplify-condition (evaluate-binary-conditional op (gpr-ref cpu rs1) (gpr-ref cpu rs2)))
+        (jump-and-link cpu 'x0 imm12 #:size size)
         (cpu-next! cpu size))]
 
-    ; Binary operation with immediate
-    [(addi subi ori andi xori srli srai slli)
-      (check-imm-size 12 imm)
-      (gpr-set! cpu dst (evaluate-binary-op op (gpr-ref cpu src) (sign-extend imm (bitvector (XLEN)))))
+    [else (core:bug-on #t #:msg (format "No such rv_s_insn: ~v" insn) #:dbg current-pc-debug)]
+  ))
+
+(define (interpret-rv_u_insn cpu insn)
+  (define op (rv_u_insn-op insn))
+  (define rd (rv_u_insn-rd insn))
+  (define imm20 (rv_u_insn-imm20 insn))
+  (define size 4)
+
+  (case op
+    ; AUIPC appends 12 low-order zero bits to the 20-bit U-immediate, sign-extends
+    ; the result to 64 bits, then adds it to the pc and places the result in register rd.
+    [(auipc)
+      (check-imm-size 20 imm20)
+      (gpr-set! cpu rd (bvadd
+                         (sign-extend (concat imm20 (bv 0 12)) (bitvector (XLEN)))
+                         (cpu-pc cpu)))
       (cpu-next! cpu size)]
 
-    ; Binary operation two registers
-    [(add sub or and xor srl sra sll mul mulh mulhu mulhsu div rem divu remu)
-      (gpr-set! cpu dst (evaluate-binary-op op (gpr-ref cpu src1) (gpr-ref cpu src2)))
+    ; LUI places the 20-bit U-immediate into bits 31–12 of register rd and places
+    ; zero in the lowest 12 bits. The 32-bit result is sign-extended to 64 bits.
+    [(lui)
+      (check-imm-size 20 imm20)
+      (gpr-set! cpu rd (sign-extend (concat imm20 (bv 0 12)) (bitvector (XLEN))))
       (cpu-next! cpu size)]
 
-    ; Binary operation two registers (32-bit ops on 64-bit only)
-    [(addw subw sllw srlw sraw mulw divw remw divuw remuw)
-      (core:bug-on (! (= (XLEN) 64)) #:msg "*w: (XLEN) != 64" #:dbg current-pc-debug)
-      (gpr-set! cpu dst (sign-extend (evaluate-binary-op op (extract 31 0 (gpr-ref cpu src1)) (extract 31 0 (gpr-ref cpu src2))) (bitvector 64)))
-      (cpu-next! cpu size)]
+    ; The jump and link (JAL) instruction uses the J-type format, where the J-immediate encodes a
+    ; signed offset in multiples of 2 bytes. The offset is sign-extended and added to the address of
+    ; the jump instruction to form the jump target address.
+    [(jal)
+      (check-imm-size 20 imm20)
+      (jump-and-link cpu rd imm20 #:size size)]
 
-    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "No semantics for instr ~e\n" instr))]))
+    [else (core:bug-on #t #:msg (format "No such rv_u_insn: ~v" insn) #:dbg current-pc-debug)]
+
+  ))
+
+; interpret one instr
+(define (interpret-insn cpu insn)
+  (cond
+    [(rv_i_insn? insn) (interpret-rv_i_insn cpu insn)]
+    [(rv_r_insn? insn) (interpret-rv_r_insn cpu insn)]
+    [(rv_s_insn? insn) (interpret-rv_s_insn cpu insn)]
+    [(rv_u_insn? insn) (interpret-rv_u_insn cpu insn)]
+    [else (core:bug-on #t #:msg (format "Unknown instruction type: ~v" insn))]))
+
 
 (define (interpret-program cpu program)
   (define instructions (program-instructions program))
@@ -347,8 +405,7 @@
         (interpret-program cpu program)]
 
       [(hash-has-key? instructions pc)
-        (case (instr-op (hash-ref instructions pc))
-          [(mret) (void)]
-          [else
-            (interpret-instr cpu (hash-ref instructions pc))
-            (interpret-program cpu program)])])))
+        (define insn (hash-ref instructions pc))
+        (when (! (and (rv_r_insn? insn) (equal? (rv_r_insn-op insn) 'mret)))
+          (interpret-insn cpu (hash-ref instructions pc))
+          (interpret-program cpu program))])))

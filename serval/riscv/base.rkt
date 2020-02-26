@@ -18,6 +18,12 @@
 
 (define current-pc-debug (bv 0 (XLEN)))
 
+(struct rv_r_insn (op rd rs1 rs2) #:transparent)
+(struct rv_i_insn (op rd rs1 imm12) #:transparent)
+(struct rv_s_insn (op rs1 rs2 imm12) #:transparent)
+(struct rv_u_insn (op rd imm20) #:transparent)
+
+
 (define (set-current-pc-debug! v)
   (set! current-pc-debug v))
 

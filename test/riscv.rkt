@@ -9,8 +9,8 @@
 (define (check-jalr-clears-least-bit)
   (define cpu (init-cpu))
   (gpr-set! cpu 'a0 (bv #xffff (XLEN)))
-  (define i (instr 'jalr 'zero 'a0 #f (bv 0 12) 4))
-  (interpret-instr cpu i)
+  (define i (rv_i_insn 'jalr 'zero 'a0 (bv 0 12)))
+  (interpret-insn cpu i)
   (check-equal? (cpu-pc cpu) (bv #xfffe (XLEN)))
   (check-equal? (asserts) null))
 
