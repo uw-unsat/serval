@@ -3,8 +3,7 @@
 (require
   serval/lib/unittest
   serval/riscv/interp
-  serval/riscv/base
-  serval/riscv/synth)
+  serval/riscv/base)
 
 (define (check-jalr-clears-least-bit)
   (define cpu (init-cpu))

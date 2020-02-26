@@ -23,6 +23,7 @@
 (struct rv_s_insn (op rs1 rs2 imm12) #:transparent)
 (struct rv_u_insn (op rd imm20) #:transparent)
 
+(struct rv_cr_insn (op rd/rs1 rs2) #:transparent)
 
 (define (set-current-pc-debug! v)
   (set! current-pc-debug v))

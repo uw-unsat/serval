@@ -109,6 +109,10 @@
   (define insn
    (match i
 
+    [(list (and op 'c.unimp))
+      (assert (equal? size 2))
+      (rv_cr_insn op #f #f)]
+
     [(list (and op (or 'wfi 'sfence.vma 'unimp 'mret)) _ ...)
       (assert (equal? size 4))
       (rv_r_insn op #f #f #f)]
