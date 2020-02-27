@@ -24,6 +24,8 @@
 
 (provide (all-defined-out))
 
+(define solver-logic (make-parameter #f))
+
 (define-syntax-rule (with-solver solver body ...)
   (parameterize ([current-solver solver])
     (printf "Using solver ~v\n" (current-solver))
@@ -47,12 +49,12 @@
       [else
         (error (format "Unknown solver type: ~v" solver))])))
 
-(define (get-z3 #:logic [logic 'QF_UFBV]
+(define (get-z3 #:logic [logic #f]
                 #:options [options (hash ':auto-config 'false ':smt.relevancy 0)]
                 #:required [required #t])
   (let ([path (getenv "Z3")])
     (cond
-      [path (z3 #:path path #:logic logic #:options options)]
+      [path (z3 #:path path #:logic (if logic logic (solver-logic)) #:options options)]
       [else (z3)])))
 
       ; TODO: why is there no "z3-available?"
@@ -65,8 +67,8 @@
                        #:required [required #t])
   (let ([path (getenv "BOOLECTOR")])
     (cond
-      [path (boolector #:path path #:logic logic #:options options)]
-      [(boolector-available?) (boolector #:logic logic #:options options)]
+      [path (boolector #:path path #:logic (if logic logic (solver-logic)) #:options options)]
+      [(boolector-available?) (boolector #:logic (if logic logic (solver-logic)) #:options options)]
       [required (error "No Boolector found and Boolector en not set!")]
       [else #f])))
 
