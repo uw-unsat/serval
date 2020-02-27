@@ -110,15 +110,12 @@
    (match i
 
     [(list (and op 'c.unimp))
-      (assert (equal? size 2))
       (rv_cr_insn op #f #f)]
 
     [(list (and op (or 'wfi 'sfence.vma 'unimp 'mret)) _ ...)
-      (assert (equal? size 4))
       (rv_r_insn op #f #f #f)]
 
     [(list (and op (or 'fence.i 'fence)) _ ...)
-      (assert (equal? size 4))
       (rv_i_insn op #f #f #f)]
 
     ; Dst + 20-bit imm
@@ -127,7 +124,6 @@
 
     ; dst + src + 12-bit imm
     [(list (and op (or 'slti 'sltiu 'addiw 'slliw 'srliw 'sraiw 'addi 'subi 'muli 'ori 'andi 'xori 'srli 'srai 'slli)) dst src imm)
-      (assert (equal? size 4))
       (rv_i_insn op dst src (bv imm 12))]
 
     ; dst + src + src
@@ -143,23 +139,19 @@
                  (bvadd i-addr (bvshl (sign-extend off (bitvector (XLEN))) (bv 1 (XLEN))))))
         #:msg (format "Relinking failed:\n i-addr ~e\n off ~e" i-addr off))
 
-      (assert (equal? size 4))
       (rv_u_insn 'jal dst off)]
 
     [(list 'jalr dst (list 'offset imm src))
-      (assert (equal? size 4))
       (rv_i_insn 'jalr dst src (bv imm 12))]
 
     [(list (and op (or 'ld 'ldu 'lw 'lwu 'lh 'lhu 'lb 'lbu))
            dst
            (list 'offset off reg))
-      (assert (equal? size 4))
       (rv_i_insn op dst reg (bv off 12))]
 
     [(list (and op (or 'sd 'sw 'sh 'sb))
            src
            (list 'offset off reg))
-      (assert (equal? size 4))
       (rv_s_insn op reg src (bv off 12))]
 
     ; [(list (and op (or 'amoor.w.aq))
@@ -186,6 +178,10 @@
       (rv_i_insn op dst (bv imm 5) csr)]
 
     [else (core:bug-on #t #:msg (format "Bad parse ~e" i))]))
+
+  (assert (equal? size (insn-size insn))
+          (format "Bad instruction size for ~a, expected ~v got ~v"
+                  insn size (insn-size insn)))
 
   (when raw
     (define encoded (encode-instr insn))
