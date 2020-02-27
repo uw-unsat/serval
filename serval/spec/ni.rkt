@@ -22,16 +22,16 @@
 
   (apply spec s args)
 
-  (for/all ([doma (dom action old-s) #:exhaustive])
-    (for/all ([u u #:exhaustive]) (begin
-
+  (for*/all ([doma (dom action old-s) #:exhaustive]
+             [u u #:exhaustive])
+    (begin
       (define pre (&& (inv old-s)
                       (! (flowsto doma u))))
 
       (define post (check-asserts (unwinding u old-s s)))
 
       (check-equal? (asserts) null)
-      (check-unsat? (verify (assert (=> pre post))))))))
+      (check-unsat? (verify (assert (=> pre post)))))))
 
 (define
   (check-step-consistency
@@ -75,8 +75,9 @@
   (apply spec s args)
   (apply spec t args)
 
-  (for/all ([u u #:exhaustive])
-    (for/all ([doma (dom action old-s) #:exhaustive]) (begin
+  (for*/all ([u u #:exhaustive]
+             [doma (dom action old-s) #:exhaustive])
+    (begin
 
       (define pre (&& (inv old-s)
                       (inv old-t)
@@ -88,4 +89,4 @@
       (define post (check-asserts (unwinding u s t)))
 
       (check-equal? (asserts) null)
-      (check-unsat? (verify (assert (=> pre post))))))))
+      (check-unsat? (verify (assert (=> pre post)))))))

@@ -22,13 +22,13 @@
     [(lh lhu sh) 2]
     [(lw lwu sw) 4]
     [(ld ldu sd) 8]
-    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such memop ~e\n" op))]))
+    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "memop->size: no such memop ~e\n" op))]))
 
 (define (load-signed? op)
   (case op
     [(lb lh lw ld) #t]
     [(lbu lhu lwu ldu) #f]
-    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such load ~e\n" op))]))
+    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "load-signed?: no such load ~e\n" op))]))
 
 (define (resolve-mem-path cpu instr)
   (define-values (type off reg)
@@ -62,9 +62,8 @@
     [(bltu) (bvult val1 val2)]
     [(bne) (! (bveq val1 val2))]
     [(beq) (bveq val1 val2)]
-    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such binary conditional ~e\n" type))]))
-
-; ALU
+    [else (core:bug-on #t #:dbg current-pc-debug
+                          #:msg (format "evaluate-binary-conditional: no such binary conditional ~e\n" type))]))
 
 (define bvmulh-proc
   (make-parameter
@@ -105,9 +104,8 @@
     [(remw rem) (if (core:bvzero? v2) v1 ((core:bvsrem-proc) v1 v2))]
     [(divuw divu) ((core:bvudiv-proc) v1 v2)]
     [(remuw remu) ((core:bvurem-proc) v1 v2)]
-    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such binary op ~e\n" type))]))
-
-; jumps
+    [else (core:bug-on #t #:dbg current-pc-debug
+                          #:msg (format "evaluate-binary-op: no such binary op ~e\n" type))]))
 
 (define (jump-and-link cpu reg addr #:size size)
 
@@ -138,7 +136,6 @@
                #:msg (format "Bad immediate size: Expected ~e got ~e" (bitvector size) imm)
                #:dbg current-pc-debug))
 
-
 (define (interpret-rv_i_insn cpu insn)
   (define op (rv_i_insn-op insn))
   (define rd (rv_i_insn-rd insn))
@@ -167,10 +164,7 @@
       (do-csr-op cpu op rd imm12 (zero-extend rs1 (bitvector (XLEN))))
       (cpu-next! cpu size)]
 
-    ; ecall/ebreak are encoded as I-type instructions
-    [(ecall ebreak)
-      (cpu-next! cpu size)]
-
+    ; ALU immediate instructions
     [(addi subi ori andi xori srli srai slli)
       (check-imm-size 12 imm12)
       (gpr-set! cpu rd (evaluate-binary-op op (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (XLEN)))))

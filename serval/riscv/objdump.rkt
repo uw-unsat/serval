@@ -128,7 +128,6 @@
 
     ; dst + src + src
     [(list (and op (or 'slt 'sltu 'addw 'add 'subw 'sub 'or 'and 'xor 'srlw 'srl 'sraw 'sra 'sllw 'sll 'mulw 'mul 'mulh 'mulhu 'mulhsu 'divw 'div 'remw 'rem 'divuw 'divu 'remuw 'remu)) dst src1 src2)
-      (assert (equal? size 4))
       (rv_r_insn op dst src1 src2)]
 
     [(list 'jal dst abs-addr)
@@ -154,47 +153,38 @@
            (list 'offset off reg))
       (rv_s_insn op reg src (bv off 12))]
 
-    ; [(list (and op (or 'amoor.w.aq))
-    ;        dst
-    ;        src
-    ;        (list addr))
-    ;   (instr op dst src addr #f size)]
-
     [(list (and op (or 'bge 'blt 'bgeu 'bltu 'bne 'beq)) reg1 reg2 abs-addr)
       (define off (extract 12 1 (bvsub (bv abs-addr (XLEN)) i-addr)))
       (core:bug-on
         (! (bveq (bv abs-addr (XLEN))
                  (bvadd i-addr (bvshl (sign-extend off (bitvector (XLEN))) (bv 1 (XLEN))))))
         #:msg (format "Relinking failed:\n i-addr ~e\n off ~e" i-addr off))
-      (assert (equal? size 4))
       (rv_s_insn op reg1 reg2 off)]
 
     [(list (and op (or 'csrrw 'csrrs 'csrrc)) dst csr src)
-      (assert (equal? size 4))
       (rv_i_insn op dst src csr)]
 
     [(list (and op (or 'csrrwi 'csrrsi 'csrrci)) dst csr imm)
-      (assert (equal? size 4))
       (rv_i_insn op dst (bv imm 5) csr)]
 
     [else (core:bug-on #t #:msg (format "Bad parse ~e" i))]))
 
-  (assert (equal? size (insn-size insn))
-          (format "Bad instruction size for ~a, expected ~v got ~v"
-                  insn size (insn-size insn)))
+  (core:bug-on (! (equal? size (insn-size insn)))
+               #:msg (format "Bad instruction size for ~a, expected ~v got ~v"
+                      insn size (insn-size insn)))
 
   (when raw
     (define encoded (encode-instr insn))
     (when encoded
       (define rawbv (bv (string->number raw 16) (* 8 size)))
-      (assert (equal? rawbv encoded) (format "encoding failed: ~a ~a ~a" insn rawbv encoded))))
+      (core:bug-on (! (equal? rawbv encoded))
+                   #:msg (format "Encoding did not produce expected result: ~a ~a ~a" insn rawbv encoded))))
 
   insn)
 
 (define (compile-objdump-program instructions)
   (core:bug-on (! (core:concrete?)))
-  (when (null? instructions)
-    (error "Cannot have empty objdump program"))
+  (core:bug-on (null? instructions) #:msg "Cannot have empty objdump program.")
   (define base (bv (car (list-ref instructions 0)) (XLEN)))
   (define insn-hash
     (for/hash ([insn instructions])

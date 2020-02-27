@@ -10,13 +10,13 @@
 
 (provide pmp-privs)
 
-(define PMPCFG_A_OFF 0) ; PMPCFG_A_OFF
-(define PMPCFG_A_NAPOT 24) ; PMPCFG_A_NAPOT
-(define PMPCFG_A_TOR 8) ; PMPCFG_A_TOR
-(define PMPCFG_R 1) ; PMPCFG_R
-(define PMPCFG_W 2) ; PMPCFG_W
-(define PMPCFG_X 4) ; PMPCFG_X
-(define PMPCFG_RWX 7) ; PMPCFG_RWX
+(define PMPCFG_A_OFF 0)
+(define PMPCFG_A_NAPOT 24)
+(define PMPCFG_A_TOR 8)
+(define PMPCFG_R 1)
+(define PMPCFG_W 2)
+(define PMPCFG_X 4)
+(define PMPCFG_RWX 7)
 
 (define (pmp-privs cpu ptr size)
   (define pmpcfg0 (csr-ref cpu 'pmpcfg0))

@@ -30,7 +30,9 @@
     [(rv_i_insn? insn) 4]
     [(rv_s_insn? insn) 4]
     [(rv_u_insn? insn) 4]
-    [(rv_cr_insn? insn) 2]))
+    [(rv_cr_insn? insn) 2]
+    [else (core:bug-on #t #:msg (format "insn-size: unknown instruction type: ~v" insn)
+                          #:dbg current-pc-debug)]))
 
 (define (set-current-pc-debug! v)
   (set! current-pc-debug v))
@@ -307,7 +309,7 @@
           (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr)))]))
 
 (define (gpr-set! cpu gpr val)
-  (core:bug-on (not (bv? val)) #:msg (format "gpr-set!: not a bitvector: ~e" val) #:dbg current-pc-debug)
+  (core:bug-on (! (bv? val)) #:msg (format "gpr-set!: not a bitvector: ~e" val) #:dbg current-pc-debug)
   (define r (cpu-gprs cpu))
   (case gpr
     [(x0 zero) (void)] ; Drop writes to x0
