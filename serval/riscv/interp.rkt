@@ -7,22 +7,6 @@
 
 (provide (all-defined-out) (all-from-out "base.rkt"))
 
-; Instruction is an opcode, destination register, two source registers, an immediate, and the size
-; (in bytes) of the encoded form of the instruction.
-; All except opcode and size are optional, and can be replaced with #f if not used for that particular
-; instruction.
-; (struct instr (op dst src1 src2 imm size)
-;   #:methods gen:custom-write
-;   [(define (write-proc instr port mode)
-;      (fprintf port "(instr")
-;      (fprintf port " ~a" (instr-op instr))
-;      (fprintf port " ~a" (instr-dst instr))
-;      (fprintf port " ~a" (instr-src1 instr))
-;      (fprintf port " ~a" (instr-src2 instr))
-;      (fprintf port " ~a" (instr-imm instr))
-;      (fprintf port " ~a)" (instr-size instr))
-;      (fprintf port ")"))])
-
 (struct program (base instructions) #:transparent)
 
 (define (cpu-next! cpu size)
