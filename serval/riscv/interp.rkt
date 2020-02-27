@@ -160,7 +160,7 @@
   (define rd (rv_i_insn-rd insn))
   (define rs1 (rv_i_insn-rs1 insn))
   (define imm12 (rv_i_insn-imm12 insn))
-  (define size 4)
+  (define size (insn-size insn))
 
   (case op
 
@@ -269,7 +269,7 @@
   (define rd (rv_r_insn-rd insn))
   (define rs1 (rv_r_insn-rs1 insn))
   (define rs2 (rv_r_insn-rs2 insn))
-  (define size 4)
+  (define size (insn-size insn))
 
   (case op
 
@@ -313,7 +313,7 @@
   (define rs1 (rv_s_insn-rs1 insn))
   (define rs2 (rv_s_insn-rs2 insn))
   (define imm12 (rv_s_insn-imm12 insn))
-  (define size 4)
+  (define size (insn-size insn))
 
   (case op
     [(sd sw sh sb)
@@ -354,7 +354,7 @@
   (define op (rv_u_insn-op insn))
   (define rd (rv_u_insn-rd insn))
   (define imm20 (rv_u_insn-imm20 insn))
-  (define size 4)
+  (define size (insn-size insn))
 
   (case op
     ; AUIPC appends 12 low-order zero bits to the 20-bit U-immediate, sign-extends

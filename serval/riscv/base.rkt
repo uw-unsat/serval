@@ -24,6 +24,14 @@
 (struct rv_u_insn (op rd imm20) #:transparent)
 (struct rv_cr_insn (op rd/rs1 rs2) #:transparent)
 
+(define (insn-size insn)
+  (cond
+    [(rv_r_insn? insn) 4]
+    [(rv_i_insn? insn) 4]
+    [(rv_s_insn? insn) 4]
+    [(rv_u_insn? insn) 4]
+    [(rv_cr_insn? insn) 2]))
+
 (define (set-current-pc-debug! v)
   (set! current-pc-debug v))
 
