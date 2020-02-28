@@ -808,7 +808,10 @@
 (define (interpret-instr cpu insn)
   (instruction-run insn cpu)
   ; bump the pc
-  (cpu-next! cpu (bv (instruction-size insn) 32)))
+  (for/all ([pc (cpu-pc cpu) #:exhaustive])
+    (begin
+      (set-cpu-pc! cpu pc)
+      (cpu-next! cpu (bv (instruction-size insn) 32)))))
 
 (define (interpret-program cpu program)
   (define instructions (program-instructions program))
