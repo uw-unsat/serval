@@ -65,24 +65,6 @@
     [else (core:bug-on #t #:dbg current-pc-debug
                           #:msg (format "evaluate-binary-conditional: no such binary conditional ~e\n" type))]))
 
-(define bvmulh-proc
-  (make-parameter
-    (lambda (x y)
-      (let ([dw (* 2 (XLEN))])
-        (extract (sub1 dw) (XLEN) ((core:bvmul-proc) (sign-extend x (bitvector dw)) (sign-extend y (bitvector dw))))))))
-
-(define bvmulhu-proc
-  (make-parameter
-    (lambda (x y)
-      (let ([dw (* 2 (XLEN))])
-        (extract (sub1 dw) (XLEN) ((core:bvmul-proc) (zero-extend x (bitvector dw)) (zero-extend y (bitvector dw))))))))
-
-(define bvmulhsu-proc
-  (make-parameter
-    (lambda (x y)
-      (let ([dw (* 2 (XLEN))])
-        (extract (sub1 dw) (XLEN) ((core:bvmul-proc) (sign-extend x (bitvector dw)) (zero-extend y (bitvector dw))))))))
-
 (define (evaluate-binary-op type v1 v2)
   (case type
     [(addi addw add) (bvadd v1 v2)]
@@ -94,9 +76,9 @@
     [(srliw srli srlw srl) (bvlshr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(sraiw srai sraw sra) (bvashr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(mulw mul) ((core:bvmul-proc) v1 v2)]
-    [(mulh) ((bvmulh-proc) v1 v2)]
-    [(mulhu) ((bvmulhu-proc) v1 v2)]
-    [(mulhsu) ((bvmulhsu-proc) v1 v2)]
+    [(mulh) ((core:bvmulh-proc) v1 v2)]
+    [(mulhu) ((core:bvmulhu-proc) v1 v2)]
+    [(mulhsu) ((core:bvmulhsu-proc) v1 v2)]
     ; our code doesn't really use divisions - just add for completeness
     ; smtlib seems to have a different div-by-zero semantics for bvsdiv
     ; (bvsdiv -1 0) returns 1, while riscv returns -1

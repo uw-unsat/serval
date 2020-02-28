@@ -735,13 +735,8 @@
 
 (define (interpret-mul cpu v2)
   (define v1 (gpr-ref cpu 'eax))
-  (define n (core:bv-size v1))
-  (define 2n (+ n n))
-  (define upper
-    (extract (sub1 2n) n
-             (bvmul (zero-extend v1 (bitvector 2n))
-                    (zero-extend v2 (bitvector 2n)))))
-  (gpr-set! cpu 'eax (bvmul v1 v2))
+  (define upper ((core:bvmulhu-proc) v1 v2))
+  (gpr-set! cpu 'eax ((core:bvmul-proc) v1 v2))
   (gpr-set! cpu 'edx upper)
   ; OF/CF are set to 0 if upper is 0
   (flag-set! cpu 'OF (! (core:bvzero? upper)))

@@ -24,6 +24,28 @@
 (define bvudiv-proc (make-parameter bvudiv))
 (define bvurem-proc (make-parameter bvurem))
 
+(define bvmulh-proc
+  (make-parameter
+    (lambda (x y)
+      (let* ([w (bv-size x)]
+             [dw (+ w w)])
+        (extract (sub1 dw) w ((bvmul-proc) (sign-extend x (bitvector dw)) (sign-extend y (bitvector dw))))))))
+
+(define bvmulhu-proc
+  (make-parameter
+    (lambda (x y)
+      (let* ([w (bv-size x)]
+             [dw (+ w w)])
+        (extract (sub1 dw) w ((bvmul-proc) (zero-extend x (bitvector dw)) (zero-extend y (bitvector dw))))))))
+
+(define bvmulhsu-proc
+  (make-parameter
+    (lambda (x y)
+      (let* ([w (bv-size x)]
+             [dw (+ w w)])
+        (extract (sub1 dw) w ((bvmul-proc) (sign-extend x (bitvector dw)) (zero-extend y (bitvector dw))))))))
+
+
 ; case splitting
 
 (define (split-cases value cases func)
