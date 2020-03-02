@@ -23,7 +23,7 @@
           rd (bv opcode 7)))
 
 (define (encode-gpr r)
-  (bv (gpr->idx r) 5))
+  (gpr->idx r))
 
 (define (encode-csr r)
   (define v

@@ -103,7 +103,7 @@
   (set-cpu-pc! cpu target))
 
 (define (do-csr-op cpu op dst csr value)
-  (when (! (= 0 (gpr->idx dst)))
+  (when (! (core:bvzero? (gpr->idx dst)))
     (gpr-set! cpu dst (zero-extend (csr-ref cpu csr) (bitvector (XLEN)))))
   (case op
     [(csrrw csrrwi)
