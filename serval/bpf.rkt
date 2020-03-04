@@ -6,67 +6,29 @@
 
 (provide (all-defined-out))
 
-
 (define bpf-verbose (make-parameter #f))
 (define bpf-allow-leak-pointer (make-parameter #f))
 (define bpf-strict-pointer (make-parameter #f))
 
+(define current-pc-debug #f)
 
 (struct insn (code dst src off imm) #:transparent)
 
 (struct pointer (base offset) #:transparent)
 
-(define (pointer-add ptr off)
-  (pointer (pointer-base ptr)
-           (bvadd (pointer-offset ptr)
-                  (sign-extend off (core:bvpointer?)))))
+(struct cpu (pc regs fdtable seen) #:mutable #:transparent
+  #:methods gen:custom-write
+  [(define (write-proc cpu port mode)
+     (define regs (cpu-regs cpu))
+     (define fdtable (cpu-fdtable cpu))
+     (fprintf port "(cpu")
+     (fprintf port "\n  pc . ~a" (cpu-pc cpu))
+     (fprintf port "\n  ~a" regs)
+     (for ([i (in-range (vector-length fdtable))])
+       (fprintf port "\n  fd~a . ~a" i (vector-ref fdtable i)))
+     (fprintf port ")"))])
 
-; strict check: allow a pointer to be from 0 to one past the end of a block
-; thus offset <= size (rather than offset < size)
-(define (bpf-pointer base offset)
-  (when (bpf-strict-pointer)
-    (let ([size (core:mblock-size base)])
-      (core:bug-on (bvugt offset (bv size (core:bv-size offset))) #:dbg current-pc-debug
-       #:msg (format "invalid pointer offset out of block size ~e: ~e\n" size offset))))
-  (pointer base offset))
-
-
-; maps
-
-(define-generics bpf-map
-  (bpf-map-key-size bpf-map)
-  (bpf-map-value-size bpf-map)
-  (bpf-map-num-entries bpf-map)
-  (bpf-map-lookup bpf-map key-ptr))
-
-; array-map
-
-(define (array-map-lookup bm keyp)
-  (define num-entries (bpf-map-num-entries bm))
-  (define value-size (bpf-map-value-size bm))
-  (define index (list->bitvector (load-bytes keyp (bpf-map-key-size bm))))
-  (define block (array-map-block bm))
-  (define offset (bvmul (zero-extend index (bitvector 64))
-                        (bv value-size 64)))
-  ; null if out of bounds
-  (if (bvuge index (bv num-entries (core:bv-size index)))
-      (bv 0 64)
-      (bpf-pointer block offset)))
-
-(struct array-map (value-size num-entries [block #:mutable]) #:transparent
-  #:methods gen:bpf-map
-  [(define bpf-map-key-size (lambda (m) 4))
-   (define (bpf-map-value-size bm) (array-map-value-size bm))
-   (define (bpf-map-num-entries bm) (array-map-num-entries bm))
-   (define bpf-map-lookup array-map-lookup)])
-
-(define (make-array-map value-size num-entries)
-  (define block (core:marray (* value-size num-entries) (core:mcell 1)))
-  ; make the map symbolic as user space might write to it
-  ; in fact we could even use a "volatile" block
-  (core:mblock-init! block (list))
-  (array-map value-size num-entries block))
-
+(struct regs (r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10) #:transparent #:mutable)
 
 ; register numbers
 
@@ -113,6 +75,55 @@
 (define BPF_FUNC_map_update_elem 2)
 (define BPF_FUNC_map_delete_elem 3)
 
+(define (pointer-add ptr off)
+  (pointer (pointer-base ptr)
+           (bvadd (pointer-offset ptr)
+                  (sign-extend off (core:bvpointer?)))))
+
+; strict check: allow a pointer to be from 0 to one past the end of a block
+; thus offset <= size (rather than offset < size)
+(define (bpf-pointer base offset)
+  (when (bpf-strict-pointer)
+    (let ([size (core:mblock-size base)])
+      (core:bug-on (bvugt offset (bv size (core:bv-size offset))) #:dbg current-pc-debug
+       #:msg (format "invalid pointer offset out of block size ~e: ~e\n" size offset))))
+  (pointer base offset))
+
+; maps
+
+(define-generics bpf-map
+  (bpf-map-key-size bpf-map)
+  (bpf-map-value-size bpf-map)
+  (bpf-map-num-entries bpf-map)
+  (bpf-map-lookup bpf-map key-ptr))
+
+; array-map
+
+(define (array-map-lookup bm keyp)
+  (define num-entries (bpf-map-num-entries bm))
+  (define value-size (bpf-map-value-size bm))
+  (define index (list->bitvector (load-bytes keyp (bpf-map-key-size bm))))
+  (define block (array-map-block bm))
+  (define offset (bvmul (zero-extend index (bitvector 64))
+                        (bv value-size 64)))
+  ; null if out of bounds
+  (if (bvuge index (bv num-entries (core:bv-size index)))
+      (bv 0 64)
+      (bpf-pointer block offset)))
+
+(struct array-map (value-size num-entries [block #:mutable]) #:transparent
+  #:methods gen:bpf-map
+  [(define bpf-map-key-size (lambda (m) 4))
+   (define (bpf-map-value-size bm) (array-map-value-size bm))
+   (define (bpf-map-num-entries bm) (array-map-num-entries bm))
+   (define bpf-map-lookup array-map-lookup)])
+
+(define (make-array-map value-size num-entries)
+  (define block (core:marray (* value-size num-entries) (core:mcell 1)))
+  ; make the map symbolic as user space might write to it
+  ; in fact we could even use a "volatile" block
+  (core:mblock-init! block (list))
+  (array-map value-size num-entries block))
 
 ; ALU ops on registers, bpf_add|sub|...: dst_reg += src_reg
 
@@ -204,7 +215,6 @@
 (define-syntax-rule (BPF_JMP32_REG OP DST SRC OFF)
   (make-insn '(BPF_JMP32 OP BPF_X) DST SRC OFF #f))
 
-
 ; Conditional jumps against immediates, if (dst_reg 'op' imm32) goto pc + off16
 
 (define-syntax-rule (BPF_JMP_IMM OP DST IMM OFF)
@@ -213,24 +223,20 @@
 (define-syntax-rule (BPF_JMP32_IMM OP DST IMM OFF)
   (make-insn '(BPF_JMP32 OP BPF_K) DST #f OFF IMM))
 
-
 ; Function call
 
 (define (BPF_EMIT_CALL FUNC)
   (make-insn '(BPF_JMP BPF_CALL) #f #f #f FUNC))
-
 
 ; Program exit
 
 (define (BPF_EXIT_INSN)
   (make-insn '(BPF_JMP BPF_EXIT) #f #f #f #f))
 
-
 ; Debugging
 
 (define (BPF_TRACE LOC)
   (make-insn '(BPF_TRACE) #f #f #f LOC))
-
 
 (define (make-insn code dst src off imm)
   (insn code dst src
@@ -242,23 +248,6 @@
     (define insns (flatten lst))
     (define keys (build-list (length insns) (lambda (x) (bv x 64))))
     (make-immutable-hash (map cons keys insns))))
-
-
-(define current-pc-debug #f)
-
-(struct cpu (pc regs fdtable seen) #:mutable #:transparent
-  #:methods gen:custom-write
-  [(define (write-proc cpu port mode)
-     (define regs (cpu-regs cpu))
-     (define fdtable (cpu-fdtable cpu))
-     (fprintf port "(cpu")
-     (fprintf port "\n  pc . ~a" (cpu-pc cpu))
-     (fprintf port "\n  ~a" regs)
-     (for ([i (in-range (vector-length fdtable))])
-       (fprintf port "\n  fd~a . ~a" i (vector-ref fdtable i)))
-     (fprintf port ")"))])
-
-(struct regs (r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10) #:transparent #:mutable)
 
 (define (regs->vector regs)
   (vector (regs-r0 regs) (regs-r1 regs) (regs-r2 regs) (regs-r3 regs)
@@ -293,13 +282,11 @@
   (set-regs-r10! regs (bpf-pointer stack (bv MAX_BPF_STACK 64)))
   (cpu (bv 0 64) regs fdtable null))
 
-
 (define (update-seen! cpu instructions pc)
   (define seen (cpu-seen cpu))
   (set-cpu-seen! cpu (cons pc seen))
   (set! current-pc-debug (bitvector->natural pc))
   (verbose "~a" (cons current-pc-debug (hash-ref instructions pc))))
-
 
 (define (reg-set! cpu reg val)
   (core:bug-on (! (|| (bv? val) (pointer? val)))
@@ -342,9 +329,12 @@
       [(r7) (regs-r7 regs)]
       [(r8) (regs-r8 regs)]
       [(r9) (regs-r9 regs)]
-      [(r10 fp) (regs-r10 regs)]))
-  (core:bug-on (boolean? val) #:dbg current-pc-debug
-   #:msg (format "reg-ref: uninitialized register: ~e" reg))
+      [(r10 fp) (regs-r10 regs)]
+      [else (core:bug-on #t #:msg (format "reg-ref: unknown reg ~v" reg)
+                            #:dbg current-pc-debug)]))
+  (core:bug-on (boolean? val)
+               #:dbg current-pc-debug
+               #:msg (format "reg-ref: uninitialized register: ~e" reg))
   val)
 
 (define (evaluate-alu64 op v1 v2)
@@ -390,7 +380,6 @@
 (define (evaluate-alu32 op v1 v2)
   (zero-extend (evaluate-alu64 op (extract 31 0 v1) (extract 31 0 v2)) (bitvector 64)))
 
-
 (define (evaluate-cond op v1 v2)
   (case op
     [(BPF_JEQ)
@@ -415,7 +404,6 @@
     [else (core:bug-on #t #:dbg current-pc-debug
            #:msg (format "no such comparison op: ~e\n" op))]))
 
-
 (define (fd->map cpu fd)
   (vector-ref (cpu-fdtable cpu) (bitvector->natural fd)))
 
@@ -426,7 +414,6 @@
 
 (define bpf-calls (vector #f
   evaluate-call-map_lookup_elem))
-
 
 (define (bpf-size->integer size)
   (case size
@@ -445,7 +432,7 @@
 (define (load-bytes ptr n)
   (define block (pointer-base ptr))
   (define offset (pointer-offset ptr))
-  (core:bug-on (not (core:bvaligned? offset n)) #:dbg current-pc-debug
+  (core:bug-on (! (core:bvaligned? offset n)) #:dbg current-pc-debug
    #:msg (format "load-bytes: ~a not ~a-byte aligned\n" ptr n))
   (core:spectre-bug-on (not (core:mblock-inbounds? block offset (core:bvpointer n))) #:dbg current-pc-debug
    #:msg (format "spectre: ~a-byte load @ ~a\n" n ptr))
@@ -457,16 +444,14 @@
   (define block (pointer-base ptr))
   (define offset (pointer-offset ptr))
   (define n (length data))
-  (core:bug-on (not (core:bvaligned? offset n)) #:dbg current-pc-debug
+  (core:bug-on (! (core:bvaligned? offset n)) #:dbg current-pc-debug
            #:msg (format "store-bytes: ~a not ~a-byte aligned\n" ptr n))
   (for ([c (in-list data)] [i (in-range n)])
     (define path (core:mblock-path block (bvadd offset (bv i 64)) (bv 1 64) #:dbg current-pc-debug))
     (core:mblock-istore! block c path)))
 
-
 (define (cpu-next! cpu [size (bv 1 64)])
   (set-cpu-pc! cpu (bvadd size (cpu-pc cpu))))
-
 
 (define (sign-imm64 x)
   (sign-extend x (bitvector 64)))
@@ -633,7 +618,8 @@
               (concat (extract 7 0 old) (extract 15 8 old) (extract 23 16 old) (extract 31 24 old)
                       (extract 39 32 old) (extract 47 40 old) (extract 55 48 old) (extract 63 56 old))
               (bitvector 64))]
-          [#t (core:bug-on #t)]))
+          [else (core:bug-on #t #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
+                                #:dbg current-pc-debug)]))
         (reg-set! cpu dst new)]
 
     [(list 'BPF_ALU 'BPF_END 'BPF_FROM_LE)
@@ -646,14 +632,14 @@
             (zero-extend (extract 31 0 old) (bitvector 64))]
           [(equal? imm (bv 64 32))
             old]
-          [#t (core:bug-on #t)]))
+          [else (core:bug-on #t #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
+                                #:dbg current-pc-debug)]))
       (reg-set! cpu dst new)]
 
     ; default
     [_ (core:bug-on #t #:dbg current-pc-debug
         #:msg (format "no semantics for instruction ~e\n" code))])
   (cpu-next! cpu))
-
 
 (define (verbose-cpu)
   (verbose "~a" cpu))
@@ -665,53 +651,55 @@
      #:msg (format "verbose: pointer not allowed: ~e\n" args) #:dbg current-pc-debug)
     (displayln (apply format (cons fmt args)) out)))
 
+; Interpret a BPF program until BPF_JMP BPF_EXIT.
+; cpu -> A BPF cpu struct
+; instructions -> A hash from PC (bitvector 64) to struct insn.
 (define (interpret-program cpu instructions)
+  (for/all ([pc (cpu-pc cpu) #:exhaustive])
+    (begin
+      (set-cpu-pc! cpu pc)
+      (cond
+        [(hash-has-key? instructions pc)
+          (update-seen! cpu instructions pc)
+          (define this-insn (hash-ref instructions pc))
+          (core:bug-on (! (insn? this-insn))
+                      #:msg (format "interpret-program: need insn?, got ~v" this-insn)
+                      #:dbg current-pc-debug)
+          ; Handle the instructions that need to be treated specially in the outer loop.
+          ; These are EXITs (because they end execution), and ld64 because it depends on the following
+          ; instruction.
+          (case (insn-code this-insn)
+            ; exit
+            [((BPF_JMP BPF_EXIT))
+              (extract 31 0 (reg-ref cpu BPF_REG_0))]
 
-  (for/all ([pc (cpu-pc cpu) #:exhaustive]) (begin
-    (set-cpu-pc! cpu pc)
+            ; ld64
+            [((BPF_LD BPF_DW BPF_IMM))
+              ; Fetch next instruction.
+              (define pc2 (core:bvadd1 pc))
+              (core:bug-on (! (hash-has-key? instructions pc2))
+                          #:msg (format "no instruction after LD64 @ ~e\n" pc)
+                          #:dbg current-pc-debug)
+              (update-seen! cpu instructions pc2)
+              (define next-insn (hash-ref instructions pc2))
+              (interpret-insn cpu this-insn #:next next-insn)
+              (interpret-program cpu instructions)]
 
-    (cond
-      [(hash-has-key? instructions pc)
-        (update-seen! cpu instructions pc)
-        (define this-insn (hash-ref instructions pc))
-        (core:bug-on (! (insn? this-insn))
-                     #:msg (format "interpret-program: need insn?, got ~v" this-insn)
-                     #:dbg current-pc-debug)
-        ; Handle the instructions that need to be treated specially in the outer loop.
-        ; These are EXITs (because they end execution), and ld64 because it depends on the following
-        ; instruction.
-        (case (insn-code this-insn)
-          ; exit
-          [((BPF_JMP BPF_EXIT))
-           (extract 31 0 (reg-ref cpu BPF_REG_0))]
+            [else
+              (interpret-insn cpu this-insn)
+              (interpret-program cpu instructions)])]
 
-          ; ld64
-          [((BPF_LD BPF_DW BPF_IMM))
-            ; Fetch next instruction.
-            (define pc2 (core:bvadd1 pc))
-            (core:bug-on (! (hash-has-key? instructions pc2))
-                         #:msg (format "no instruction after LD64 @ ~e\n" pc)
-                         #:dbg current-pc-debug)
-            (update-seen! cpu instructions pc2)
-            (define next-insn (hash-ref instructions pc2))
-            (interpret-insn cpu this-insn #:next next-insn)
-            (interpret-program cpu instructions)]
-
-          [else
-           (interpret-insn cpu this-insn)
-           (interpret-program cpu instructions)])]
-
-      [else (core:bug-on #t
-                         #:dbg current-pc-debug
-                         #:msg (format "no instruction @ ~e\n" pc))]))))
+        [else (core:bug-on #t
+                           #:dbg current-pc-debug
+                           #:msg (format "no instruction @ ~e\n" pc))]))))
 
 (define (sanitize-program cpu instructions)
   (define seen (cpu-seen cpu))
   (define nop (BPF_MOV64_REG BPF_REG_0 BPF_REG_0))
   (for/hash ([(pc insn) (in-hash instructions)])
-    (define dead (not (member pc seen)))
+    (define dead (! (member pc seen)))
     ; could invoke the solver; just do a simple constant evaluation here
-    (define kill (&& (not (term? dead)) dead))
+    (define kill (&& (! (term? dead)) dead))
     (when kill
       (displayln (format "removing dead code: ~a . ~a" (bitvector->natural pc) insn)))
     (values pc (if kill nop insn))))
