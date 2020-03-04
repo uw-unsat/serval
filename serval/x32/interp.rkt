@@ -78,7 +78,7 @@
     (match-let ([(and-r32-r/m32 dst src) insn])
       (interpret-logical cpu dst (gpr-ref cpu src) bvand)))])
 
-(struct cmp-r32-imm8 (dst imm8)
+(struct cmp-r32-imm8 (src imm8)
  #:transparent
  #:methods gen:instruction
  [(define (instruction-encode insn)
@@ -86,9 +86,156 @@
       (list '0x83 (ModOpcodeR/M '0xF8 src) imm8)))
   (define (instruction-run insn cpu)
     (match-let ([(cmp-r32-imm8 src imm8) insn])
-     (define src1 (gpr-ref cpu src))
-     (define src2 (sign-extend imm8 (bitvector 32)))
-     (flag-set-arithmetic! cpu bvsub src1 src2)))])
+     (define lhs (gpr-ref cpu src))
+     (define rhs (sign-extend imm8 (bitvector 32)))
+     (flag-set-arithmetic! cpu bvsub lhs rhs)))])
+
+(struct cmp-r/m32-r32 (src1 src2)
+ #:transparent
+ #:methods gen:instruction
+ [(define (instruction-encode insn)
+    (match-let ([(cmp-r/m32-r32 src1 src2) insn])
+      (list '0x39 (ModR/M '0xC0 src1 src2))))
+  (define (instruction-run insn cpu)
+    (match-let ([(cmp-r/m32-r32 src1 src2) insn])
+     (define lhs (gpr-ref cpu src1))
+     (define rhs (gpr-ref cpu src2))
+     (flag-set-arithmetic! cpu bvsub lhs rhs)))])
+
+(define-syntax-rule (define-jcc id prefix proc)
+  (struct id (off)
+    #:transparent
+    #:methods gen:instruction
+   [(define (instruction-encode insn)
+      (match-let ([(id off) insn])
+        (append prefix (list off))))
+    (define (instruction-run insn cpu)
+      (match-let ([(id off) insn])
+        (when (proc cpu)
+          (cpu-next! cpu (sign-extend off (bitvector 32))))))]))
+
+; jump if above (CF=0 and ZF=0)
+(define (ja? cpu)
+  (&& (! (flag-ref cpu 'CF)) (! (flag-ref cpu 'ZF))))
+
+; jump if above or equal (CF=0)
+(define (jae? cpu)
+  (! (flag-ref cpu 'CF)))
+
+; jump if below (CF=1)
+(define (jb? cpu)
+  (flag-ref cpu 'CF))
+
+; jump if below or equal (CF=1 or ZF=1)
+(define (jbe? cpu)
+  (|| (flag-ref cpu 'CF)
+      (flag-ref cpu 'ZF)))
+
+; jump if equal (ZF=1)
+(define (je? cpu)
+  (flag-ref cpu 'ZF))
+
+; jump if greater (ZF=0 and SF=OF)
+(define (jg? cpu)
+  (&& (! (flag-ref cpu 'ZF))
+      (equal? (flag-ref cpu 'SF) (flag-ref cpu 'OF))))
+
+; jump if greater or equal (SF=OF)
+(define (jge? cpu)
+  (equal? (flag-ref cpu 'SF) (flag-ref cpu 'OF)))
+
+; jump if less (SF≠OF)
+(define (jl? cpu)
+  (! (equal? (flag-ref cpu 'SF) (flag-ref cpu 'OF))))
+
+; jump if less or equal (ZF=1 or SF≠OF)
+(define (jle? cpu)
+  (|| (flag-ref cpu 'ZF)
+      (! (equal? (flag-ref cpu 'SF) (flag-ref cpu 'OF)))))
+
+; jump if not equal (ZF=0)
+(define (jne? cpu)
+  (! (flag-ref cpu 'ZF)))
+
+(define-jcc ja-rel8
+  '(0x77) ja?)
+
+(define-jcc jae-rel8
+  '(0x73) jae?)
+
+(define-jcc jb-rel8
+  '(0x72) jb?)
+
+(define-jcc jbe-rel8
+  '(0x76) jbe?)
+
+(define-jcc je-rel8
+  '(0x74) je?)
+
+(define-jcc jg-rel8
+  '(0x7F) jg?)
+
+(define-jcc jge-rel8
+  '(0x7D) jge?)
+
+(define-jcc jl-rel8
+  '(0x7C) jl?)
+
+(define-jcc jle-rel8
+  '(0x7E) jle?)
+
+(define-jcc jne-rel8
+  '(0x75) jne?)
+
+(define-jcc ja-rel32
+  '(0x0F 0x87) ja?)
+
+(define-jcc jae-rel32
+  '(0x0F 0x83) jae?)
+
+(define-jcc jb-rel32
+  '(0x0F 0x82) jb?)
+
+(define-jcc jbe-rel32
+  '(0x0F 0x86) jbe?)
+
+(define-jcc je-rel32
+  '(0x0F 0x84) je?)
+
+(define-jcc jg-rel32
+  '(0x0F 0x8F) jg?)
+
+(define-jcc jge-rel32
+  '(0x0F 0x8D) jge?)
+
+(define-jcc jl-rel32
+  '(0x0F 0x8C) jl?)
+
+(define-jcc jle-rel32
+  '(0x0F 0x8E) jle?)
+
+(define-jcc jne-rel32
+  '(0x0F 0x85) jne?)
+
+(struct jmp-rel8 (rel8)
+ #:transparent
+ #:methods gen:instruction
+ [(define (instruction-encode insn)
+    (match-let ([(jmp-rel8 rel8) insn])
+      (list '0xEB rel8)))
+  (define (instruction-run insn cpu)
+    (match-let ([(jmp-rel8 rel8) insn])
+      (cpu-next! cpu (sign-extend rel8 (bitvector 32)))))])
+
+(struct jmp-rel32 (rel32)
+ #:transparent
+ #:methods gen:instruction
+ [(define (instruction-encode insn)
+    (match-let ([(jmp-rel32 rel32) insn])
+      (list '0xE9 rel32)))
+  (define (instruction-run insn cpu)
+    (match-let ([(jmp-rel32 rel32) insn])
+      (cpu-next! cpu rel32)))])
 
 (struct mov-r8-imm8 (dst imm8)
  #:transparent
@@ -176,17 +323,6 @@
   (define (instruction-run insn cpu)
     (match-let ([(movzx-r32-r8 dst src) insn])
       (gpr-set! cpu dst (zero-extend (extract 7 0 (gpr-ref cpu src)) (bitvector 32)))))])
-
-(struct jb-rel8 (rel8)
- #:transparent
- #:methods gen:instruction
- [(define (instruction-encode insn)
-    (match-let ([(jb-rel8 rel8) insn])
-      (list '0x72 rel8)))
-  (define (instruction-run insn cpu)
-    (match-let ([(jb-rel8 rel8) insn])
-      (when (flag-ref cpu 'CF)
-        (cpu-next! cpu (sign-extend rel8 (bitvector 32))))))])
 
 (struct mul-r32 (src)
  #:transparent
@@ -463,10 +599,118 @@
     [(list '0x83 (ModOpcodeR/M '0xF8 src) imm8)
      (cmp-r32-imm8 src imm8)]
 
+    ; 39 /r
+    ; CMP r/m32, imm8
+    [(list '0x39 (ModR/M '0xC0 src1 src2))
+     (cmp-r/m32-r32 src1 src2)]
+
+    ; 77 cb
+    ; JA rel8
+    [(list '0x77 rel8)
+     (ja-rel8 rel8)]
+
+    ; 73 cb
+    ; JAE rel8
+    [(list '0x73 rel8)
+     (jae-rel8 rel8)]
+
     ; 72 cb
     ; JB rel8
     [(list '0x72 rel8)
      (jb-rel8 rel8)]
+
+    ; 76 cb
+    ; JBE rel8
+    [(list '0x76 rel8)
+     (jbe-rel8 rel8)]
+
+    ; 74 cb
+    ; JE rel8
+    [(list '0x74 rel8)
+     (je-rel8 rel8)]
+
+    ; 7F cb
+    ; JG rel8
+    [(list '0x7F rel8)
+     (jg-rel8 rel8)]
+
+    ; 7D cb
+    ; JGE rel8
+    [(list '0x7D rel8)
+     (jge-rel8 rel8)]
+
+    ; 7C cb
+    ; JL rel8
+    [(list '0x7C rel8)
+     (jl-rel8 rel8)]
+
+    ; 7E cb
+    ; JLE rel8
+    [(list '0x7E rel8)
+     (jle-rel8 rel8)]
+
+    ; 75 cb
+    ; JNE rel8
+    [(list '0x75 rel8)
+     (jne-rel8 rel8)]
+
+    ; 0F 87 cd
+    ; JA rel32
+    [(list '0x0F '0x87 rel32)
+     (ja-rel32 rel32)]
+
+    ; 0F 83 cd
+    ; JAE rel32
+    [(list '0x0F '0x83 rel32)
+     (jae-rel32 rel32)]
+
+    ; 0F 82 cd
+    ; JB rel32
+    [(list '0x0F '0x82 rel32)
+     (jb-rel32 rel32)]
+
+    ; 0F 86 cd
+    ; JBE rel32
+    [(list '0x0F '0x86 rel32)
+     (jbe-rel32 rel32)]
+
+    ; 0F 84 cd
+    ; JE rel32
+    [(list '0x0F '0x84 rel32)
+     (je-rel32 rel32)]
+
+    ; 0F 8F cd
+    ; JG rel32
+    [(list '0x0F '0x8F rel32)
+     (jg-rel32 rel32)]
+
+    ; 0F 8D cd
+    ; JGE rel32
+    [(list '0x0F '0x8D rel32)
+     (jge-rel32 rel32)]
+
+    ; 0F 8C cd
+    ; JL rel32
+    [(list '0x0F '0x8C rel32)
+     (jl-rel32 rel32)]
+
+    ; 0F 8E cd
+    ; JLE rel32
+    [(list '0x0F '0x8E rel32)
+     (jle-rel32 rel32)]
+
+    ; 0F 85 cd
+    ; JNE rel32
+    [(list '0x0F '0x85 rel32)
+     (jne-rel32 rel32)]
+
+    ; EB cb
+    [(list '0xEB rel8)
+     (jmp-rel8 rel8)]
+
+    ; E9 cd
+    [(list '0xE9 rel32)
+     (jmp-rel32 rel32)]
 
     ; B0+ rb ib
     ; MOV r8, imm8
@@ -619,51 +863,6 @@
     ; XOR r32, r/m32
     [(list '0x33 (ModR/M '0xC0 src dst))
      (xor-r32-r/m32 dst src)]
-
-;     ; 73 cb
-;     ; JAE rel8
-;     [(list '0x73 rel8)
-;      (instruction '(JAE rel8) (list rel8) size)]
-
-;     ; 74 cb
-;     ; JE rel8
-;     [(list '0x74 rel8)
-;      (instruction '(JE rel8) (list rel8) size)]
-
-;     ; 75 cb
-;     ; JNE rel8
-;     [(list '0x75 rel8)
-;      (instruction '(JNE rel8) (list rel8) size)]
-
-;     ; 76 cb
-;     ; JBE rel8
-;     [(list '0x76 rel8)
-;      (instruction '(JBE rel8) (list rel8) size)]
-
-;     ; 77 cb
-;     ; JA rel8
-;     [(list '0x77 rel8)
-;      (instruction '(JA rel8) (list rel8) size)]
-
-;     ; 7C cb
-;     ; JL rel8
-;     [(list '0x7C rel8)
-;      (instruction '(JL rel8) (list rel8) size)]
-
-;     ; 7D cb
-;     ; JGE rel8
-;     [(list '0x7D rel8)
-;      (instruction '(JGE rel8) (list rel8) size)]
-
-;     ; 7E cb
-;     ; JLE rel8
-;     [(list '0x7E rel8)
-;      (instruction '(JLE rel8) (list rel8) size)]
-
-;     ; 7F cb
-;     ; JG rel8
-;     [(list '0x7F rel8)
-;      (instruction '(JG rel8) (list rel8) size)]
   ))
 
 
