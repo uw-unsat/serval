@@ -258,8 +258,8 @@
     [(r8) 8]
     [(r9) 9]
     [(r10 fp) 0]
-    [else (core:bug-on #t #:msg (format "reg-idx: Unknown reg ~v" reg)
-                          #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "reg-idx: Unknown reg ~v" reg)
+                    #:dbg current-pc-debug)]))
 
 (define (make-regs [value #f])
   (apply regs (make-list 11 value)))
@@ -296,10 +296,10 @@
     [(r7) (set-regs-r7! regs val)]
     [(r8) (set-regs-r8! regs val)]
     [(r9) (set-regs-r9! regs val)]
-    [(r10 fp) (core:bug-on #t #:msg "reg-set!: R10/FP is read-only"
-                              #:dbg current-pc-debug)]
-    [else (core:bug-on #t #:msg (format "reg-set!: Unknown register ~v" reg)
-                          #:dbg current-pc-debug)]))
+    [(r10 fp) (core:bug #:msg "reg-set!: R10/FP is read-only"
+                        #:dbg current-pc-debug)]
+    [else (core:bug #:msg (format "reg-set!: Unknown register ~v" reg)
+                    #:dbg current-pc-debug)]))
 
 (define (reg-havoc! cpu reg)
   (core:bug-on (equal? reg BPF_REG_10)
@@ -322,8 +322,8 @@
       [(r8) (regs-r8 regs)]
       [(r9) (regs-r9 regs)]
       [(r10 fp) (regs-r10 regs)]
-      [else (core:bug-on #t #:msg (format "reg-ref: unknown reg ~v" reg)
-                            #:dbg current-pc-debug)]))
+      [else (core:bug #:msg (format "reg-ref: unknown reg ~v" reg)
+                      #:dbg current-pc-debug)]))
   (core:bug-on (boolean? val)
                #:dbg current-pc-debug
                #:msg (format "reg-ref: uninitialized register: ~e" reg))
@@ -337,8 +337,8 @@
         (bvadd v1 v2)]
        [(pointer? v1)
         (bpf-pointer (pointer-base v1) (bvadd (pointer-offset v1) v2))]
-       [else (core:bug-on #t #:dbg current-pc-debug
-                             #:msg (format "evaluate-alu64: unknown BPF_ADD operands: ~e ~e" v1 v2))])]
+       [else (core:bug #:dbg current-pc-debug
+                       #:msg (format "evaluate-alu64: unknown BPF_ADD operands: ~e ~e" v1 v2))])]
     [(BPF_SUB)
      (cond
        [(&& (bv? v1) (bv? v2))
@@ -349,8 +349,8 @@
         (core:bug-on (! (equal? (pointer-base v1) (pointer-base v2))) #:dbg current-pc-debug
          #:msg (format "evaluate-alu64: BPF_SUB: pointers of different blocks: ~e ~e" v1 v2))
         (bvsub (pointer-offset v1) (pointer-offset v2))]
-       [else (core:bug-on #t #:dbg current-pc-debug
-                             #:msg (format "evaluate-alu64: unknown BPF_SUB operands: ~e ~e" v1 v2))])]
+       [else (core:bug #:dbg current-pc-debug
+                       #:msg (format "evaluate-alu64: unknown BPF_SUB operands: ~e ~e" v1 v2))])]
     [(BPF_MUL) ((core:bvmul-proc) v1 v2)]
     [(BPF_DIV)
      (core:bug-on (core:bvzero? v2)
@@ -368,8 +368,8 @@
     [(BPF_LSH) (bvshl v1 v2)]
     [(BPF_RSH) (bvlshr v1 v2)]
     [(BPF_ARSH) (bvashr v1 v2)]
-    [else (core:bug-on #t #:dbg current-pc-debug
-           #:msg (format "no such ALU op: ~e\n" op))]))
+    [else (core:bug #:dbg current-pc-debug
+                    #:msg (format "evaluate-alu64: no such ALU op: ~e\n" op))]))
 
 (define (evaluate-alu32 op v1 v2)
   (zero-extend (evaluate-alu64 op (extract 31 0 v1) (extract 31 0 v2)) (bitvector 64)))
@@ -382,8 +382,8 @@
        [(&& (pointer? v1) (if (bv? v2) (core:bvzero? v2) #f)) #f]
        [(&& (bv? v1) (bv? v2)) (bveq v1 v2)]
        [(&& (pointer? v1) (pointer? v2)) (equal? v1 v2)]
-       [else (core:bug-on #t #:dbg current-pc-debug
-              #:msg (format "invalid ~e: ~e ~e\n" op v1 v2))])]
+       [else (core:bug #:dbg current-pc-debug
+                       #:msg (format "evaluate-cond: invalid ~e: ~e ~e\n" op v1 v2))])]
     [(BPF_JNE) (! (evaluate-cond 'BPF_JEQ v1 v2))]
     ; maybe too strict for pointer comparisons
     [(BPF_JGT) (bvugt v1 v2)]
@@ -395,8 +395,8 @@
     [(BPF_JSLT) (bvslt v1 v2)]
     [(BPF_JSGE) (bvsge v1 v2)]
     [(BPF_JSLE) (bvsle v1 v2)]
-    [else (core:bug-on #t #:dbg current-pc-debug
-           #:msg (format "no such comparison op: ~e\n" op))]))
+    [else (core:bug #:dbg current-pc-debug
+                    #:msg (format "no such comparison op: ~e\n" op))]))
 
 (define (fd->map cpu fd)
   (vector-ref (cpu-fdtable cpu) (bitvector->natural fd)))
@@ -415,8 +415,8 @@
     [(BPF_H) 2]
     [(BPF_W) 4]
     [(BPF_DW) 8]
-    [else (core:bug-on #t #:dbg current-pc-debug
-           #:msg (format "unknown BPF_SIZE: ~e\n" size))]))
+    [else (core:bug #:dbg current-pc-debug
+                    #:msg (format "unknown BPF_SIZE: ~e\n" size))]))
 
 ; assume little-endian
 (define bitvector->list core:bitvector->list/le)
@@ -468,8 +468,8 @@
     [(equal? imm (bv 16 32)) 2]
     [(equal? imm (bv 32 32)) 4]
     [(equal? imm (bv 64 32)) 8]
-    [else (core:bug-on #t #:dbg current-pc-debug
-                          #:msg (format "endian-size: unknown endian size ~e\n" imm))]))
+    [else (core:bug #:dbg current-pc-debug
+                    #:msg (format "endian-size: unknown endian size ~e\n" imm))]))
 
 ; Interpret an instruction.
 (define (interpret-insn cpu insn #:next [next-insn #f])
@@ -617,8 +617,8 @@
               (concat (extract 7 0 old) (extract 15 8 old) (extract 23 16 old) (extract 31 24 old)
                       (extract 39 32 old) (extract 47 40 old) (extract 55 48 old) (extract 63 56 old))
               (bitvector 64))]
-          [else (core:bug-on #t #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
-                                #:dbg current-pc-debug)]))
+          [else (core:bug #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
+                          #:dbg current-pc-debug)]))
         (reg-set! cpu dst new)]
 
     [(list 'BPF_ALU 'BPF_END 'BPF_FROM_LE)
@@ -631,13 +631,13 @@
             (zero-extend (extract 31 0 old) (bitvector 64))]
           [(equal? imm (bv 64 32))
             old]
-          [else (core:bug-on #t #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
-                                #:dbg current-pc-debug)]))
+          [else (core:bug #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
+                          #:dbg current-pc-debug)]))
       (reg-set! cpu dst new)]
 
     ; default
-    [_ (core:bug-on #t #:dbg current-pc-debug
-                       #:msg (format "interpret-insn: no semantics for instruction ~e\n" code))])
+    [_ (core:bug #:dbg current-pc-debug
+                 #:msg (format "interpret-insn: no semantics for instruction ~e\n" code))])
   (cpu-next! cpu))
 
 (define (verbose-cpu)
@@ -689,9 +689,8 @@
               (interpret-insn cpu this-insn)
               (interpret-program cpu instructions)])]
 
-        [else (core:bug-on #t
-                           #:dbg current-pc-debug
-                           #:msg (format "no instruction @ ~e\n" pc))]))))
+        [else (core:bug #:dbg current-pc-debug
+                        #:msg (format "no instruction @ ~e\n" pc))]))))
 
 (define (sanitize-program cpu instructions)
   (define seen (cpu-seen cpu))

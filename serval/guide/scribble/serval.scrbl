@@ -46,16 +46,20 @@ Alternatively, you can install @hyperlink["https://github.com/uw-unsat/serval"](
 @defmodule[serval/lib/core #:use-sources (serval/lib/core)]
 
 Serval provides a library for writing verifiers and specifications.
-This includes support for bug reporting, overflow checking for bitvectors, 
+This includes support for bug reporting, overflow checking for bitvectors,
 a memory model for low-level systems, symbolic optimizations, and common specifications.
 
 @subsection{Bug reporting}
 
-@defproc[(bug-on [cond boolean?] [#:key key any/c #f] [#:dbg dbg any/c #f] [#:msg msg string? "Unknown assert"]) void?]{
+@defproc[(bug-on [cond boolean?] [#:key key any/c #f] [#:dbg dbg any/c #f] [#:msg msg string? "Unknown bug-on"]) void?]{
 Inserts a check that @racket[cond] must be false under the current path condition,
-using @racket[key] and @racket[dbg] to provide optional information 
+using @racket[key] and @racket[dbg] to provide optional information
 on bug type and location.
 This is useful for a verifier to add checks for undefined behavior,
+}
+
+@defproc[(bug [#:key key any/c #f] [#:dbg dbg any/c #f] [#:msg msg string? "Unknown bug"]) void?]{
+Equivalent to @racket[(bug-on #t)].
 }
 
 @defproc[(bug-clear!) void?]{
