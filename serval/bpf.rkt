@@ -67,7 +67,6 @@
 
 (define BPF_PSEUDO_MAP_FD 1)
 
-
 ;  helper functions
 
 (define BPF_FUNC_unspec          0)
@@ -133,7 +132,6 @@
 (define-syntax-rule (BPF_ALU32_REG OP DST SRC)
   (make-insn '(BPF_ALU OP BPF_X) DST SRC #f #f))
 
-
 ; ALU ops on immediates, bpf_add|sub|...: dst_reg += imm32
 
 (define-syntax-rule (BPF_ALU64_IMM OP DST IMM)
@@ -151,7 +149,6 @@
 (define-syntax-rule (BPF_ENDIAN TYPE DST LEN)
   (make-insn '(BPF_ALU BPF_END TYPE) DST #f #f LEN))
 
-
 ; Short form of mov, dst_reg = src_reg
 
 (define (BPF_MOV64_REG DST SRC)
@@ -160,7 +157,6 @@
 (define (BPF_MOV32_REG DST SRC)
   (make-insn '(BPF_ALU BPF_MOV BPF_X) DST SRC #f #f))
 
-
 ; Short form of mov, dst_reg = imm32
 
 (define (BPF_MOV64_IMM DST IMM)
@@ -168,7 +164,6 @@
 
 (define (BPF_MOV32_IMM DST IMM)
   (make-insn '(BPF_ALU BPF_MOV BPF_K) DST #f #f IMM))
-
 
 ; BPF_LD_IMM64 macro encodes single 'load 64-bit immediate' insn
 
@@ -183,7 +178,6 @@
 (define (BPF_LD_MAP_FD DST MAP_FD)
   (BPF_LD_IMM64_RAW DST BPF_PSEUDO_MAP_FD MAP_FD))
 
-
 ; Memory load, dst_reg = *(uint *) (src_reg + off16)
 
 (define-syntax-rule (BPF_LDX_MEM SIZE DST SRC OFF)
@@ -194,18 +188,15 @@
 (define-syntax-rule (BPF_STX_MEM SIZE DST SRC OFF)
   (make-insn '(BPF_STX SIZE BPF_MEM) DST SRC OFF #f))
 
-
 ; Atomic memory add, *(uint *)(dst_reg + off16) += src_reg
 
 (define-syntax-rule (BPF_STX_XADD SIZE DST SRC OFF)
   (make-insn '(BPF_STX SIZE BPF_XADD) DST SRC OFF #f))
 
-
 ; Memory store, *(uint *) (dst_reg + off16) = imm32
 
 (define-syntax-rule (BPF_ST_MEM SIZE DST OFF IMM)
   (make-insn '(BPF_ST SIZE BPF_MEM) DST #f OFF IMM))
-
 
 ; Conditional jumps against registers, if (dst_reg 'op' src_reg) goto pc + off16
 
@@ -267,7 +258,8 @@
     [(r8) 8]
     [(r9) 9]
     [(r10 fp) 0]
-    [else (core:bug-on #t #:msg (format "reg-idx: Unknown reg ~v" reg))]))
+    [else (core:bug-on #t #:msg (format "reg-idx: Unknown reg ~v" reg)
+                          #:dbg current-pc-debug)]))
 
 (define (make-regs [value #f])
   (apply regs (make-list 11 value)))
@@ -290,9 +282,8 @@
 
 (define (reg-set! cpu reg val)
   (core:bug-on (! (|| (bv? val) (pointer? val)))
-   #:msg (format "reg-set!: not a bitvector/pointer: ~e" val) #:dbg current-pc-debug)
-  (core:bug-on (equal? reg BPF_REG_10)
-   #:msg (format "reg-set!: R10 is read-only") #:dbg current-pc-debug)
+               #:msg (format "reg-set!: not a bitvector/pointer: ~e" val)
+               #:dbg current-pc-debug)
   (define regs (cpu-regs cpu))
   (case reg
     [(r0) (set-regs-r0! regs val)]
@@ -312,7 +303,8 @@
 
 (define (reg-havoc! cpu reg)
   (core:bug-on (equal? reg BPF_REG_10)
-   #:msg (format "reg-havoc!: R10 is read-only") #:dbg current-pc-debug)
+               #:msg (format "reg-havoc!: R10 is read-only")
+               #:dbg current-pc-debug)
   (reg-set! cpu reg #f))
 
 (define (reg-ref cpu reg)
@@ -346,7 +338,7 @@
        [(pointer? v1)
         (bpf-pointer (pointer-base v1) (bvadd (pointer-offset v1) v2))]
        [else (core:bug-on #t #:dbg current-pc-debug
-              #:msg (format "unknown BPF_ADD operands: ~e ~e\n" v1 v2))])]
+                             #:msg (format "evaluate-alu64: unknown BPF_ADD operands: ~e ~e" v1 v2))])]
     [(BPF_SUB)
      (cond
        [(&& (bv? v1) (bv? v2))
@@ -355,18 +347,20 @@
         (bpf-pointer (pointer-base v1) (bvsub (pointer-offset v1) v2))]
        [(&& (pointer? v1) (pointer? v2))
         (core:bug-on (! (equal? (pointer-base v1) (pointer-base v2))) #:dbg current-pc-debug
-         #:msg (format "BPF_SUB: pointers of different blocks: ~e ~e\n" v1 v2))
+         #:msg (format "evaluate-alu64: BPF_SUB: pointers of different blocks: ~e ~e" v1 v2))
         (bvsub (pointer-offset v1) (pointer-offset v2))]
        [else (core:bug-on #t #:dbg current-pc-debug
-              #:msg (format "unknown BPF_SUB operands: ~e ~e\n" v1 v2))])]
+                             #:msg (format "evaluate-alu64: unknown BPF_SUB operands: ~e ~e" v1 v2))])]
     [(BPF_MUL) ((core:bvmul-proc) v1 v2)]
     [(BPF_DIV)
-     (core:bug-on (core:bvzero? v2) #:dbg current-pc-debug
-      #:msg "division by zero\n")
+     (core:bug-on (core:bvzero? v2)
+                  #:dbg current-pc-debug
+                  #:msg (format "evaluate-alu64: div by zero, dividend: ~v" v2))
      ((core:bvudiv-proc) v1 v2)]
     [(BPF_MOD)
-     (core:bug-on (core:bvzero? v2) #:dbg current-pc-debug
-      #:msg "division by zero\n")
+     (core:bug-on (core:bvzero? v2)
+                  #:dbg current-pc-debug
+                  #:msg (format "evaluate-alu64: mod by zero, dividend: ~v" v2))
      ((core:bvurem-proc) v1 v2)]
     [(BPF_OR) (bvor v1 v2)]
     [(BPF_AND) (bvand v1 v2)]
@@ -432,10 +426,12 @@
 (define (load-bytes ptr n)
   (define block (pointer-base ptr))
   (define offset (pointer-offset ptr))
-  (core:bug-on (! (core:bvaligned? offset n)) #:dbg current-pc-debug
-   #:msg (format "load-bytes: ~a not ~a-byte aligned\n" ptr n))
-  (core:spectre-bug-on (not (core:mblock-inbounds? block offset (core:bvpointer n))) #:dbg current-pc-debug
-   #:msg (format "spectre: ~a-byte load @ ~a\n" n ptr))
+  (core:bug-on (! (core:bvaligned? offset n))
+               #:dbg current-pc-debug
+               #:msg (format "load-bytes: ~a not ~a-byte aligned\n" ptr n))
+  (core:spectre-bug-on (! (core:mblock-inbounds? block offset (core:bvpointer n)))
+                       #:dbg current-pc-debug
+                       #:msg (format "spectre: ~a-byte load @ ~a\n" n ptr))
   (for/list ([i (in-range n)])
     (define path (core:mblock-path block (bvadd offset (bv i 64)) (bv 1 64) #:dbg current-pc-debug))
     (core:mblock-iload block path)))
@@ -444,8 +440,9 @@
   (define block (pointer-base ptr))
   (define offset (pointer-offset ptr))
   (define n (length data))
-  (core:bug-on (! (core:bvaligned? offset n)) #:dbg current-pc-debug
-           #:msg (format "store-bytes: ~a not ~a-byte aligned\n" ptr n))
+  (core:bug-on (! (core:bvaligned? offset n))
+               #:dbg current-pc-debug
+               #:msg (format "store-bytes: ~a not ~a-byte aligned\n" ptr n))
   (for ([c (in-list data)] [i (in-range n)])
     (define path (core:mblock-path block (bvadd offset (bv i 64)) (bv 1 64) #:dbg current-pc-debug))
     (core:mblock-istore! block c path)))
@@ -456,12 +453,15 @@
 (define (sign-imm64 x)
   (sign-extend x (bitvector 64)))
 
+(define (zero-imm32 x)
+  (zero-extend x (bitvector 32)))
+
 (define (zero-imm64 x)
   (zero-extend x (bitvector 64)))
 
 (define (imm64-dw lo hi)
-  (bvor (zero-extend lo (bitvector 64))
-        (bvshl (zero-extend hi (bitvector 64)) (bv 32 64))))
+  (concat (zero-imm32 hi)
+          (zero-imm32 lo)))
 
 (define (endian-size imm)
   (cond
@@ -469,7 +469,7 @@
     [(equal? imm (bv 32 32)) 4]
     [(equal? imm (bv 64 32)) 8]
     [else (core:bug-on #t #:dbg current-pc-debug
-           #:msg (format "unknown endian size ~e\n" imm))]))
+                          #:msg (format "endian-size: unknown endian size ~e\n" imm))]))
 
 ; Interpret an instruction.
 (define (interpret-insn cpu insn #:next [next-insn #f])
@@ -491,7 +491,6 @@
       (reg-set! cpu dst (imm64-dw lower upper))
       ; Bump the PC by one here: the other bump happens in the common case after the match.
       (cpu-next! cpu)]
-
 
     ; debugging
     [(list 'BPF_TRACE)
@@ -638,7 +637,7 @@
 
     ; default
     [_ (core:bug-on #t #:dbg current-pc-debug
-        #:msg (format "no semantics for instruction ~e\n" code))])
+                       #:msg (format "interpret-insn: no semantics for instruction ~e\n" code))])
   (cpu-next! cpu))
 
 (define (verbose-cpu)
@@ -647,8 +646,9 @@
 (define (verbose fmt . args)
   (define out (bpf-verbose))
   (when out
-    (core:bug-on (&& (not (bpf-allow-leak-pointer)) (ormap pointer? args))
-     #:msg (format "verbose: pointer not allowed: ~e\n" args) #:dbg current-pc-debug)
+    (core:bug-on (&& (! (bpf-allow-leak-pointer)) (ormap pointer? args))
+                 #:msg (format "verbose: pointer not allowed: ~e\n" args)
+                 #:dbg current-pc-debug)
     (displayln (apply format (cons fmt args)) out)))
 
 ; Interpret a BPF program until BPF_JMP BPF_EXIT.
@@ -663,8 +663,8 @@
           (update-seen! cpu instructions pc)
           (define this-insn (hash-ref instructions pc))
           (core:bug-on (! (insn? this-insn))
-                      #:msg (format "interpret-program: need insn?, got ~v" this-insn)
-                      #:dbg current-pc-debug)
+                       #:msg (format "interpret-program: need insn?, got ~v" this-insn)
+                       #:dbg current-pc-debug)
           ; Handle the instructions that need to be treated specially in the outer loop.
           ; These are EXITs (because they end execution), and ld64 because it depends on the following
           ; instruction.
