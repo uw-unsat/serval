@@ -486,10 +486,28 @@
     [else (core:bug-on #t #:dbg current-pc-debug
            #:msg (format "unknown endian size ~e\n" imm))]))
 
+; Interpret an instruction.
+(define (interpret-insn cpu insn #:next [next-insn #f])
+  (define code (insn-code insn))
+  (define dst (insn-dst insn))
+  (define src (insn-src insn))
+  (define off (insn-off insn))
+  (define imm (insn-imm insn))
 
-; Interpret an instruction. Returns #t if PC should be bumped after
-(define (interpret-instr cpu code dst src off imm)
   (match code
+    ; 64-bit immediate load
+    [(list 'BPF_LD 'BPF_DW 'BPF_IMM)
+      ; Use this instruction for imm[31:0], next instruction for imm[63:32]
+      (core:bug-on (! (insn? next-insn))
+                   #:msg "interpret-insn: must pass next instruction for BPF_LD BPF_DW BPF_IMM"
+                   #:dbg current-pc-debug)
+      (define lower imm)
+      (define upper (insn-imm next-insn))
+      (reg-set! cpu dst (imm64-dw lower upper))
+      ; Bump the PC by one here: the other bump happens in the common case after the match.
+      (cpu-next! cpu)]
+
+
     ; debugging
     [(list 'BPF_TRACE)
      (displayln (cons (bitvector->natural imm) cpu))]
@@ -655,33 +673,37 @@
     (cond
       [(hash-has-key? instructions pc)
         (update-seen! cpu instructions pc)
-        (match (hash-ref instructions pc)
+        (define this-insn (hash-ref instructions pc))
+        (core:bug-on (! (insn? this-insn))
+                     #:msg (format "interpret-program: need insn?, got ~v" this-insn)
+                     #:dbg current-pc-debug)
+        ; Handle the instructions that need to be treated specially in the outer loop.
+        ; These are EXITs (because they end execution), and ld64 because it depends on the following
+        ; instruction.
+        (case (insn-code this-insn)
           ; exit
-          [(struct insn ('(BPF_JMP BPF_EXIT) _ _ _ _))
+          [((BPF_JMP BPF_EXIT))
            (extract 31 0 (reg-ref cpu BPF_REG_0))]
 
           ; ld64
-          [(struct insn ('(BPF_LD BPF_DW BPF_IMM) dst src #f lower))
-           (core:bug-on (not (hash-has-key? instructions pc)) #:dbg current-pc-debug
-            #:msg (format "no instruction after LD64 @ ~e\n" pc))
-           (define pc2 (core:bvadd1 pc))
-           (update-seen! cpu instructions pc2)
-           (match (hash-ref instructions pc2)
-             [(struct insn (#f #f #f #f upper))
-              (reg-set! cpu dst (imm64-dw lower upper))
-              (cpu-next! cpu)
-              (cpu-next! cpu)
-              (interpret-program cpu instructions)]
-             [any (core:bug-on #t #:dbg pc2 #:msg (format "bad instruction after LD64 @ ~e\n" pc2))])]
+          [((BPF_LD BPF_DW BPF_IMM))
+            ; Fetch next instruction.
+            (define pc2 (core:bvadd1 pc))
+            (core:bug-on (! (hash-has-key? instructions pc2))
+                         #:msg (format "no instruction after LD64 @ ~e\n" pc)
+                         #:dbg current-pc-debug)
+            (update-seen! cpu instructions pc2)
+            (define next-insn (hash-ref instructions pc2))
+            (interpret-insn cpu this-insn #:next next-insn)
+            (interpret-program cpu instructions)]
 
-          [(struct insn (code dst src off imm))
-           (interpret-instr cpu code dst src off imm)
-           (interpret-program cpu instructions)]
+          [else
+           (interpret-insn cpu this-insn)
+           (interpret-program cpu instructions)])]
 
-          [any (core:bug-on #t #:dbg current-pc-debug
-                #:msg (format "bad instruction format ~e\n" any))])]
-      [#t (core:bug-on #t #:dbg current-pc-debug
-           #:msg (format "no instruction @ ~e\n" pc))]))))
+      [else (core:bug-on #t
+                         #:dbg current-pc-debug
+                         #:msg (format "no instruction @ ~e\n" pc))]))))
 
 (define (sanitize-program cpu instructions)
   (define seen (cpu-seen cpu))
