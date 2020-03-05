@@ -22,19 +22,20 @@
     [(lh lhu sh) 2]
     [(lw lwu sw) 4]
     [(ld ldu sd) 8]
-    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "memop->size: no such memop ~e\n" op))]))
+    [else (core:bug #:dbg current-pc-debug #:msg (format "memop->size: no such memop ~e\n" op))]))
 
 (define (load-signed? op)
   (case op
     [(lb lh lw ld) #t]
     [(lbu lhu lwu ldu) #f]
-    [else (core:bug-on #t #:dbg current-pc-debug #:msg (format "load-signed?: no such load ~e\n" op))]))
+    [else (core:bug #:dbg current-pc-debug #:msg (format "load-signed?: no such load ~e\n" op))]))
 
 (define (resolve-mem-path cpu instr)
   (define-values (type off reg)
     (cond
       [(rv_s_insn? instr) (values (rv_s_insn-op instr) (rv_s_insn-imm12 instr) (rv_s_insn-rs1 instr))]
-      [(rv_i_insn? instr) (values (rv_i_insn-op instr) (rv_i_insn-imm12 instr) (rv_i_insn-rs1 instr))]))
+      [(rv_i_insn? instr) (values (rv_i_insn-op instr) (rv_i_insn-imm12 instr) (rv_i_insn-rs1 instr))]
+      [else (core:bug #:msg (format "resolve-mem-path: bad insn type ~v" instr) #:dbg current-pc-debug)]))
 
   (define mr (core:guess-mregion-from-addr #:dbg current-pc-debug (cpu-mregions cpu) (gpr-ref cpu reg) off))
   (define start (core:mregion-start mr))
@@ -62,8 +63,8 @@
     [(bltu) (bvult val1 val2)]
     [(bne) (! (bveq val1 val2))]
     [(beq) (bveq val1 val2)]
-    [else (core:bug-on #t #:dbg current-pc-debug
-                          #:msg (format "evaluate-binary-conditional: no such binary conditional ~e\n" type))]))
+    [else (core:bug #:dbg current-pc-debug
+                    #:msg (format "evaluate-binary-conditional: no such binary conditional ~e\n" type))]))
 
 (define (evaluate-binary-op type v1 v2)
   (case type
@@ -86,8 +87,8 @@
     [(remw rem) (if (core:bvzero? v2) v1 ((core:bvsrem-proc) v1 v2))]
     [(divuw divu) ((core:bvudiv-proc) v1 v2)]
     [(remuw remu) ((core:bvurem-proc) v1 v2)]
-    [else (core:bug-on #t #:dbg current-pc-debug
-                          #:msg (format "evaluate-binary-op: no such binary op ~e\n" type))]))
+    [else (core:bug #:dbg current-pc-debug
+                    #:msg (format "evaluate-binary-op: no such binary op ~e\n" type))]))
 
 (define (jump-and-link cpu reg addr #:size size)
 
@@ -111,7 +112,8 @@
     [(csrrs csrrsi)
       (csr-set! cpu csr (bvor (csr-ref cpu csr) value))]
     [(csrrc csrrci)
-      (csr-set! cpu csr (bvand (csr-ref cpu csr) (bvnot value)))]))
+      (csr-set! cpu csr (bvand (csr-ref cpu csr) (bvnot value)))]
+    [else (core:bug #:msg (format "do-csr-op: Unknown csr op ~v" op) #:dbg current-pc-debug)]))
 
 (define (check-imm-size size imm)
   (core:bug-on (! (= size (for/all ([imm imm #:exhaustive]) (core:bv-size imm))))
@@ -219,10 +221,7 @@
             (bvadd src (sign-extend imm12 (bitvector (XLEN)))))))
       (set-cpu-pc! cpu target)]
 
-    [else (core:bug-on #t #:msg (format "No such rv_i_insn: ~v" insn) #:dbg current-pc-debug)]
-
-  ))
-
+    [else (core:bug #:msg (format "No such rv_i_insn: ~v" insn) #:dbg current-pc-debug)]))
 
 (define (interpret-rv_r_insn cpu insn)
   (define op (rv_r_insn-op insn))
@@ -264,7 +263,7 @@
       (gpr-set! cpu rd (sign-extend (evaluate-binary-op op (extract 31 0 (gpr-ref cpu rs1)) (extract 31 0 (gpr-ref cpu rs2))) (bitvector 64)))
       (cpu-next! cpu size)]
 
-    [else (core:bug-on #t #:msg (format "No such rv_r_insn: ~v" insn) #:dbg current-pc-debug)]
+    [else (core:bug #:msg (format "No such rv_r_insn: ~v" insn) #:dbg current-pc-debug)]
 
   ))
 
@@ -307,7 +306,7 @@
         (jump-and-link cpu 'x0 imm12 #:size size)
         (cpu-next! cpu size))]
 
-    [else (core:bug-on #t #:msg (format "No such rv_s_insn: ~v" insn) #:dbg current-pc-debug)]
+    [else (core:bug #:msg (format "No such rv_s_insn: ~v" insn) #:dbg current-pc-debug)]
   ))
 
 (define (interpret-rv_u_insn cpu insn)
@@ -340,7 +339,7 @@
       (check-imm-size 20 imm20)
       (jump-and-link cpu rd imm20 #:size size)]
 
-    [else (core:bug-on #t #:msg (format "No such rv_u_insn: ~v" insn) #:dbg current-pc-debug)]
+    [else (core:bug #:msg (format "No such rv_u_insn: ~v" insn) #:dbg current-pc-debug)]
 
   ))
 
@@ -351,8 +350,8 @@
     [(rv_r_insn? insn) (interpret-rv_r_insn cpu insn)]
     [(rv_s_insn? insn) (interpret-rv_s_insn cpu insn)]
     [(rv_u_insn? insn) (interpret-rv_u_insn cpu insn)]
-    [else (core:bug-on #t #:msg (format "Unknown instruction type: ~v" insn))]))
-
+    [else (core:bug #:msg (format "interpret-insn: Unknown instruction type: ~v" insn)
+                    #:dbg current-pc-debug)]))
 
 (define (interpret-program cpu program)
   (define instructions (program-instructions program))

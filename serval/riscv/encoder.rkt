@@ -98,7 +98,6 @@
 
 (define (encode-instr insn)
   (cond
-
     ; IRREGULAR ENCODINGS
 
     [(and (rv_cr_insn? insn) (memv (rv_cr_insn-op insn) '(c.unimp)))
@@ -167,7 +166,6 @@
         [(auipc) (u-type imm20 rd #b0010111)]
         [else (unsupported insn)])]
 
-
     [(rv_s_insn? insn)
       (define op (rv_s_insn-op insn))
       (define rs1 (encode-gpr (rv_s_insn-rs1 insn)))
@@ -186,7 +184,6 @@
         [(sw) (s-type imm12 rs2 rs1 #b010 #b0100011)]
         [(sd) (s-type imm12 rs2 rs1 #b011 #b0100011)]
         [else (unsupported insn)])]
-
 
     [(rv_i_insn? insn)
       (define op (rv_i_insn-op insn))
@@ -260,17 +257,5 @@
         [else (unsupported insn)])]
 
     [else (unsupported insn)]))
-
-  ;   [(ecall)
-  ;     (i-type (bv #b000000000000 12) (bv 0 5) 0 (bv 0 5) #b1110011)]
-  ;   [(ebreak)
-  ;     (i-type (bv #b000000000001 12) (bv 0 5) 0 (bv 0 5) #b1110011)]
-  ;   [(c.unimp)
-  ;     (bv 0 16)]
-  ;   [(unimp)
-  ;     (bv #xc0001073 32)]
-
-
-
 
 (provide encode-instr)

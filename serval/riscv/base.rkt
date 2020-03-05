@@ -31,8 +31,8 @@
     [(rv_s_insn? insn) 4]
     [(rv_u_insn? insn) 4]
     [(rv_cr_insn? insn) 2]
-    [else (core:bug-on #t #:msg (format "insn-size: unknown instruction type: ~v" insn)
-                          #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "insn-size: unknown instruction type: ~v" insn)
+                    #:dbg current-pc-debug)]))
 
 (define (set-current-pc-debug! v)
   (set! current-pc-debug v))
@@ -208,7 +208,7 @@
     [(pmpaddr14) (set-csrs-pmpaddr14! (cpu-csrs cpu) val)]
     [(pmpaddr15) (set-csrs-pmpaddr15! (cpu-csrs cpu) val)]
 
-    [else (core:bug-on #t #:msg (format "csr-set!: unknown csr ~e" csr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "csr-set!: unknown csr ~e" csr) #:dbg current-pc-debug)]))
 
 (define (csr-ref cpu csr)
   (core:bug-on (term? csr) #:msg (format "csr-ref: symbolic csr ~e" csr) #:dbg current-pc-debug)
@@ -265,7 +265,7 @@
     [(pmpaddr14) (csrs-pmpaddr14 (cpu-csrs cpu))]
     [(pmpaddr15) (csrs-pmpaddr15 (cpu-csrs cpu))]
 
-    [else (core:bug-on #t #:msg (format "csr-ref: unknown csr ~e" csr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "csr-ref: unknown csr ~e" csr) #:dbg current-pc-debug)]))
 
 ; Convert GPR name to integer index.
 ; Useful for encoding RISC-V instructions.
@@ -306,7 +306,7 @@
     [else
       (if (and (integer? gpr) (&& (>= gpr 0) (< gpr 32)))
           gpr
-          (core:bug-on #t #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr)))]))
+          (core:bug #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr)))]))
 
 (define (gpr-set! cpu gpr val)
   (core:bug-on (! (bv? val)) #:msg (format "gpr-set!: not a bitvector: ~e" val) #:dbg current-pc-debug)
@@ -344,8 +344,7 @@
     [(x29 t4) (set-gprs-x29! r val)]
     [(x30 t5) (set-gprs-x30! r val)]
     [(x31 t6) (set-gprs-x31! r val)]
-    [else (core:bug-on #t #:msg (format "gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]
-  ))
+    [else (core:bug #:msg (format "gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
 
 (define (gpr-havoc! cpu gpr)
   (define-symbolic* havoc (bitvector (XLEN)))
@@ -390,5 +389,4 @@
     [(x29 t4) (gprs-x29 r)]
     [(x30 t5) (gprs-x30 r)]
     [(x31 t6) (gprs-x31 r)]
-    [else (core:bug-on #t #:msg (format "gpr-ref: unknown gpr ~e" gpr) #:dbg current-pc-debug)]
-  ))
+    [else (core:bug #:msg (format "gpr-ref: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
