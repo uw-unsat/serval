@@ -102,6 +102,16 @@
      (define rhs (gpr-ref cpu src2))
      (flag-set-arithmetic! cpu bvsub lhs rhs)))])
 
+(struct div-r32 (src)
+ #:transparent
+ #:methods gen:instruction
+ [(define (instruction-encode insn)
+    (match-let ([(div-r32 src) insn])
+      (list '0xF7 (ModOpcodeR/M '0xF0 src))))
+  (define (instruction-run insn cpu)
+    (match-let ([(div-r32 src) insn])
+      (interpret-div cpu (gpr-ref cpu src))))])
+
 (define-syntax-rule (define-jcc id prefix proc)
   (struct id (off)
     #:transparent
@@ -604,6 +614,11 @@
     [(list '0x39 (ModR/M '0xC0 src1 src2))
      (cmp-r/m32-r32 src1 src2)]
 
+    ; F7 /6
+    ; DIV r/m32
+    [(list '0xF7 (ModOpcodeR/M '0xF0 src))
+     (div-r32 src)]
+
     ; 77 cb
     ; JA rel8
     [(list '0x77 rel8)
@@ -931,6 +946,32 @@
   (flag-clear! cpu 'OF)
   ; AF is undefined
   (flag-havoc! cpu 'AF))
+
+; On x86, the result of DIV is EDX:EAX / SRC; #DE is raised if the result
+; doesn't fit in 32 bits.
+;
+; The following specification is more restricted, requiring EDX to be zero.
+; this means that SRC must not be EDX.
+(define (interpret-div cpu v2)
+  (core:bug-on (core:bvzero? v2)
+   #:dbg current-pc-debug
+   #:msg "interpret-div: div by zero")
+
+  (define edx (gpr-ref cpu 'edx))
+  (core:bug-on (! (core:bvzero? edx))
+   #:dbg current-pc-debug
+   #:msg (format "interpret-div: edx is restricted to be zero: ~a" edx))
+
+  (define v1 (gpr-ref cpu 'eax))
+  (gpr-set! cpu 'eax ((core:bvudiv-proc) v1 v2))
+  (gpr-set! cpu 'edx ((core:bvurem-proc) v1 v2))
+  ; CF, OF, SF, ZF, AF, PF are undefined
+  (flag-havoc! cpu 'CF)
+  (flag-havoc! cpu 'OF)
+  (flag-havoc! cpu 'SF)
+  (flag-havoc! cpu 'ZF)
+  (flag-havoc! cpu 'AF)
+  (flag-havoc! cpu 'PF))
 
 (define (interpret-mul cpu v2)
   (define v1 (gpr-ref cpu 'eax))

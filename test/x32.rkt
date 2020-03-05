@@ -21,6 +21,9 @@
 (define choose-r32
   (choose 'eax 'ecx 'edx 'ebx 'esp 'ebp 'esi 'edi))
 
+(define choose-r32-minus-edx
+  (choose 'eax 'ecx 'ebx 'esp 'ebp 'esi 'edi))
+
 (define (cpu->uc cpu addr code)
   (define uc (uc-open 'x86 'x86-32))
   ; allocate memory
@@ -95,8 +98,14 @@
 
 (define (fixup-adc-r32-r32 insn cpu)
   (match-let ([(adc-r32-r32 dst src) insn])
-  (when (! (equal? dst src))
-    (fixup-adc cpu dst (x32:gpr-ref cpu src)))))
+    (when (! (equal? dst src))
+      (fixup-adc cpu dst (x32:gpr-ref cpu src)))))
+
+(define (fixup-div-r32 insn cpu)
+  (x32:gpr-set! cpu 'edx (bv 0 32))
+  (match-let ([(div-r32 src) insn])
+    (when (core:bvzero? (x32:gpr-ref cpu src))
+      (x32:gpr-set! cpu src (bv 1 32)))))
 
 (define (fixup-sbb cpu dst v2)
   (define v1 (x32:gpr-ref cpu dst))
@@ -130,6 +139,7 @@
      (x32-case and-r32-r/m32 choose-r32 choose-r32)
      (x32-case cmp-r32-imm8 choose-r32 choose-imm8)
      (x32-case cmp-r/m32-r32 choose-r32 choose-r32)
+     (x32-case div-r32 choose-r32-minus-edx #:fixup fixup-div-r32)
      (x32-case ja-rel8 choose-imm8)
      (x32-case jae-rel8 choose-imm8)
      (x32-case jb-rel8 choose-imm8)
