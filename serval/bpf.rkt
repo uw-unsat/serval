@@ -471,6 +471,13 @@
     [else (core:bug #:dbg current-pc-debug
                     #:msg (format "endian-size: unknown endian size ~e\n" imm))]))
 
+; The static "size" of a BPF instruction. This is the amount the PC must be incremented by to point
+; to the next instruction in the program. It is 1 for all instructions except ld64, which is unique.
+(define (insn-size insn)
+  (case (insn-code insn)
+    [((BPF_LD BPF_DW BPF_IMM)) (bv 2 64)]
+    [else (bv 1 64)]))
+
 ; Interpret an instruction.
 (define (interpret-insn cpu insn #:next [next-insn #f])
   (define code (insn-code insn))
@@ -478,6 +485,7 @@
   (define src (insn-src insn))
   (define off (insn-off insn))
   (define imm (insn-imm insn))
+  (define size (insn-size insn))
 
   (match code
     ; 64-bit immediate load
@@ -488,9 +496,7 @@
                    #:dbg current-pc-debug)
       (define lower imm)
       (define upper (insn-imm next-insn))
-      (reg-set! cpu dst (imm64-dw lower upper))
-      ; Bump the PC by one here: the other bump happens in the common case after the match.
-      (cpu-next! cpu)]
+      (reg-set! cpu dst (imm64-dw lower upper))]
 
     ; debugging
     [(list 'BPF_TRACE)
@@ -638,7 +644,9 @@
     ; default
     [_ (core:bug #:dbg current-pc-debug
                  #:msg (format "interpret-insn: no semantics for instruction ~e\n" code))])
-  (cpu-next! cpu))
+
+  ; size == (bv 1 64) for all instructions except ld64.
+  (cpu-next! cpu size))
 
 (define (verbose-cpu)
   (verbose "~a" cpu))
