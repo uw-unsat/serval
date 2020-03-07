@@ -7,15 +7,19 @@
   serval/riscv/base)
 
 (define (run-test testfile)
+  (define globalsfile (string->path (string-replace (path->string testfile) ".asm.rkt" ".globals.rkt")))
+  (define mapfile (string->path (string-replace (path->string testfile) ".asm.rkt" ".map.rkt")))
   (define instrs (dynamic-require testfile 'instructions))
   (define arch (dynamic-require testfile 'architecture))
+  (define symbols (dynamic-require mapfile 'symbols))
+  (define globals (dynamic-require globalsfile 'globals))
   (parameterize
     ([XLEN
       (case arch
         [(riscv:rv64) 64]
         [(riscv:rv32) 32])])
 
-    (define cpu (init-cpu))
+    (define cpu (init-cpu symbols globals))
 
     (define (handle-failure e)
       (displayln e)

@@ -22,6 +22,7 @@
 (struct rv_i_insn (op rd rs1 imm12) #:transparent)
 (struct rv_s_insn (op rs1 rs2 imm12) #:transparent)
 (struct rv_u_insn (op rd imm20) #:transparent)
+(struct rv_amo_insn (op rd rs1 rs2 aq rl) #:transparent)
 (struct rv_cr_insn (op rd/rs1 rs2) #:transparent)
 
 (define (insn-size insn)
@@ -30,6 +31,7 @@
     [(rv_i_insn? insn) 4]
     [(rv_s_insn? insn) 4]
     [(rv_u_insn? insn) 4]
+    [(rv_amo_insn? insn) 4]
     [(rv_cr_insn? insn) 2]
     [else (core:bug #:msg (format "insn-size: unknown instruction type: ~v" insn)
                     #:dbg current-pc-debug)]))

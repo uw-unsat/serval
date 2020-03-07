@@ -64,6 +64,11 @@
                      [r (string->symbol reg)])
          #'(offset n r))]
 
+    ; Match amo reg address, e.g. "(a5)"
+    [(pregexp #px"^\\((.+)\\)$" (list _ reg))
+      (with-syntax ([r (string->symbol reg)])
+        #'(r))]
+
     ; Anything else we don't recognize is a register.
     ; Have to be careful here otherwise registers like "a5"
     ; might look like base-16 numbers.
@@ -152,6 +157,14 @@
            src
            (list 'offset off reg))
       (rv_s_insn op reg src (bv off 12))]
+
+    [(list (and op (or 'amoswap.w 'amoadd.w 'amoand.w 'amoor.w 'amoxor.w 'amomax.w 'amomaxu.w 'amomin.w 'amominu.w
+                       'amoswap.d 'amoadd.d 'amoand.d 'amoor.d 'amoxor.d 'amomax.d 'amomaxu.d 'amomin.d 'amominu.d))
+           dst
+           rs2
+           (list rs1))
+      ; NB: assume aq,rl == 0
+      (rv_amo_insn op dst rs1 rs2 (bv 0 1) (bv 0 1))]
 
     [(list (and op (or 'bge 'blt 'bgeu 'bltu 'bne 'beq)) reg1 reg2 abs-addr)
       (define off (extract 12 1 (bvsub (bv abs-addr (XLEN)) i-addr)))
