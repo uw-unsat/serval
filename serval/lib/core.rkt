@@ -45,7 +45,6 @@
              [dw (+ w w)])
         (extract (sub1 dw) w ((bvmul-proc) (sign-extend x (bitvector dw)) (zero-extend y (bitvector dw))))))))
 
-
 ; case splitting
 
 (define (split-cases value cases func)
@@ -75,7 +74,6 @@
             (begin
               (setter! obj pc)
               body ...))))]))
-
 
 ; primitive types
 
@@ -164,7 +162,6 @@
 
 (define (bvaligned? x alignment)
   (bvzero? (bvurem x (bvpointer alignment))))
-
 
 ; bitvector overflow detection, following the enoding in MSR-TR-2009-57:
 ;   Modular Bug-finding for Integer Overflows in the Large:
@@ -395,11 +392,9 @@
   (cons (mfield-name f)
         (mblock-path (mfield-element f) (bvsub offset2 (mfield-offset f)) size #:dbg dbg)))
 
-
 (define (mstruct-resolve mblock path [indices null])
   (define f (mstruct-field-by-name mblock (car path)))
   (mblock-resolve (mfield-element f) (cdr path) indices))
-
 
 ; For simplicity, this supports two cases only:
 ; - memset within a single field
@@ -407,9 +402,9 @@
 ; It doesn't allow memset over partial fields.
 (define (mstruct-memset! mblock c offset size [preds null] #:dbg dbg)
   (define offset2 (crunch-struct-offset offset))
-  (bug-on (not (bveq offset offset2)) #:dbg dbg #:msg "mstruct-memset!: rewriting failed")
+  (bug-on (! (bveq offset offset2)) #:dbg dbg #:msg "mstruct-memset!: rewriting failed")
 
-  (bug-on (not (mblock-inbounds? mblock offset2 size)) #:dbg dbg
+  (bug-on (! (mblock-inbounds? mblock offset2 size)) #:dbg dbg
     #:msg "mstruct-memset!: [offset, offset + size) not in bounds")
 
   (define block-size (bvpointer (mblock-size mblock)))
@@ -471,13 +466,13 @@
 (define (mcell-path mblock offset size #:dbg dbg)
   (define block-size (bvpointer (mblock-size mblock)))
   ; block size must be a multiple of size - this check should be constant
-  (bug-on (not (bvzero? (bvurem block-size size))) #:dbg dbg
+  (bug-on (! (bvzero? (bvurem block-size size))) #:dbg dbg
           #:msg (format "mcell-path: block size ~a must be a multiple of size ~a\n" block-size size))
   ; offset must be a multiple of size
-  (bug-on (not (bvzero? (bvurem offset size))) #:dbg dbg
+  (bug-on (! (bvzero? (bvurem offset size))) #:dbg dbg
           #:msg (format "mcell-path: offset ~a must be a multiple of size ~a\n" offset size))
   ; offset must be smaller than block size
-  (bug-on (not (bvult offset block-size)) #:dbg dbg
+  (bug-on (! (bvult offset block-size)) #:dbg dbg
           #:msg (format "mcell-path: offset ~a must be smaller than block size ~a\n" offset block-size))
   (cons offset size))
 
@@ -538,7 +533,6 @@
    (define mblock-memset! mcell-memset!)
    (define mblock-copy mcell-copy)])
 
-
 ; mblock utility operations
 
 ; iload and istore! are implemented using memblock-resolve, which returns
@@ -548,13 +542,12 @@
 (define (mblock-iload mblock path)
   (match (mblock-resolve mblock path)
     [(list leaf offset size indices) (mblock-load leaf offset size indices)]
-    [any (bug-on #t #:msg (format "mblock-iload: invalid result from mblock-resolve: ~a\n" any))]))
+    [any (bug #:msg (format "mblock-iload: invalid result from mblock-resolve: ~a\n" any))]))
 
 (define (mblock-istore! mblock value path)
   (match (mblock-resolve mblock path)
     [(list leaf offset size indices) (mblock-store! leaf value offset indices)]
-    [any (bug-on #t #:msg (format "mblock-istore!: invalid result from mblock-resolve: ~a\n" any))]))
-
+    [any (bug #:msg (format "mblock-istore!: invalid result from mblock-resolve: ~a\n" any))]))
 
 ; An mregion is an mblock with information about its
 ; location in memory, since pointers are just integers
@@ -576,7 +569,7 @@
         (bug-on (< (- end start) (mblock-size block)) #:msg "create-mregions: not enough size for global")
         (mblock-init! block (list name))
         (mregion start end name block)]
-      [_ (bug-on #t #:msg (format "create-mregions: bad symbol format: ~e" entry))])))
+      [_ (bug #:msg (format "create-mregions: bad symbol format: ~e" entry))])))
 
 ; Find an symbol by its name
 (define (find-symbol-by-name ls name)
@@ -620,7 +613,7 @@
         (if x x
           (find-mregion-by-addr #:dbg dbg ls literal)))]
 
-    [_ (bug-on #t #:dbg dbg #:msg "guess-mregion-from-addr: unknown term")]))
+    [_ (bug #:dbg dbg #:msg "guess-mregion-from-addr: unknown term")]))
 
 ; check if [addr, add + size) falls in region mr
 (define (mregion-inbounds? mr addr size)

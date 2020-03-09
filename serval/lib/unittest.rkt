@@ -35,7 +35,6 @@
     (check-unsat? (verify (assert (apply && asserted))))
     (void)))
 
-
 ; random testing
 
 ; generate a random value from a symbolic expression

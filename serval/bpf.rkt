@@ -519,7 +519,7 @@
      (reg-set! cpu dst (zero-imm64 imm))]
 
     [(list 'BPF_ALU64 'BPF_MOV 'BPF_X)
-     ; NB: intentially leak src for poc/zero-1251-log
+     ; NB: intentionally leak src for poc/zero-1251-log
      (verbose "r~a = r~a (~a)" dst src (reg-ref cpu src))
      (reg-set! cpu dst (reg-ref cpu src))]
 
