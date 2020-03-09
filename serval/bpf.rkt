@@ -307,8 +307,7 @@
                #:dbg current-pc-debug)
   (reg-set! cpu reg #f))
 
-(define (reg-ref cpu reg)
-  (define regs (cpu-regs cpu))
+(define (@reg-ref regs reg)
   (define val
     (case reg
       [(r0) (regs-r0 regs)]
@@ -328,6 +327,9 @@
                #:dbg current-pc-debug
                #:msg (format "reg-ref: uninitialized register: ~e" reg))
   val)
+
+(define (reg-ref cpu reg)
+  (@reg-ref (cpu-regs cpu) reg))
 
 (define (evaluate-alu64 op v1 v2)
   (case op
