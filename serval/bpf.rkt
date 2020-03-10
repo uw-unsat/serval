@@ -6,8 +6,6 @@
 
 (provide (all-defined-out))
 
-(define bpf-verbose (make-parameter #f))
-(define bpf-allow-leak-pointer (make-parameter #f))
 (define bpf-strict-pointer (make-parameter #f))
 
 (define current-pc-debug #f)
@@ -16,7 +14,7 @@
 
 (struct pointer (base offset) #:transparent)
 
-(struct cpu (pc regs fdtable seen) #:mutable #:transparent
+(struct cpu (pc regs fdtable) #:mutable #:transparent
   #:methods gen:custom-write
   [(define (write-proc cpu port mode)
      (define regs (cpu-regs cpu))
@@ -272,13 +270,7 @@
   ; R10 points to the stack, which is uninitialized
   (define stack (core:marray MAX_BPF_STACK (core:mcell 1)))
   (set-regs-r10! regs (bpf-pointer stack (bv MAX_BPF_STACK 64)))
-  (cpu (bv 0 64) regs fdtable null))
-
-(define (update-seen! cpu instructions pc)
-  (define seen (cpu-seen cpu))
-  (set-cpu-seen! cpu (cons pc seen))
-  (set! current-pc-debug (bitvector->natural pc))
-  (verbose "~a" (cons current-pc-debug (hash-ref instructions pc))))
+  (cpu (bv 0 64) regs fdtable))
 
 (define (reg-set! cpu reg val)
   (core:bug-on (! (|| (bv? val) (pointer? val)))
@@ -519,8 +511,6 @@
      (reg-set! cpu dst (zero-imm64 imm))]
 
     [(list 'BPF_ALU64 'BPF_MOV 'BPF_X)
-     ; NB: intentionally leak src for poc/zero-1251-log
-     (verbose "r~a = r~a (~a)" dst src (reg-ref cpu src))
      (reg-set! cpu dst (reg-ref cpu src))]
 
     [(list 'BPF_ALU 'BPF_MOV 'BPF_X)
@@ -650,17 +640,6 @@
   ; size == (bv 1 64) for all instructions except ld64.
   (cpu-next! cpu size))
 
-(define (verbose-cpu)
-  (verbose "~a" cpu))
-
-(define (verbose fmt . args)
-  (define out (bpf-verbose))
-  (when out
-    (core:bug-on (&& (! (bpf-allow-leak-pointer)) (ormap pointer? args))
-                 #:msg (format "verbose: pointer not allowed: ~e\n" args)
-                 #:dbg current-pc-debug)
-    (displayln (apply format (cons fmt args)) out)))
-
 ; Interpret a BPF program until BPF_JMP BPF_EXIT.
 ; cpu -> A BPF cpu struct
 ; instructions -> A hash from PC (bitvector 64) to struct insn.
@@ -670,7 +649,6 @@
       (set-cpu-pc! cpu pc)
       (cond
         [(hash-has-key? instructions pc)
-          (update-seen! cpu instructions pc)
           (define this-insn (hash-ref instructions pc))
           (core:bug-on (! (insn? this-insn))
                        #:msg (format "interpret-program: need insn?, got ~v" this-insn)
@@ -690,7 +668,6 @@
               (core:bug-on (! (hash-has-key? instructions pc2))
                           #:msg (format "no instruction after LD64 @ ~e\n" pc)
                           #:dbg current-pc-debug)
-              (update-seen! cpu instructions pc2)
               (define next-insn (hash-ref instructions pc2))
               (interpret-insn cpu this-insn #:next next-insn)
               (interpret-program cpu instructions)]
@@ -701,14 +678,3 @@
 
         [else (core:bug #:dbg current-pc-debug
                         #:msg (format "no instruction @ ~e\n" pc))]))))
-
-(define (sanitize-program cpu instructions)
-  (define seen (cpu-seen cpu))
-  (define nop (BPF_MOV64_REG BPF_REG_0 BPF_REG_0))
-  (for/hash ([(pc insn) (in-hash instructions)])
-    (define dead (! (member pc seen)))
-    ; could invoke the solver; just do a simple constant evaluation here
-    (define kill (&& (! (term? dead)) dead))
-    (when kill
-      (displayln (format "removing dead code: ~a . ~a" (bitvector->natural pc) insn)))
-    (values pc (if kill nop insn))))
