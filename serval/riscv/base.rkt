@@ -2,6 +2,7 @@
 
 (require
   (prefix-in core: "../lib/core.rkt")
+  "../lib/memmgr.rkt"
   rosette/base/core/polymorphic)
 
 (provide (all-defined-out))
@@ -117,13 +118,19 @@
     pmpaddr0 pmpaddr1 pmpaddr2 pmpaddr3 pmpaddr4 pmpaddr5 pmpaddr6 pmpaddr7 pmpaddr8 pmpaddr9
     pmpaddr10 pmpaddr11 pmpaddr12 pmpaddr13 pmpaddr14 pmpaddr15 mcycle minstret))
 
-(struct cpu (pc gprs csrs mregions shims) #:mutable #:transparent)
+(struct cpu (pc gprs csrs memmgr shims) #:mutable #:transparent)
 
-(define (cpu-copy c)
-  (struct-copy cpu c
-    [gprs (vector-copy (cpu-gprs c))]
-    [csrs (struct-copy csrs (cpu-csrs c))]
-    [mregions (map core:mregion-copy (cpu-mregions c))]))
+; DEPRECATED:
+;  To be backwards compatible with code that assumes the RISC-V memory
+;  manager is the default, mregion based one.
+(define (cpu-mregions cpu)
+  (default-memmgr-regions (cpu-memmgr cpu)))
+
+; (define (cpu-copy c)
+;   (struct-copy cpu c
+;     [gprs (vector-copy (cpu-gprs c))]
+;     [csrs (struct-copy csrs (cpu-csrs c))]
+;     [mregions (map core:mregion-copy (cpu-mregions c))]))
 
 (define (cpu-add-shim! cpu addr shim)
   (core:bug-on (! (equal? (pc) #t)) #:msg "cpu-add-shim!: path condition not #t" #:dbg current-pc-debug)
@@ -136,13 +143,13 @@
 
   (define csrs (init-csrs))
 
-  (define mregions (core:create-mregions symbols globals))
+  (define memmgr (make-default-memmgr symbols globals))
   (define shims (make-hash))
 
   ; Reset vector is where PC will be set upon CPU reset
   (define reset-vector (bv #x0000000080000000 (XLEN)))
 
-  (cpu reset-vector gpr-vals csrs mregions shims))
+  (cpu reset-vector gpr-vals csrs memmgr shims))
 
 
 (define (cpu-equal? cpu1 cpu2)

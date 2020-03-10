@@ -2,6 +2,7 @@
 
 (require
   (prefix-in core: "../lib/core.rkt")
+  "../lib/memmgr.rkt"
   (only-in racket/base hash-has-key? hash-ref)
   "base.rkt")
 
@@ -14,7 +15,7 @@
 
 ; memory
 
-(struct ptr (block path) #:transparent)
+(struct ptr (addr off size) #:transparent)
 
 (define (memop->size op)
   (case op
@@ -30,28 +31,38 @@
     [(lbu lhu lwu ldu) #f]
     [else (core:bug #:dbg current-pc-debug #:msg (format "load-signed?: no such load ~e\n" op))]))
 
-(define (resolve-mem-path cpu instr)
+(define (insn->ptr cpu insn)
   (define-values (type off reg)
     (cond
-      [(rv_s_insn? instr) (values (rv_s_insn-op instr) (rv_s_insn-imm12 instr) (rv_s_insn-rs1 instr))]
-      [(rv_i_insn? instr) (values (rv_i_insn-op instr) (rv_i_insn-imm12 instr) (rv_i_insn-rs1 instr))]
-      [else (core:bug #:msg (format "resolve-mem-path: bad insn type ~v" instr) #:dbg current-pc-debug)]))
+      [(rv_s_insn? insn) (values (rv_s_insn-op insn) (rv_s_insn-imm12 insn) (rv_s_insn-rs1 insn))]
+      [(rv_i_insn? insn) (values (rv_i_insn-op insn) (rv_i_insn-imm12 insn) (rv_i_insn-rs1 insn))]
+      [else (core:bug #:msg (format "insn->ptr: bad insn type ~v" insn) #:dbg current-pc-debug)]))
 
-  (define mr (core:guess-mregion-from-addr #:dbg current-pc-debug (cpu-mregions cpu) (gpr-ref cpu reg) off))
-  (define start (core:mregion-start mr))
-  (define end (core:mregion-end mr))
-  (define name (core:mregion-name mr))
-  (define block (core:mregion-block mr))
+  ; (ptr addr off size)
+  (ptr (gpr-ref cpu reg) (sign-extend off (bitvector (XLEN))) (core:bvpointer (memop->size type))))
 
-  (define addr (bvadd (sign-extend off (bitvector (XLEN))) (gpr-ref cpu reg)))
-  (define size (core:bvpointer (memop->size type)))
-  (define offset (bvsub addr (bv start (XLEN))))
+; (define (resolve-mem-path cpu instr)
+;   (define-values (type off reg)
+;     (cond
+;       [(rv_s_insn? instr) (values (rv_s_insn-op instr) (rv_s_insn-imm12 instr) (rv_s_insn-rs1 instr))]
+;       [(rv_i_insn? instr) (values (rv_i_insn-op instr) (rv_i_insn-imm12 instr) (rv_i_insn-rs1 instr))]
+;       [else (core:bug #:msg (format "resolve-mem-path: bad insn type ~v" instr) #:dbg current-pc-debug)]))
 
-  (core:bug-on (! (core:mregion-inbounds? mr addr size))
-                #:dbg current-pc-debug
-                #:msg (format "resolve-mem-path: address out of range:\n addr: ~e\n block: ~e" addr name))
-  (define path (core:mblock-path block offset size #:dbg current-pc-debug))
-  (ptr block path))
+;   (define mr (core:guess-mregion-from-addr #:dbg current-pc-debug (cpu-mregions cpu) (gpr-ref cpu reg) off))
+;   (define start (core:mregion-start mr))
+;   (define end (core:mregion-end mr))
+;   (define name (core:mregion-name mr))
+;   (define block (core:mregion-block mr))
+
+;   (define addr (bvadd (sign-extend off (bitvector (XLEN))) (gpr-ref cpu reg)))
+;   (define size (core:bvpointer (memop->size type)))
+;   (define offset (bvsub addr (bv start (XLEN))))
+
+;   (core:bug-on (! (core:mregion-inbounds? mr addr size))
+;                 #:dbg current-pc-debug
+;                 #:msg (format "resolve-mem-path: address out of range:\n addr: ~e\n block: ~e" addr name))
+;   (define path (core:mblock-path block offset size #:dbg current-pc-debug))
+;   (ptr block path))
 
 ; conditionals
 
@@ -126,6 +137,7 @@
   (define rs1 (rv_i_insn-rs1 insn))
   (define imm12 (rv_i_insn-imm12 insn))
   (define size (insn-size insn))
+  (define memmgr (cpu-memmgr cpu))
 
   (case op
 
@@ -200,11 +212,12 @@
 
     [(ld ldu lw lwu lh lhu lb lbu)
       (check-imm-size 12 imm12)
-      (define ptr (resolve-mem-path cpu insn))
-      (define block (ptr-block ptr))
-      (define path (ptr-path ptr))
-      (define extend (if (load-signed? op) sign-extend zero-extend))
-      (gpr-set! cpu rd (extend (core:mblock-iload block path) (bitvector (XLEN))))
+      (define ptr (insn->ptr cpu insn))
+      (define read-value
+        (memmgr-load memmgr (ptr-addr ptr) (ptr-off ptr) (ptr-size ptr)
+                     #:dbg current-pc-debug))
+            (define extend (if (load-signed? op) sign-extend zero-extend))
+      (gpr-set! cpu rd (extend read-value (bitvector (XLEN))))
       (cpu-next! cpu size)]
 
     ; The indirect jump instruction JALR (jump and link register) uses the I-type encoding.
@@ -273,15 +286,15 @@
   (define rs2 (rv_s_insn-rs2 insn))
   (define imm12 (rv_s_insn-imm12 insn))
   (define size (insn-size insn))
+  (define memmgr (cpu-memmgr cpu))
 
   (case op
     [(sd sw sh sb)
       (check-imm-size 12 imm12)
-      (define ptr (resolve-mem-path cpu insn))
-      (define block (ptr-block ptr))
-      (define path (ptr-path ptr))
+      (define ptr (insn->ptr cpu insn))
       (define value (extract (- (* 8 (memop->size op)) 1) 0 (gpr-ref cpu rs2)))
-      (core:mblock-istore! block value path)
+      (memmgr-store! memmgr (ptr-addr ptr) (ptr-off ptr) value (ptr-size ptr)
+                     #:dbg current-pc-debug)
       (cpu-next! cpu size)]
 
     ; Binary conditional branch
