@@ -423,9 +423,9 @@
   (core:bug-on (! (core:bvaligned? offset n))
                #:dbg current-pc-debug
                #:msg (format "load-bytes: ~a not ~a-byte aligned\n" ptr n))
-  (core:spectre-bug-on (! (core:mblock-inbounds? block offset (core:bvpointer n)))
-                       #:dbg current-pc-debug
-                       #:msg (format "spectre: ~a-byte load @ ~a\n" n ptr))
+  (core:bug-on (! (core:mblock-inbounds? block offset (core:bvpointer n)))
+               #:dbg current-pc-debug
+               #:msg (format "load-bytes: ~a-byte load @ ~a\n" n ptr))
   (for/list ([i (in-range n)])
     (define path (core:mblock-path block (bvadd offset (bv i 64)) (bv 1 64) #:dbg current-pc-debug))
     (core:mblock-iload block path)))
