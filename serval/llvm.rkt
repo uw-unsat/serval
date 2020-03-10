@@ -46,7 +46,6 @@
 (define (@bug-on v msg)
   (core:bug-on v #:key 'llvm #:dbg (current-pc) #:msg msg))
 
-
 ; control flow
 
 (define (unreachable) (@bug-on #t "unreachable"))
@@ -57,11 +56,9 @@
   (set-frame-label! frame label)
   (label))
 
-
 (struct function (proc args dbg)
   #:transparent
   #:property prop:procedure (struct-field-index proc))
-
 
 ; Use lambda to delay the evaluation of dbg.
 (define-syntax (define-function stx)
@@ -72,7 +69,6 @@
          (function (lambda (arg-id ...) body ...)
                    (list (cons (substring (symbol->string 'arg-id) 1) arg-type) ...)
                    'name)))]))
-
 
 (define-syntax (define-label stx)
   (syntax-case stx ()
@@ -165,7 +161,6 @@
      (define-symbolic* symbolic-undef type)
      symbolic-undef]))
 
-
 ; comparisons
 
 (define (icmp/eq x y)
@@ -201,7 +196,6 @@
 (define (select cond x y)
   (if (core:bitvector->bool cond) x y))
 
-
 ; arithmetic operations
 
 ; We are not checking flags such as nsw, nuw, and exact - they should be
@@ -232,7 +226,6 @@
   (@bug-on (core:bvsdiv-overflow? x y) "srem: signed division overflow")
   (bvsrem x y))
 
-
 ; logical operations
 
 (define (shl x y)
@@ -256,7 +249,6 @@
 
 (define xor bvxor)
 
-
 ; casts
 
 (define sext sign-extend)
@@ -278,7 +270,6 @@
   (define start (core:bvpointer (core:mregion-start mr)))
   (bvadd start (pointer-offset ptr)))
 
-
 ; vector operations
 ; TBD
 
@@ -297,7 +288,6 @@
   (if (empty? indices)
       val
       (apply extractvalue (list-ref val (car indices)) (cdr indices))))
-
 
 ; memory operations
 
@@ -366,7 +356,6 @@
   (define offset (pointer-offset ptr))
   (core:mblock-memset! mblock (extract 7 0 c) offset size #:dbg (current-pc))
   ptr)
-
 
 ; builtin calls
 
@@ -444,7 +433,6 @@
 (define (memzero_explicit ptr size)
   (memset ptr (bv 0 32) size)
   (void))
-
 
 ; assertions
 

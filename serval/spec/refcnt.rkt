@@ -100,9 +100,4 @@
     (forall (list owner)
       (=> (owner-valid? owner)
         (bvule (cnt owner) max-refs)))
-
   ))
-
-
-
-

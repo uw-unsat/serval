@@ -104,7 +104,6 @@
    (define (hash-proc a hash-recur) 1)
    (define (hash2-proc a hash2-recur) 22)])
 
-
 (define (init-csrs)
   (define-symbolic*
    sedeleg sideleg stvec scounteren sscratch sepc scause stval satp
@@ -125,12 +124,6 @@
 ;  manager is the default, mregion based one.
 (define (cpu-mregions cpu)
   (default-memmgr-regions (cpu-memmgr cpu)))
-
-; (define (cpu-copy c)
-;   (struct-copy cpu c
-;     [gprs (vector-copy (cpu-gprs c))]
-;     [csrs (struct-copy csrs (cpu-csrs c))]
-;     [mregions (map core:mregion-copy (cpu-mregions c))]))
 
 (define (cpu-add-shim! cpu addr shim)
   (core:bug-on (! (equal? (pc) #t)) #:msg "cpu-add-shim!: path condition not #t" #:dbg current-pc-debug)

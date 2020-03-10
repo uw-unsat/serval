@@ -65,7 +65,7 @@
             (if overlaps
               (if contains cfg-perm (bv 0 8))
               (pmp-privs this-addr #t cfgs-rest addrs-rest))]
-          [#t (assert #f)])]
+          [else (assert #f)])]
       [(cons null null) (if (! any?) (bv PMPCFG_RWX 8) (bv 0 8))]
       [_ (assert #f)]))
 

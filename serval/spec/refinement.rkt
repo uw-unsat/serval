@@ -49,5 +49,4 @@
     (check-unsat? sol))
 
   (check-unsat? (verify (assert (=> (&& pre ri0) ri1))))
-
-(void))
+  (void))

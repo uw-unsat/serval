@@ -3,7 +3,7 @@
 (require
     (prefix-in core: "lib/core.rkt")
     rosette/base/core/polymorphic)
-  
+
 (provide (all-defined-out))
 
 (struct interpreter (func locals stack pc) #:mutable #:transparent)
@@ -36,16 +36,16 @@
   (match args
     [(list 'BitVecVal val n) (bv val n)]
     [(list 'UDiv x y) (bvudiv x y)]
-    [_ (core:bug-on #t #:dbg pc #:msg (format "unknown call ~e\n" args))]))
+    [_ (core:bug #:dbg pc #:msg (format "unknown call ~e\n" args))]))
 
 (define (interpret-compare op args)
   (when (not (equal? (length args) 2))
-    (core:bug-on #t #:dbg pc #:msg (format "unknown compare args ~e\n" args)))
+    (core:bug #:dbg pc #:msg (format "unknown compare args ~e\n" args)))
   (define lhs (first args))
   (define rhs (second args))
   (case op
     [(2) (equal? lhs rhs)]
-    [else (core:bug-on #t #:dbg pc #:msg (format "unknown compare op ~e\n" op))]))
+    [else (core:bug #:dbg pc #:msg (format "unknown compare op ~e\n" op))]))
 
 (define (interpret-instr interp instr)
   (define pc (interpreter-pc interp))
@@ -81,7 +81,7 @@
           (interpreter-next! interp)
           (interpreter-jump! interp arg))]
 
-    [_ (core:bug-on #t #:dbg pc #:msg (format "unknown instruction ~e\n" instr))]))
+    [_ (core:bug #:dbg pc #:msg (format "unknown instruction ~e\n" instr))]))
 
 (define (interpret-program interp)
   (define func (interpreter-func interp))
@@ -98,4 +98,4 @@
         (interpret-instr interp instr)
         (interpret-program interp)]
 
-      [any (core:bug-on #t #:dbg pc #:msg (format "Bad instruction format ~e\n" any))]))))
+      [any (core:bug #:dbg pc #:msg (format "Bad instruction format ~e\n" any))]))))

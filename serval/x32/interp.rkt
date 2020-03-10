@@ -880,7 +880,6 @@
      (xor-r32-r/m32 dst src)]
   ))
 
-
 ; helpers
 
 (define (interpret-adc cpu dst v2)
@@ -1044,7 +1043,6 @@
   (define path (core:mblock-path block offset size #:dbg current-pc-debug))
   (values block path))
 
-
 (define (interpret-instr cpu insn)
   (instruction-run insn cpu)
   ; bump the pc
@@ -1069,6 +1067,6 @@
              (interpret-instr cpu insn)
              (interpret-program cpu program)])]
         [else
-         (core:bug-on #t
+         (core:bug
           #:dbg current-pc-debug
           #:msg (format "No instruction at pc ~e\n" pc))]))))

@@ -4,7 +4,6 @@
 
 (provide (all-defined-out))
 
-
 ; types
 
 (struct source-location (filename line column) #:transparent
@@ -23,7 +22,6 @@
 
 (struct shift-out-of-bounds-data (location lhs-type rhs-type) #:transparent)
 
-
 ; constructors
 
 (define (make-overflow-data lst)
@@ -37,7 +35,6 @@
 (define (make-shift-out-of-bounds-data lst)
   (apply shift-out-of-bounds-data
          (map apply (list source-location type-descriptor type-descriptor) lst)))
-
 
 ; helpers
 
@@ -62,7 +59,6 @@
       (get-signed-val type val)
       (get-unsigned-val type val)))
 
-
 ; handlers
 
 ; define a function that evaluates variables given a solution
@@ -85,7 +81,7 @@
             (if (type-is-signed? type) "signed" "unsigned")
             lhs-str op rhs-str
             (type-descriptor-name type)))
-  (core:bug-on #t
+  (core:bug
    #:key 'ubsan
    #:dbg (overflow-data-location data)
    #:msg msg))
@@ -105,7 +101,7 @@
        (format "division of ~a by -1 cannot be represented in type ~a"
                (bitvector->integer lhs)
                (type-descriptor-name type))]))
-  (core:bug-on #t
+  (core:bug
    #:key 'ubsan
    #:dbg (overflow-data-location data)
    #:msg msg))
@@ -118,7 +114,7 @@
     (format "index ~a is out of range for type ~a"
             (val->string index-type index)
             (type-descriptor-name array-type)))
-  (core:bug-on #t
+  (core:bug
    #:key 'ubsan
    #:dbg (out-of-bounds-data-location data)
    #:msg msg))
@@ -141,7 +137,7 @@
       [else
        (format "left shift of ~a by ~a places cannot be represented in type ~a"
                lhs-str rhs-str (type-descriptor-name lhs-type))]))
-  (core:bug-on #t
+  (core:bug
    #:key 'ubsan
    #:dbg (shift-out-of-bounds-data-location data)
    #:msg msg))

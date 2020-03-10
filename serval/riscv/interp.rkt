@@ -41,29 +41,6 @@
   ; (ptr addr off size)
   (ptr (gpr-ref cpu reg) (sign-extend off (bitvector (XLEN))) (core:bvpointer (memop->size type))))
 
-; (define (resolve-mem-path cpu instr)
-;   (define-values (type off reg)
-;     (cond
-;       [(rv_s_insn? instr) (values (rv_s_insn-op instr) (rv_s_insn-imm12 instr) (rv_s_insn-rs1 instr))]
-;       [(rv_i_insn? instr) (values (rv_i_insn-op instr) (rv_i_insn-imm12 instr) (rv_i_insn-rs1 instr))]
-;       [else (core:bug #:msg (format "resolve-mem-path: bad insn type ~v" instr) #:dbg current-pc-debug)]))
-
-;   (define mr (core:guess-mregion-from-addr #:dbg current-pc-debug (cpu-mregions cpu) (gpr-ref cpu reg) off))
-;   (define start (core:mregion-start mr))
-;   (define end (core:mregion-end mr))
-;   (define name (core:mregion-name mr))
-;   (define block (core:mregion-block mr))
-
-;   (define addr (bvadd (sign-extend off (bitvector (XLEN))) (gpr-ref cpu reg)))
-;   (define size (core:bvpointer (memop->size type)))
-;   (define offset (bvsub addr (bv start (XLEN))))
-
-;   (core:bug-on (! (core:mregion-inbounds? mr addr size))
-;                 #:dbg current-pc-debug
-;                 #:msg (format "resolve-mem-path: address out of range:\n addr: ~e\n block: ~e" addr name))
-;   (define path (core:mblock-path block offset size #:dbg current-pc-debug))
-;   (ptr block path))
-
 ; conditionals
 
 (define (evaluate-binary-conditional type val1 val2)
@@ -102,14 +79,12 @@
                     #:msg (format "evaluate-binary-op: no such binary op ~e\n" type))]))
 
 (define (jump-and-link cpu reg addr #:size size)
-
   (define target
     (bvadd
       (cpu-pc cpu)
       (bvshl
         (sign-extend addr (bitvector (XLEN)))
         (bv 1 (XLEN)))))
-
   ; Set register to address of following instruction
   (gpr-set! cpu reg (bvadd (bv size (XLEN)) (cpu-pc cpu)))
   (set-cpu-pc! cpu target))
@@ -276,9 +251,7 @@
       (gpr-set! cpu rd (sign-extend (evaluate-binary-op op (extract 31 0 (gpr-ref cpu rs1)) (extract 31 0 (gpr-ref cpu rs2))) (bitvector 64)))
       (cpu-next! cpu size)]
 
-    [else (core:bug #:msg (format "No such rv_r_insn: ~v" insn) #:dbg current-pc-debug)]
-
-  ))
+    [else (core:bug #:msg (format "No such rv_r_insn: ~v" insn) #:dbg current-pc-debug)]))
 
 (define (interpret-rv_s_insn cpu insn)
   (define op (rv_s_insn-op insn))
@@ -319,8 +292,7 @@
         (jump-and-link cpu 'x0 imm12 #:size size)
         (cpu-next! cpu size))]
 
-    [else (core:bug #:msg (format "No such rv_s_insn: ~v" insn) #:dbg current-pc-debug)]
-  ))
+    [else (core:bug #:msg (format "No such rv_s_insn: ~v" insn) #:dbg current-pc-debug)]))
 
 (define (interpret-rv_u_insn cpu insn)
   (define op (rv_u_insn-op insn))
@@ -352,9 +324,7 @@
       (check-imm-size 20 imm20)
       (jump-and-link cpu rd imm20 #:size size)]
 
-    [else (core:bug #:msg (format "No such rv_u_insn: ~v" insn) #:dbg current-pc-debug)]
-
-  ))
+    [else (core:bug #:msg (format "No such rv_u_insn: ~v" insn) #:dbg current-pc-debug)]))
 
 ; interpret one instr
 (define (interpret-insn cpu insn)
@@ -380,4 +350,7 @@
         (define insn (hash-ref instructions pc))
         (when (! (and (rv_r_insn? insn) (equal? (rv_r_insn-op insn) 'mret)))
           (interpret-insn cpu (hash-ref instructions pc))
-          (interpret-program cpu program))])))
+          (interpret-program cpu program))]
+
+      [else (core:bug #:dbg current-pc-debug
+                      #:msg (format "interpret-program: Unknown insn for pc: ~v" pc))])))

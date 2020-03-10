@@ -271,7 +271,7 @@
   (mblock-fini! (marray-elements mblock)))
 
 (define (marray-path mblock offset size #:dbg dbg)
-  (bug-on (not (mblock-inbounds? mblock offset size))
+  (bug-on (! (mblock-inbounds? mblock offset size))
     #:msg (format "marray-path: offset ~e not in bounds ~e" offset size) #:dbg dbg)
   (define element-size (bvpointer (mblock-size (marray-elements mblock))))
   (define element-index (bvudiv offset element-size))
@@ -289,7 +289,7 @@
 ; - memset over multiple (full) elements
 ; It doesn't allow memset over partial elements.
 (define (marray-memset! mblock c offset size [preds null] #:dbg dbg)
-  (bug-on (not (mblock-inbounds? mblock offset size)) #:dbg dbg
+  (bug-on (! (mblock-inbounds? mblock offset size)) #:dbg dbg
     #:msg "marray-memset!: [offset, offset + size) not in bounds")
   (define element-size (bvpointer (mblock-size (marray-elements mblock))))
   (define element-index (bvudiv offset element-size))
@@ -307,9 +307,9 @@
       ; memset across multiple full elements
       (begin
         ; alignment checks for offset and size
-        (bug-on (not (bvzero? element-offset)) #:dbg dbg
+        (bug-on (! (bvzero? element-offset)) #:dbg dbg
                 #:msg "marray-memset!: offset not aligned")
-        (bug-on (not (bvzero? (bvurem size element-size))) #:dbg dbg
+        (bug-on (! (bvzero? (bvurem size element-size))) #:dbg dbg
                 #:msg "marray-memset!: size not aligned")
         ; predicate: element-index <= idx < element-index + size / element-size
         (define pred (lambda (idx)
@@ -357,17 +357,17 @@
        (let ([subexpr (kill-bvmul y const)])
          (if subexpr (bvadd x subexpr) #f))]
 
-      [(expression (== bvmul) x y) #:when (and (not (term? x)) (bveq const x))
+      [(expression (== bvmul) x y) #:when (and (! (term? x)) (bveq const x))
         (bv 0 (target-pointer-bitwidth))]
 
-      [(expression (== bvshl) x y) #:when (and (not (term? y)) (bveq const (bvshl (bv 1 (target-pointer-bitwidth)) y)))
+      [(expression (== bvshl) x y) #:when (and (! (term? y)) (bveq const (bvshl (bv 1 (target-pointer-bitwidth)) y)))
         (bv 0 (target-pointer-bitwidth))]
 
       [_ #f]))
 
   (if (enable-struct-crunch)
     (match offset
-      [(expression (== bvurem) x y) #:when (not (term? y))
+      [(expression (== bvurem) x y) #:when (! (term? y))
         (let ([subexpr (kill-bvmul x y)])
           (if subexpr subexpr offset))]
       [any any])

@@ -57,11 +57,6 @@
       [path (z3 #:path path #:logic (if logic logic (solver-logic)) #:options options)]
       [else (z3)])))
 
-      ; TODO: why is there no "z3-available?"
-      ; [(z3-available?) (z3 #:logic logic #:options options)]
-      ; [required (error "No Z3 found and Z3 en not set!")]
-      ; [else #f])))
-
 (define (get-boolector #:logic [logic #f]
                        #:options [options (hash)]
                        #:required [required #t])

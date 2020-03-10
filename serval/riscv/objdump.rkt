@@ -180,7 +180,7 @@
     [(list (and op (or 'csrrwi 'csrrsi 'csrrci)) dst csr imm)
       (rv_i_insn op dst (bv imm 5) csr)]
 
-    [else (core:bug-on #t #:msg (format "Bad parse ~e" i))]))
+    [else (core:bug #:msg (format "Bad parse ~e" i))]))
 
   (core:bug-on (! (equal? size (insn-size insn)))
                #:msg (format "Bad instruction size for ~a, expected ~v got ~v"
@@ -209,7 +209,7 @@
           [(list i ...) #:when (riscv-default-size)
             (parse-objdump-instr i #:addr addr #:size (riscv-default-size))]
           [_
-            (core:bug-on #t #:dbg current-pc-debug #:msg (format "Bad objdump ~e" instr))]))
+            (core:bug #:dbg current-pc-debug #:msg (format "Bad objdump ~e" instr))]))
       (values addr instr)))
   (program base insn-hash))
 

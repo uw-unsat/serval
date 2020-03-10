@@ -19,12 +19,10 @@
 (define (cpu-next! cpu size)
   (set-cpu-pc! cpu (bvadd size (cpu-pc cpu))))
 
-
 (define current-pc-debug #f)
 
 (define (set-current-pc-debug! v)
   (set! current-pc-debug v))
-
 
 (define (gpr->idx gpr)
   (case gpr
@@ -37,7 +35,7 @@
     [(esi dh) 6]
     [(edi bh) 7]
     [else
-     (core:bug-on #t
+     (core:bug
       #:msg (format "gpr->idx: unknown gpr: ~e" gpr)
       #:dbg current-pc-debug)]))
 
@@ -91,7 +89,7 @@
     [(sil) (set-gprs-esi! rs (gpr-update-8l (gprs-esi rs) val))]
     [(dil) (set-gprs-edi! rs (gpr-update-8l (gprs-edi rs) val))]
     ;
-    [else (core:bug-on #t #:msg (format "gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
 
 (define (gpr-ref cpu gpr)
   (define (gpr-ref-16 x) (extract 15 0 x))
@@ -131,7 +129,7 @@
     [(sil) (gpr-ref-8l (gprs-esi rs))]
     [(dil) (gpr-ref-8l (gprs-edi rs))]
     ;
-    [else (core:bug-on #t #:msg (format "gpr-ref: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "gpr-ref: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
 
 (define (flag->idx flag)
   (case flag
@@ -142,12 +140,12 @@
     [(SF) 7]  ; sign flag
     [(OF) 11] ; overflow flag
     [else
-     (core:bug-on #t
+     (core:bug
       #:msg (format "flag->idx: unknown flag: ~e" flag)
       #:dbg current-pc-debug)]))
 
 (define (flag-set! cpu flag [val #t])
-  (core:bug-on (not (boolean? val))
+  (core:bug-on (! (boolean? val))
    #:msg (format "flag-set!: not boolean: ~e" val)
    #:dbg current-pc-debug)
   (define fs (cpu-flags cpu))
@@ -159,7 +157,7 @@
     [(SF) (set-flags-sf! fs val)]
     [(OF) (set-flags-of! fs val)]
     [else
-     (core:bug-on #t
+     (core:bug
       #:msg (format "flag->set!: unknown flag: ~e" flag)
       #:dbg current-pc-debug)]))
 
@@ -170,7 +168,7 @@
   (bvnot (apply bvxor (for/list ([i (in-range (core:bv-size x))]) (extract i i x)))))
 
 (define (flag-set-result! cpu val)
-  (core:bug-on (not ((bitvector 32) val))
+  (core:bug-on (! ((bitvector 32) val))
    #:msg (format "flag-set!: not bv32: ~e" val)
    #:dbg current-pc-debug)
   (flag-set! cpu 'PF (core:bitvector->bool (parity (extract 7 0 val))))
@@ -190,7 +188,7 @@
     [(SF) (flags-sf fs)]
     [(OF) (flags-of fs)]
     [else
-     (core:bug-on #t
+     (core:bug
       #:msg (format "flag->ref: unknown flag: ~e" flag)
       #:dbg current-pc-debug)]))
 
@@ -241,8 +239,8 @@
          (gpr->idx (ModR/M-r/m x))
          (arithmetic-shift (gpr->idx (ModR/M-reg x)) 3))]
       [(symbol? x)
-       (hex-symbol->integer x)]))
+       (hex-symbol->integer x)]
+      [else (core:bug #:msg "instruction->integer-bytes: ->list failed with x = ~v" x)]))
   (flatten (map ->list code)))
-
 
 (struct program (base instructions) #:transparent)
