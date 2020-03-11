@@ -6,6 +6,8 @@
          ffi/unsafe/define/conventions
          "unicorn/const/unicorn.rkt"
          "unicorn/engine.rkt"
+         "unicorn/arm.rkt"
+         "unicorn/arm64.rkt"
          "unicorn/x86.rkt")
 
 (provide (except-out (all-defined-out)
@@ -18,6 +20,8 @@
 
 (define (arch->engine arch)
   (case arch
+    [(arm) arm-engine]
+    [(arm64) arm64-engine]
     [(x86) x86-engine]))
 
 (define-fun-syntax _uc_engine
