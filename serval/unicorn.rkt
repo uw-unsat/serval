@@ -4,6 +4,7 @@
          ffi/unsafe/alloc
          ffi/unsafe/define
          ffi/unsafe/define/conventions
+         setup/dirs
          "unicorn/const/unicorn.rkt"
          "unicorn/engine.rkt"
          "unicorn/arm.rkt"
@@ -13,7 +14,10 @@
 (provide (except-out (all-defined-out)
                      arch->engine check define-unicorn))
 
-(define unicorn-lib (ffi-lib "libunicorn"))
+(define unicorn-lib
+  (ffi-lib "libunicorn"
+   #:get-lib-dirs (lambda () (append (get-lib-search-dirs)
+                                     (list "/usr/local/lib" "/usr/lib")))))
 
 (define-ffi-definer define-unicorn unicorn-lib
   #:make-c-id convention:hyphen->underscore)
