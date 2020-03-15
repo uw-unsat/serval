@@ -41,8 +41,8 @@ RUN wget 'https://mirror.racket-lang.org/installers/7.6/racket-7.6-x86_64-linux.
 # Install Unicorn
 RUN git clone 'https://github.com/unicorn-engine/unicorn.git' && \
     cd unicorn && \
-    env UNICORN_ARCHS="x86" ./make.sh && \
-    env UNICORN_ARCHS="x86" ./make.sh install && \
+    env UNICORN_ARCHS="x86,arm,aarch64" ./make.sh && \
+    env UNICORN_ARCHS="x86,arm,aarch64" ./make.sh install && \
     cd /code && rm -rfv unicorn
 
 # Install HEAD Rosette
