@@ -71,3 +71,7 @@
   (let ([boolector (get-boolector #:required #f)])
     (if boolector boolector (begin (printf "Could not find boolector, falling back to Z3\n")
                                    (get-default-solver)))))
+
+; Set the global default solver. If test cases don't specify any other solver,
+; this is what will be used.
+(current-solver (get-default-solver))
