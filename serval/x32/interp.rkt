@@ -266,8 +266,11 @@
       (list '0xC7 (ModOpcodeR/M '0x40 dst) disp imm32)))
   (define (instruction-run insn cpu)
     (match-let ([(mov-m32-imm32 dst disp imm32) insn])
-      (define-values (block path) (resolve-mem-path cpu dst disp 4))
-      (core:mblock-istore! block imm32 path)))])
+      (core:memmgr-store! (cpu-memmgr cpu)
+                          (gpr-ref cpu dst)
+                          (sign-extend disp (bitvector 32))
+                          imm32 (bv 4 32)
+                          #:dbg current-pc-debug)))])
 
 (struct mov-m32-r32 (dst disp src)
  #:transparent
@@ -277,8 +280,11 @@
       (list '0x89 (ModR/M '0x40 dst src) disp)))
   (define (instruction-run insn cpu)
     (match-let ([(mov-m32-r32 dst disp src) insn])
-      (define-values (block path) (resolve-mem-path cpu dst disp 4))
-      (core:mblock-istore! block (gpr-ref cpu src) path)))])
+      (core:memmgr-store! (cpu-memmgr cpu)
+                          (gpr-ref cpu dst)
+                          (sign-extend disp (bitvector 32))
+                          (gpr-ref cpu src) (bv 4 32)
+                          #:dbg current-pc-debug)))])
 
 (struct mov-r32-imm32 (dst imm32)
  #:transparent
@@ -298,8 +304,10 @@
       (list '0x8B (ModR/M '0x40 src dst) disp)))
   (define (instruction-run insn cpu)
     (match-let ([(mov-r32-m32 dst src disp) insn])
-      (define-values (block path) (resolve-mem-path cpu src disp 4))
-      (define val (core:mblock-iload block path))
+      (define val (core:memmgr-load (cpu-memmgr cpu)
+                                    (gpr-ref cpu src)
+                                    (sign-extend disp (bitvector 32))
+                                    (bv 4 32) #:dbg current-pc-debug))
       (gpr-set! cpu dst val)))])
 
 ; The two forms of mov-r32-32 instructions are encoded differently.
@@ -352,8 +360,10 @@
       (list '0xF7 (ModOpcodeR/M '0x60 src) disp)))
   (define (instruction-run insn cpu)
     (match-let ([(mul-m32 src disp) insn])
-      (define-values (block path) (resolve-mem-path cpu src disp 4))
-      (define val (core:mblock-iload block path))
+      (define val (core:memmgr-load (cpu-memmgr cpu)
+                                    (gpr-ref cpu src)
+                                    (sign-extend disp (bitvector 32))
+                                    (bv 4 32) #:dbg current-pc-debug))
       (interpret-mul cpu val)))])
 
 (struct neg-r32 (dst)
@@ -1024,24 +1034,6 @@
                        (bvshl (gpr-ref cpu src) (bvsub (bv 32 32) count))))
   (gpr-set! cpu dst result)
   (flag-set-shift! cpu count result))
-
-(define (resolve-mem-path cpu reg disp size)
-  (when (integer? size)
-    (set! size (bv size 32)))
-
-  (define base32 (gpr-ref cpu reg))
-  (define disp32 (sign-extend disp (bitvector 32)))
-
-  (define mr (core:guess-mregion-from-addr #:dbg current-pc-debug (cpu-mregions cpu) base32 disp32))
-  (define addr (bvadd base32 disp32))
-  (core:bug-on (! (core:mregion-inbounds? mr addr size))
-   #:dbg current-pc-debug
-   #:msg (format "resolve-mem-path: address out of range:\n addr: ~e\n block: ~e" addr (core:mregion-name mr)))
-
-  (define block (core:mregion-block mr))
-  (define offset (bvsub addr (bv (core:mregion-start mr) 32)))
-  (define path (core:mblock-path block offset size #:dbg current-pc-debug))
-  (values block path))
 
 (define (interpret-instr cpu insn)
   (instruction-run insn cpu)

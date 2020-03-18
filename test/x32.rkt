@@ -43,7 +43,7 @@
     (for/list ([gpr '(eax ecx edx ebx esp ebp esi edi)])
       (bv (uc-reg-read uc gpr) 32)))
   (define eflags (bv (uc-reg-read uc 'eflags) 32))
-  (x32:cpu pc (apply x32:gprs regs) (x32:bitvector->flags eflags) null))
+  (x32:cpu pc (apply x32:gprs regs) (x32:bitvector->flags eflags) (core:typed-bv-memmgr null)))
 
 (define (check-insn #:fixup [fixup void] ctor . generators)
   (define args (map arbitrary generators))

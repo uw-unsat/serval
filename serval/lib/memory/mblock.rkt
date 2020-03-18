@@ -285,16 +285,16 @@
   (set-mcell-func! mblock newf))
 
 (define (mcell-memset! mblock c offset size [preds null] #:dbg dbg)
-  (bug-on (not (bvzero? offset))
+  (bug-on (! (bvzero? offset))
           #:msg "mcell-memset!: offset non-zero" #:dbg dbg)
-  (bug-on (not (equal? (bv-size c) 8))
+  (bug-on (! (equal? (bv-size c) 8))
           #:msg "mcell-memset!: not (bitvector 8)" #:dbg dbg)
   ; not required: just leave it here for sanity checks
-  (bug-on (not (bvzero? c))
+  (bug-on (! (bvzero? c))
           #:msg "mcell-memset!: must be 0" #:dbg dbg)
   (unless (bvzero? size)
-    (bug-on (not (equal? size (bvpointer (mcell-size mblock))))
-          #:msg "mcell-memset!: size incorrect" #:dbg dbg)
+    (bug-on (! (equal? size (bvpointer (mcell-size mblock))))
+            #:msg "mcell-memset!: size incorrect" #:dbg dbg)
     (define value (apply concat (make-list (mcell-size mblock) c)))
     (define oldf (mcell-func mblock))
     (define newf (lambda args

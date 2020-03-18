@@ -7,14 +7,23 @@
 (struct gprs (eax ecx edx ebx esp ebp esi edi) #:mutable #:transparent)
 (struct flags (cf pf af zf sf of) #:mutable #:transparent)
 
-(struct cpu (pc gprs flags mregions) #:mutable #:transparent)
+(struct cpu (pc gprs flags memmgr) #:mutable #:transparent)
+
+; DEPRECATED:
+;  To be backwards compatible with code that assumes the x32 memory
+;  manager is the default, mregion based one.
+(define (cpu-mregions cpu)
+  (core:typed-bv-memmgr-regions (cpu-memmgr cpu)))
 
 (define (init-cpu [symbols null] [globals null])
   (define-symbolic* eax ecx edx ebx esp ebp esi edi (bitvector 32))
   (define-symbolic* cf pf af zf sf of boolean?)
-  (define mregions (core:create-mregions symbols globals))
+  (define memmgr (core:make-typed-bv-memmgr symbols globals))
   (define reset-vector (bv 0 32))
-  (cpu reset-vector (gprs eax ecx edx ebx esp ebp esi edi) (flags cf pf af zf sf of) mregions))
+  (cpu reset-vector
+       (gprs eax ecx edx ebx esp ebp esi edi)
+       (flags cf pf af zf sf of)
+       memmgr))
 
 (define (cpu-next! cpu size)
   (set-cpu-pc! cpu (bvadd size (cpu-pc cpu))))

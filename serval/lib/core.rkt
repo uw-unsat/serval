@@ -3,6 +3,7 @@
 (require
   "bvarith.rkt"
   "debug.rkt"
+  "memmgr.rkt"
   "memory/mblock.rkt"
   "memory/mregion.rkt"
   "solver.rkt"
@@ -15,6 +16,7 @@
   (all-defined-out)
   (all-from-out "bvarith.rkt")
   (all-from-out "debug.rkt")
+  (all-from-out "memmgr.rkt")
   (all-from-out "memory/mblock.rkt")
   (all-from-out "memory/mregion.rkt")
   (all-from-out "solver.rkt")

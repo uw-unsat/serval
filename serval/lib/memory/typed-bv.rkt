@@ -3,7 +3,7 @@
 ; Typed memory manager with bitvector pointers.
 ; Memory is divided into a set of disjoint regions of concrete base and size.
 
-(require "../core.rkt" "manager.rkt")
+(require "mblock.rkt" "mregion.rkt" "manager.rkt" "../debug.rkt" "../bvarith.rkt")
 
 (define (get-block-and-path memmgr addr off size #:dbg dbg)
   (define regions (typed-bv-memmgr-regions memmgr))
