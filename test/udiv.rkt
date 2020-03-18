@@ -9,7 +9,6 @@
 
 (require "generated/racket/test/udiv.ll.rkt")
 
-
 (define-symbolic x y i32)
 
 (define (check-udiv x y #:result [result (/ x y)])

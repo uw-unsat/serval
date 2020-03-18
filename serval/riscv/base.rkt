@@ -123,7 +123,7 @@
 ;  To be backwards compatible with code that assumes the RISC-V memory
 ;  manager is the default, mregion based one.
 (define (cpu-mregions cpu)
-  (default-memmgr-regions (cpu-memmgr cpu)))
+  (typed-bv-memmgr-regions (cpu-memmgr cpu)))
 
 (define (cpu-add-shim! cpu addr shim)
   (core:bug-on (! (equal? (pc) #t)) #:msg "cpu-add-shim!: path condition not #t" #:dbg current-pc-debug)
@@ -136,14 +136,13 @@
 
   (define csrs (init-csrs))
 
-  (define memmgr (make-default-memmgr symbols globals))
+  (define memmgr (make-typed-bv-memmgr symbols globals))
   (define shims (make-hash))
 
   ; Reset vector is where PC will be set upon CPU reset
   (define reset-vector (bv #x0000000080000000 (XLEN)))
 
   (cpu reset-vector gpr-vals csrs memmgr shims))
-
 
 (define (cpu-equal? cpu1 cpu2)
   (&& (bveq (cpu-pc cpu1) (cpu-pc cpu2))
