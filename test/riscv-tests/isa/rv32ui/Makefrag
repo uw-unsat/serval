@@ -17,6 +17,7 @@ rv32ui_sc_tests = \
 	srl srli \
 	sub \
 	xor xori \
+	sw \
 	# fence_i \
 	# sb sh sw \
 	# lb lbu lh lhu lw \
