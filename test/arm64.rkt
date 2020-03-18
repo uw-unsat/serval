@@ -151,6 +151,12 @@
       adds-immediate
       sub-immediate
       subs-immediate)
+    ; Logical (immediate)
+    (arm64-case* [choose-sf choose-sf choose-imm6 choose-imm6 choose-reg choose-reg]
+      and-immediate
+      ands-immediate
+      eor-immediate
+      orr-immediate)
     ; Move (wide immediate)
     (arm64-case* [choose-sf choose-hw choose-imm16 choose-reg]
       movn
