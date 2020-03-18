@@ -5,21 +5,9 @@
 
 (provide (all-defined-out))
 
-
-; i must be an integer
-(define (bit i x)
-  (extract i i x))
-
-; i can be a symbolic bitvector
-(define (bv-bit i x)
-  (define mask (bvshl (bv 1 (core:bv-size i)) i))
-  (if (core:bvzero? (bvand x mask))
-      (bv 0 1)
-      (bv 1 1)))
-
-(define (trunc n x)
-  (extract (sub1 n) 0 x))
-
+(define bit core:bit)
+(define trunc core:truncate)
+(define bv-bit core:bv-bit)
 
 ; N: negative condition flag
 ;    1 if the result is negative
