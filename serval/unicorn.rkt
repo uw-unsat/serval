@@ -33,6 +33,9 @@
     [_ (type: _pointer
         pre: (x => (engine-ptr x)))]))
 
+(define _uc_cb_hookcode_t
+  (_fun _pointer _uint64 _uint32 _pointer -> _void))
+
 (define (check v)
   (unless (equal? v 'ok)
     (error v)))
@@ -101,7 +104,7 @@
 
 (define-unicorn uc-emu-start
   (_fun [uc : _uc_engine]
-        [begin : _uint64]
+        [start : _uint64]
         [until : _uint64]
         [timeout : _uint64]
         [count : _size]
@@ -110,6 +113,24 @@
 
 (define-unicorn uc-emu-stop
   (_fun [uc : _uc_engine]
+        -> [r : _uc_err]
+        -> (check r)))
+
+(define-unicorn uc-hook-add/code
+  (_fun [uc : _uc_engine]
+        [hh : (_ptr o _size)]
+        [_int = (cast 'code _uc_hook _int)]
+        [callback : _uc_cb_hookcode_t]
+        [user_data : _pointer = #f]
+        [start : _uint64 = 1]
+        [end : _uint64 = 0]
+        -> [r : _uc_err]
+        -> (begin (check r) hh))
+  #:c-id uc_hook_add)
+
+(define-unicorn uc-hook-del
+  (_fun [uc : _uc_engine]
+        [hh : _size]
         -> [r : _uc_err]
         -> (check r)))
 
