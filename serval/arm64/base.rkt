@@ -6,8 +6,10 @@
 (provide (all-defined-out))
 
 (define bit core:bit)
-(define trunc core:truncate)
 (define bv-bit core:bv-bit)
+
+(define (trunc n x)
+  (extract (sub1 n) 0 x))
 
 ; N: negative condition flag
 ;    1 if the result is negative

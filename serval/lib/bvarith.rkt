@@ -33,9 +33,6 @@
 (define (bv-size x)
   (bitvector-size (type-of x)))
 
-(define (truncate n x)
-  (extract (sub1 n) 0 x))
-
 ; i must be an integer
 (define (bit i x)
   (extract i i x))
