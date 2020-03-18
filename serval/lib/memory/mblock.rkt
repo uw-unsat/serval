@@ -1,6 +1,6 @@
 #lang rosette
 
-(require "../debug.rkt" "../bvarith.rkt")
+(require "../debug.rkt" "../bvarith.rkt" "manager.rkt")
 
 (provide (all-defined-out))
 
@@ -18,7 +18,6 @@
 ; mblock-iload and mblock-istore! uses a path to access the leaf cell.
 ;
 
-(define target-pointer-bitwidth (make-parameter 64))
 (define enable-struct-crunch (make-parameter (if (getenv "DISABLE_STRUCT_CRUNCH") #f #t)))
 
 (define (bvpointer?)

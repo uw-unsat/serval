@@ -2,6 +2,8 @@
 
 (provide (all-defined-out))
 
+(define target-pointer-bitwidth (make-parameter 64))
+
 (define-generics memmgr
   (memmgr-alloc! memmgr size alignment proc #:dbg dbg)
   (memmgr-load memmgr addr off size #:dbg dbg)

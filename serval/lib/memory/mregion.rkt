@@ -1,6 +1,6 @@
 #lang rosette
 
-(require "mblock.rkt" "../debug.rkt")
+(require "mblock.rkt" "../debug.rkt" "manager.rkt")
 
 (provide (all-defined-out))
 

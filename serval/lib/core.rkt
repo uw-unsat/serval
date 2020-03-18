@@ -22,4 +22,5 @@
   (all-from-out "solver.rkt")
   (all-from-out "symopt.rkt")
   (all-from-out "uf.rkt")
+  (all-from-out "unittest.rkt")
   var)
