@@ -2,24 +2,26 @@
 
 (require
   serval/lib/unittest
+  (prefix-in core: serval/lib/core)
   serval/riscv/interp
   serval/riscv/objdump
   serval/riscv/base)
 
 (define (run-test testfile)
-  (define globalsfile (string->path (string-replace (path->string testfile) ".asm.rkt" ".globals.rkt")))
-  (define mapfile (string->path (string-replace (path->string testfile) ".asm.rkt" ".map.rkt")))
+  ; (define globalsfile (string->path (string-replace (path->string testfile) ".asm.rkt" ".globals.rkt")))
+  ; (define mapfile (string->path (string-replace (path->string testfile) ".asm.rkt" ".map.rkt")))
   (define instrs (dynamic-require testfile 'instructions))
   (define arch (dynamic-require testfile 'architecture))
-  (define symbols (dynamic-require mapfile 'symbols))
-  (define globals (dynamic-require globalsfile 'globals))
-  (parameterize
-    ([XLEN
-      (case arch
-        [(riscv:rv64) 64]
-        [(riscv:rv32) 32])])
+  ; (define symbols (dynamic-require mapfile 'symbols))
+  ; (define globals (dynamic-require globalsfile 'globals))
 
-    (define cpu (init-cpu symbols globals))
+  (define bits (case arch [(riscv:rv64) 64] [(riscv:rv32) 32]))
+
+  (parameterize
+    ([XLEN bits]
+     [core:target-pointer-bitwidth bits])
+
+    (define cpu (init-cpu null null (lambda a (core:make-flat-memmgr))))
 
     (define (handle-failure e)
       (displayln e)

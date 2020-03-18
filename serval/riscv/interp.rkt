@@ -21,8 +21,8 @@
   (case op
     [(lb lbu sb) 1]
     [(lh lhu sh) 2]
-    [(lw lwu sw) 4]
-    [(ld ldu sd) 8]
+    [(lw lwu sw amoswap.w amoadd.w amoand.w amoor.w amoxor.w amomax.w amomaxu.w amomin.w amominu.w) 4]
+    [(ld ldu sd amoswap.d amoadd.d amoand.d amoor.d amoxor.d amomax.d amomaxu.d amomin.d amominu.d) 8]
     [else (core:bug #:dbg current-pc-debug #:msg (format "memop->size: no such memop ~e\n" op))]))
 
 (define (load-signed? op)
@@ -36,6 +36,7 @@
     (cond
       [(rv_s_insn? insn) (values (rv_s_insn-op insn) (rv_s_insn-imm12 insn) (rv_s_insn-rs1 insn))]
       [(rv_i_insn? insn) (values (rv_i_insn-op insn) (rv_i_insn-imm12 insn) (rv_i_insn-rs1 insn))]
+      [(rv_amo_insn? insn) (values (rv_amo_insn-op insn) (bv 0 (XLEN)) (rv_amo_insn-rs1 insn))]
       [else (core:bug #:msg (format "insn->ptr: bad insn type ~v" insn) #:dbg current-pc-debug)]))
 
   ; (ptr addr off size)
@@ -56,11 +57,11 @@
 
 (define (evaluate-binary-op type v1 v2)
   (case type
-    [(addi addw add) (bvadd v1 v2)]
+    [(addi addw add amoadd.w amoadd.d) (bvadd v1 v2)]
     [(subi subw sub) (bvsub v1 v2)]
-    [(ori or) (bvor v1 v2)]
-    [(andi and) (bvand v1 v2)]
-    [(xori xor) (bvxor v1 v2)]
+    [(ori or amoor.w amoor.d) (bvor v1 v2)]
+    [(andi and amoand.w amoand.d) (bvand v1 v2)]
+    [(xori xor amoxor.w amoxor.d) (bvxor v1 v2)]
     [(slliw slli sllw sll) (bvshl v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(srliw srli srlw srl) (bvlshr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
     [(sraiw srai sraw sra) (bvashr v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2))]
@@ -75,6 +76,11 @@
     [(remw rem) (if (core:bvzero? v2) v1 ((core:bvsrem-proc) v1 v2))]
     [(divuw divu) ((core:bvudiv-proc) v1 v2)]
     [(remuw remu) ((core:bvurem-proc) v1 v2)]
+    [(amomax.w amomax.d) (if (bvsge v1 v2) v1 v2)]
+    [(amomin.w amomin.d) (if (bvslt v1 v2) v1 v2)]
+    [(amomaxu.w amomaxu.d) (if (bvuge v1 v2) v1 v2)]
+    [(amominu.w amominu.d) (if (bvult v1 v2) v1 v2)]
+    [(amoswap.w amoswap.d) v2]
     [else (core:bug #:dbg current-pc-debug
                     #:msg (format "evaluate-binary-op: no such binary op ~e\n" type))]))
 
@@ -326,6 +332,26 @@
 
     [else (core:bug #:msg (format "No such rv_u_insn: ~v" insn) #:dbg current-pc-debug)]))
 
+; From RISC-V Manual:
+; The atomic memory operation (AMO) instructions perform read-modify-write operations for multiprocessor
+; synchronization and are encoded with an R-type instruction format. These AMO instructions atomically
+; load a data value from the address in rs1, place the value into register rd, apply a binary operator
+; to the loaded value and the original value in rs2, then store the result back to the address in rs1.
+(define (interpret-rv_amo_insn cpu insn)
+  (define op (rv_amo_insn-op insn))
+  (define rd (rv_amo_insn-rd insn))
+  (define rs2 (rv_amo_insn-rs2 insn))
+  (define size (insn-size insn))
+  (define memmgr (cpu-memmgr cpu))
+  (define ptr (insn->ptr cpu insn))
+
+  (define value (memmgr-load memmgr (ptr-addr ptr) (ptr-off ptr) (ptr-size ptr) #:dbg current-pc-debug))
+  (gpr-set! cpu rd (sign-extend value (bitvector (XLEN))))
+  (define newvalue (evaluate-binary-op op (sign-extend value (bitvector (XLEN))) (gpr-ref cpu rs2)))
+  (memmgr-store! memmgr (ptr-addr ptr) (ptr-off ptr) newvalue (ptr-size ptr)
+                  #:dbg current-pc-debug)
+  (cpu-next! cpu size))
+
 ; interpret one instr
 (define (interpret-insn cpu insn)
   (cond
@@ -333,6 +359,7 @@
     [(rv_r_insn? insn) (interpret-rv_r_insn cpu insn)]
     [(rv_s_insn? insn) (interpret-rv_s_insn cpu insn)]
     [(rv_u_insn? insn) (interpret-rv_u_insn cpu insn)]
+    [(rv_amo_insn? insn) (interpret-rv_amo_insn cpu insn)]
     [else (core:bug #:msg (format "interpret-insn: Unknown instruction type: ~v" insn)
                     #:dbg current-pc-debug)]))
 

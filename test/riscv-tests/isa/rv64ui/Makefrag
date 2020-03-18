@@ -17,6 +17,7 @@ rv64ui_sc_tests = \
 	srl srli srliw srlw \
 	sub subw \
 	xor xori \
+	sw sd \
+	# sb sh \
 	# fence_i \
 	# lb lbu lh lhu lw lwu ld \
-	# sb sh sw sd \

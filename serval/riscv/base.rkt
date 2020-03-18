@@ -130,13 +130,13 @@
   (core:bug-on (! (equal? (asserts) null)) #:msg "cpu-add-shim!: asserts not empty" #:dbg current-pc-debug)
   (hash-set! (cpu-shims cpu) addr shim))
 
-(define (init-cpu [symbols null] [globals null])
+(define (init-cpu [symbols null] [globals null] [make-memmgr make-typed-bv-memmgr])
   (define-symbolic* x (bitvector (XLEN)) [31])
   (define gpr-vals (apply gprs x))
 
   (define csrs (init-csrs))
 
-  (define memmgr (make-typed-bv-memmgr symbols globals))
+  (define memmgr (make-memmgr symbols globals))
   (define shims (make-hash))
 
   ; Reset vector is where PC will be set upon CPU reset
