@@ -137,10 +137,9 @@
 
 (define arm64-tests
   (test-suite+ "Tests for arm64 instructions"
-    ; Disable b.cond testing for now.
-    ; ; Conditional branch
-    ;  (arm64-case* [choose-imm19 choose-cond]
-    ;   b.cond)
+    ; Conditional branch
+     (arm64-case* [choose-imm19 choose-cond]
+      b.cond)
     ; Unconditional branch (immediate)
      (arm64-case* [choose-imm26]
       b
