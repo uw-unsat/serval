@@ -15,10 +15,10 @@
 (define (cpu-mregions cpu)
   (core:typed-bv-memmgr-regions (cpu-memmgr cpu)))
 
-(define (init-cpu [symbols null] [globals null])
+(define (init-cpu [symbols null] [globals null] [make-memmgr core:make-typed-bv-memmgr])
   (define-symbolic* eax ecx edx ebx esp ebp esi edi (bitvector 32))
   (define-symbolic* cf pf af zf sf of boolean?)
-  (define memmgr (core:make-typed-bv-memmgr symbols globals))
+  (define memmgr (make-memmgr symbols globals))
   (define reset-vector (bv 0 32))
   (cpu reset-vector
        (gprs eax ecx edx ebx esp ebp esi edi)
