@@ -350,7 +350,6 @@
   (set! data (extract (- (* 8 sizen) 1) 0 data))
   (set! addr (extract (- (core:target-pointer-bitwidth) 1) 0 addr))
   (set! off (sign-extend off (bitvector (core:target-pointer-bitwidth))))
-  (displayln (list addr off data sizen))
   (core:memmgr-store! memmgr addr off data (bv sizen 64)
                       #:dbg current-pc-debug))
 
