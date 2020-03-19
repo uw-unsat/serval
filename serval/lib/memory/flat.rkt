@@ -3,7 +3,8 @@
 ; Flat memory model. Assumes Little endian.
 ; Memory is a single uninterpreted function from bv -> bv8
 
-(provide (all-defined-out))
+(provide make-flat-memmgr (struct-out flat-memmgr))
+
 (require "manager.rkt" "../bvarith.rkt" "../uf.rkt" "../debug.rkt")
 
 (define (flat-memmgr-alloc! memmgr size alignment proc #:dbg dbg)

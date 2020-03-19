@@ -39,7 +39,7 @@
 (define (run-insns result . insns)
   (define cpu (init-cpu #f))
   (define actual (interpret-program cpu (make-insns insns)))
-  (check-equal? actual (bv result 32)))
+  (check-unsat? (verify (assert (equal? actual (bv result 32))))))
 
 (define-syntax-rule (bpf-test-case name #:result result ...)
   (test-case+ name (run-insns result ...)))
