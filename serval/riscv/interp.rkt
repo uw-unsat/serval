@@ -11,7 +11,7 @@
 (struct program (base instructions) #:transparent)
 
 (define (cpu-next! cpu size)
-  (set-cpu-pc! cpu (bvadd (bv size (XLEN)) (cpu-pc cpu))))
+  (set-cpu-pc! cpu (bvadd (bv size (cpu-xlen cpu)) (cpu-pc cpu))))
 
 ; memory
 
@@ -36,11 +36,11 @@
     (cond
       [(rv_s_insn? insn) (values (rv_s_insn-op insn) (rv_s_insn-imm12 insn) (rv_s_insn-rs1 insn))]
       [(rv_i_insn? insn) (values (rv_i_insn-op insn) (rv_i_insn-imm12 insn) (rv_i_insn-rs1 insn))]
-      [(rv_amo_insn? insn) (values (rv_amo_insn-op insn) (bv 0 (XLEN)) (rv_amo_insn-rs1 insn))]
+      [(rv_amo_insn? insn) (values (rv_amo_insn-op insn) (bv 0 (cpu-xlen cpu)) (rv_amo_insn-rs1 insn))]
       [else (core:bug #:msg (format "insn->ptr: bad insn type ~v" insn) #:dbg current-pc-debug)]))
 
   ; (ptr addr off size)
-  (ptr (gpr-ref cpu reg) (sign-extend off (bitvector (XLEN))) (core:bvpointer (memop->size type))))
+  (ptr (gpr-ref cpu reg) (sign-extend off (bitvector (cpu-xlen cpu))) (core:bvpointer (memop->size type))))
 
 ; conditionals
 
@@ -89,15 +89,15 @@
     (bvadd
       (cpu-pc cpu)
       (bvshl
-        (sign-extend addr (bitvector (XLEN)))
-        (bv 1 (XLEN)))))
+        (sign-extend addr (bitvector (cpu-xlen cpu)))
+        (bv 1 (cpu-xlen cpu)))))
   ; Set register to address of following instruction
-  (gpr-set! cpu reg (bvadd (bv size (XLEN)) (cpu-pc cpu)))
+  (gpr-set! cpu reg (bvadd (bv size (cpu-xlen cpu)) (cpu-pc cpu)))
   (set-cpu-pc! cpu target))
 
 (define (do-csr-op cpu op dst csr value)
   (when (! (core:bvzero? (gpr->idx dst)))
-    (gpr-set! cpu dst (zero-extend (csr-ref cpu csr) (bitvector (XLEN)))))
+    (gpr-set! cpu dst (zero-extend (csr-ref cpu csr) (bitvector (cpu-xlen cpu)))))
   (case op
     [(csrrw csrrwi)
       (csr-set! cpu csr value)]
@@ -138,31 +138,31 @@
       ; and not an actual register name.
       ; In addition, imm12 is actually a CSR name and not an immediate.
       (check-imm-size 5 rs1)
-      (do-csr-op cpu op rd imm12 (zero-extend rs1 (bitvector (XLEN))))
+      (do-csr-op cpu op rd imm12 (zero-extend rs1 (bitvector (cpu-xlen cpu))))
       (cpu-next! cpu size)]
 
     ; ALU immediate instructions
     [(addi subi ori andi xori srli srai slli)
       (check-imm-size 12 imm12)
-      (gpr-set! cpu rd (evaluate-binary-op op (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (XLEN)))))
+      (gpr-set! cpu rd (evaluate-binary-op op (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (cpu-xlen cpu)))))
       (cpu-next! cpu size)]
 
     ; Set if less than immediate (signed)
     [(slti)
       (check-imm-size 12 imm12)
       (gpr-set! cpu rd
-        (if (bvslt (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (XLEN))))
-          (bv 1 (XLEN))
-          (bv 0 (XLEN))))
+        (if (bvslt (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (cpu-xlen cpu))))
+          (bv 1 (cpu-xlen cpu))
+          (bv 0 (cpu-xlen cpu))))
       (cpu-next! cpu size)]
 
     ; Set if less than immediate unsigned
     [(sltiu)
       (check-imm-size 12 imm12)
       (gpr-set! cpu rd
-        (if (bvult (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (XLEN))))
-          (bv 1 (XLEN))
-          (bv 0 (XLEN))))
+        (if (bvult (gpr-ref cpu rs1) (sign-extend imm12 (bitvector (cpu-xlen cpu))))
+          (bv 1 (cpu-xlen cpu))
+          (bv 0 (cpu-xlen cpu))))
       (cpu-next! cpu size)]
 
     ; ADDIW is an RV64I-only instruction that adds the sign-extended 12-bit
@@ -172,7 +172,7 @@
     ; sign-extension of the lower 32 bits of register rs1 into register rd
     [(addiw)
       (check-imm-size 12 imm12)
-      (core:bug-on (! (= (XLEN) 64)) #:msg "addiw: (XLEN) != 64" #:dbg current-pc-debug)
+      (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "addiw: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
       (gpr-set! cpu rd
         (sign-extend
           (bvadd (extract 31 0 (gpr-ref cpu rs1))
@@ -182,7 +182,7 @@
 
     [(slliw srliw sraiw)
       (check-imm-size 12 imm12)
-      (core:bug-on (! (= (XLEN) 64)) #:msg "slliw/srliw/sraiw: (XLEN) != 64" #:dbg current-pc-debug)
+      (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "slliw/srliw/sraiw: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
       (gpr-set! cpu rd
         (sign-extend
           (evaluate-binary-op op
@@ -198,7 +198,7 @@
         (memmgr-load memmgr (ptr-addr ptr) (ptr-off ptr) (ptr-size ptr)
                      #:dbg current-pc-debug))
             (define extend (if (load-signed? op) sign-extend zero-extend))
-      (gpr-set! cpu rd (extend read-value (bitvector (XLEN))))
+      (gpr-set! cpu rd (extend read-value (bitvector (cpu-xlen cpu))))
       (cpu-next! cpu size)]
 
     ; The indirect jump instruction JALR (jump and link register) uses the I-type encoding.
@@ -207,12 +207,12 @@
     ; instruction following the jump (pc+4) is written to register rd.
     [(jalr)
       (check-imm-size 12 imm12)
-      (gpr-set! cpu rd (bvadd (bv size (XLEN)) (cpu-pc cpu)))
+      (gpr-set! cpu rd (bvadd (bv size (cpu-xlen cpu)) (cpu-pc cpu)))
       (define target
         (for/all ([src (gpr-ref cpu rs1) #:exhaustive])
           (bvand
-            (bvnot (bv 1 (XLEN)))
-            (bvadd src (sign-extend imm12 (bitvector (XLEN)))))))
+            (bvnot (bv 1 (cpu-xlen cpu)))
+            (bvadd src (sign-extend imm12 (bitvector (cpu-xlen cpu)))))))
       (set-cpu-pc! cpu target)]
 
     [else (core:bug #:msg (format "No such rv_i_insn: ~v" insn) #:dbg current-pc-debug)]))
@@ -234,16 +234,16 @@
     [(slt)
       (gpr-set! cpu rd
         (if (bvslt (gpr-ref cpu rs1) (gpr-ref cpu rs2))
-          (bv 1 (XLEN))
-          (bv 0 (XLEN))))
+          (bv 1 (cpu-xlen cpu))
+          (bv 0 (cpu-xlen cpu))))
       (cpu-next! cpu size)]
 
     ; Set if less than unsigned
     [(sltu)
       (gpr-set! cpu rd
         (if (bvult (gpr-ref cpu rs1) (gpr-ref cpu rs2))
-          (bv 1 (XLEN))
-          (bv 0 (XLEN))))
+          (bv 1 (cpu-xlen cpu))
+          (bv 0 (cpu-xlen cpu))))
       (cpu-next! cpu size)]
 
     ; Binary operation two registers
@@ -253,7 +253,7 @@
 
     ; Binary operation two registers (32-bit ops on 64-bit only)
     [(addw subw sllw srlw sraw mulw divw remw divuw remuw)
-      (core:bug-on (! (= (XLEN) 64)) #:msg "*w: (XLEN) != 64" #:dbg current-pc-debug)
+      (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
       (gpr-set! cpu rd (sign-extend (evaluate-binary-op op (extract 31 0 (gpr-ref cpu rs1)) (extract 31 0 (gpr-ref cpu rs2))) (bitvector 64)))
       (cpu-next! cpu size)]
 
@@ -312,7 +312,7 @@
     [(auipc)
       (check-imm-size 20 imm20)
       (gpr-set! cpu rd (bvadd
-                         (sign-extend (concat imm20 (bv 0 12)) (bitvector (XLEN)))
+                         (sign-extend (concat imm20 (bv 0 12)) (bitvector (cpu-xlen cpu)))
                          (cpu-pc cpu)))
       (cpu-next! cpu size)]
 
@@ -320,7 +320,7 @@
     ; zero in the lowest 12 bits. The 32-bit result is sign-extended to 64 bits.
     [(lui)
       (check-imm-size 20 imm20)
-      (gpr-set! cpu rd (sign-extend (concat imm20 (bv 0 12)) (bitvector (XLEN))))
+      (gpr-set! cpu rd (sign-extend (concat imm20 (bv 0 12)) (bitvector (cpu-xlen cpu))))
       (cpu-next! cpu size)]
 
     ; The jump and link (JAL) instruction uses the J-type format, where the J-immediate encodes a
@@ -347,12 +347,12 @@
 
   (memmgr-atomic-begin memmgr)
   (define value (memmgr-load memmgr (ptr-addr ptr) (ptr-off ptr) (ptr-size ptr) #:dbg current-pc-debug))
-  (gpr-set! cpu rd (sign-extend value (bitvector (XLEN))))
+  (gpr-set! cpu rd (sign-extend value (bitvector (cpu-xlen cpu))))
   (define newvalue
     (extract (- (* 8 (memop->size op)) 1) 0
-      (evaluate-binary-op op (sign-extend value (bitvector (XLEN))) (gpr-ref cpu rs2))))
+      (evaluate-binary-op op (sign-extend value (bitvector (cpu-xlen cpu))) (gpr-ref cpu rs2))))
   (memmgr-store! memmgr (ptr-addr ptr) (ptr-off ptr) newvalue (ptr-size ptr)
-                  #:dbg current-pc-debug)
+                 #:dbg current-pc-debug)
   (memmgr-atomic-end memmgr)
   (cpu-next! cpu size))
 

@@ -104,20 +104,20 @@
    (define (hash-proc a hash-recur) 1)
    (define (hash2-proc a hash2-recur) 22)])
 
-(define (init-csrs)
+(define (init-csrs xlen)
   (define-symbolic*
    sedeleg sideleg stvec scounteren sscratch sepc scause stval satp
     mstatus misa medeleg mideleg mie mtvec mcounteren mscratch mepc
     mcause mtval mip pmpcfg0 pmpcfg2 pmpaddr0 pmpaddr1 pmpaddr2 pmpaddr3 pmpaddr4 pmpaddr5 pmpaddr6
     pmpaddr7 pmpaddr8 pmpaddr9 pmpaddr10 pmpaddr11 pmpaddr12 pmpaddr13 pmpaddr14 pmpaddr15 mcycle
-    minstret (bitvector (XLEN)))
+    minstret (bitvector xlen))
   (csrs
     sedeleg sideleg stvec scounteren sscratch sepc scause stval satp
     mstatus misa medeleg mideleg mie mtvec mcounteren mscratch mepc mcause mtval mip pmpcfg0 pmpcfg2
     pmpaddr0 pmpaddr1 pmpaddr2 pmpaddr3 pmpaddr4 pmpaddr5 pmpaddr6 pmpaddr7 pmpaddr8 pmpaddr9
     pmpaddr10 pmpaddr11 pmpaddr12 pmpaddr13 pmpaddr14 pmpaddr15 mcycle minstret))
 
-(struct cpu (pc gprs csrs memmgr shims) #:mutable #:transparent)
+(struct cpu (pc gprs csrs memmgr shims xlen) #:mutable #:transparent)
 
 ; DEPRECATED:
 ;  To be backwards compatible with code that assumes the RISC-V memory
@@ -130,19 +130,22 @@
   (core:bug-on (! (equal? (asserts) null)) #:msg "cpu-add-shim!: asserts not empty" #:dbg current-pc-debug)
   (hash-set! (cpu-shims cpu) addr shim))
 
-(define (init-cpu [symbols null] [globals null] [make-memmgr make-typed-bv-memmgr])
-  (define-symbolic* x (bitvector (XLEN)) [31])
+(define (init-cpu [symbols null] [globals null] [make-memmgr make-typed-bv-memmgr] #:xlen [xlen #f])
+  (when (equal? xlen #f)
+    (set! xlen (XLEN)))
+
+  (define-symbolic* x (bitvector xlen) [31])
   (define gpr-vals (apply gprs x))
 
-  (define csrs (init-csrs))
+  (define csrs (init-csrs xlen))
 
   (define memmgr (make-memmgr symbols globals))
   (define shims (make-hash))
 
   ; Reset vector is where PC will be set upon CPU reset
-  (define reset-vector (bv #x0000000080000000 (XLEN)))
+  (define reset-vector (bv #x0000000080000000 xlen))
 
-  (cpu reset-vector gpr-vals csrs memmgr shims))
+  (cpu reset-vector gpr-vals csrs memmgr shims xlen))
 
 (define (cpu-equal? cpu1 cpu2)
   (&& (bveq (cpu-pc cpu1) (cpu-pc cpu2))
@@ -228,10 +231,10 @@
     [(sip) (bvand sip-mask (csrs-mip (cpu-csrs cpu)))]
     [(satp) (csrs-satp (cpu-csrs cpu))]
 
-    [(marchid) (bv -1 (XLEN))]
-    [(mimpid) (bv 0 (XLEN))]
-    [(mvendorid) (bv 0 (XLEN))]
-    [(mhartid) (bv 1 (XLEN))]
+    [(marchid) (bv -1 (cpu-xlen cpu))]
+    [(mimpid) (bv 0 (cpu-xlen cpu))]
+    [(mvendorid) (bv 0 (cpu-xlen cpu))]
+    [(mhartid) (bv 1 (cpu-xlen cpu))]
     [(mstatus) (csrs-mstatus (cpu-csrs cpu))]
     [(misa) (csrs-misa (cpu-csrs cpu))]
     [(medeleg) (csrs-medeleg (cpu-csrs cpu))]
@@ -348,7 +351,7 @@
     [else (core:bug #:msg (format "gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
 
 (define (gpr-havoc! cpu gpr)
-  (define-symbolic* havoc (bitvector (XLEN)))
+  (define-symbolic* havoc (bitvector (cpu-xlen cpu)))
   (gpr-set! cpu gpr havoc))
 
 (define (havoc-caller-saved! cpu)
@@ -358,7 +361,7 @@
 (define (gpr-ref cpu gpr)
   (define r (cpu-gprs cpu))
   (case gpr
-    [(x0 zero) (bv 0 (XLEN))]
+    [(x0 zero) (bv 0 (cpu-xlen cpu))]
     [(x1 ra) (gprs-x1 r)]
     [(x2 sp) (gprs-x2 r)]
     [(x3 gp) (gprs-x3 r)]
