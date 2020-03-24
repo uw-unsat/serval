@@ -505,15 +505,19 @@
     ; xadd operations
     [(list 'BPF_STX 'BPF_W 'BPF_XADD)
       (define addr (reg-ref cpu dst))
+      (core:memmgr-atomic-begin memmgr)
       (define old (load-bytes cpu addr off 4))
       (define new (bvadd old (extract 31 0 (reg-ref cpu src))))
-      (store-bytes! cpu addr off new 4)]
+      (store-bytes! cpu addr off new 4)
+      (core:memmgr-atomic-end memmgr)]
 
     [(list 'BPF_STX 'BPF_DW 'BPF_XADD)
       (define addr (reg-ref cpu dst))
+      (core:memmgr-atomic-begin memmgr)
       (define old (load-bytes cpu addr off 8))
       (define new (bvadd old (reg-ref cpu src)))
-      (store-bytes! cpu addr off new 8)]
+      (store-bytes! cpu addr off new 8)
+      (core:memmgr-atomic-end memmgr)]
 
     ; endian operations
     [(list 'BPF_ALU 'BPF_END 'BPF_FROM_BE)

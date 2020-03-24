@@ -345,6 +345,7 @@
   (define memmgr (cpu-memmgr cpu))
   (define ptr (insn->ptr cpu insn))
 
+  (memmgr-atomic-begin memmgr)
   (define value (memmgr-load memmgr (ptr-addr ptr) (ptr-off ptr) (ptr-size ptr) #:dbg current-pc-debug))
   (gpr-set! cpu rd (sign-extend value (bitvector (XLEN))))
   (define newvalue
@@ -352,6 +353,7 @@
       (evaluate-binary-op op (sign-extend value (bitvector (XLEN))) (gpr-ref cpu rs2))))
   (memmgr-store! memmgr (ptr-addr ptr) (ptr-off ptr) newvalue (ptr-size ptr)
                   #:dbg current-pc-debug)
+  (memmgr-atomic-end memmgr)
   (cpu-next! cpu size))
 
 ; interpret one instr
