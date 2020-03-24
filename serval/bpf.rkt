@@ -209,7 +209,7 @@
     [(r7) 7]
     [(r8) 8]
     [(r9) 9]
-    [(r10 fp) 0]
+    [(r10 fp) 10]
     [else (core:bug #:msg (format "reg-idx: Unknown reg ~v" reg)
                     #:dbg current-pc-debug)]))
 
