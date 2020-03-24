@@ -200,7 +200,7 @@
           (regs-r4 regs) (regs-r5 regs) (regs-r6 regs) (regs-r7 regs)
           (regs-r8 regs) (regs-r9 regs) (regs-r10 regs) (regs-ax regs)))
 
-(define (reg-idx reg)
+(define (reg->idx reg)
   (case reg
     [(r0) 0]
     [(r1) 1]
@@ -214,7 +214,24 @@
     [(r9) 9]
     [(r10 fp) 10]
     [(ax) 11]
-    [else (core:bug #:msg (format "reg-idx: Unknown reg ~v" reg)
+    [else (core:bug #:msg (format "reg->idx: Unknown reg ~v" reg)
+                    #:dbg current-pc-debug)]))
+
+(define (idx->reg idx)
+  (case idx
+    [(0) 'r0]
+    [(1) 'r1]
+    [(2) 'r2]
+    [(3) 'r3]
+    [(4) 'r4]
+    [(5) 'r5]
+    [(6) 'r6]
+    [(7) 'r7]
+    [(8) 'r8]
+    [(9) 'r9]
+    [(10) 'r10]
+    [(11) 'ax]
+    [else (core:bug #:msg (format "idx->reg: Unknown idx ~v" idx)
                     #:dbg current-pc-debug)]))
 
 (define (make-regs [value #f])
