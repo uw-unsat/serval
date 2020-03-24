@@ -1,5 +1,7 @@
 #lang rosette
 
+(require "../debug.rkt")
+
 (provide (all-defined-out))
 
 (define target-pointer-bitwidth (make-parameter 64))
@@ -13,6 +15,10 @@
   (memmgr-atomic-begin memmgr)
   (memmgr-atomic-end memmgr)
   #:fallbacks [
+    (define (memmgr-alloc! memmgr size alignment proc #:dbg dbg)
+      (bug #:msg (format "memmgr: ~v does not provide an allocator" memmgr) #:dbg dbg))
+    (define (memmgr-memset! memmgr addr value len #:dbg dbg)
+      (bug #:msg (format "memmgr: ~v does not implement memset" memmgr) #:dbg dbg))
     (define (memmgr-atomic-begin memmgr) (void))
     (define (memmgr-atomic-end memmgr) (void))
     (define (memmgr-invariants memmgr) #t)
