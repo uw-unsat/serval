@@ -24,7 +24,7 @@
        (fprintf port "\n  fd~a . ~a" i (vector-ref fdtable i)))
      (fprintf port ")"))])
 
-(struct regs (r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10) #:transparent #:mutable)
+(struct regs (r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 ax) #:transparent #:mutable)
 
 ; register numbers
 
@@ -39,6 +39,9 @@
 (define BPF_REG_8  'r8)
 (define BPF_REG_9  'r9)
 (define BPF_REG_10 'r10)
+(define BPF_REG_AX 'ax) ; Auxiliary register hidden from userspace
+
+(define MAX_BPF_JIT_REG 12)
 
 ; ArgX, context and stack frame pointer register positions. Note,
 ; Arg1, Arg2, Arg3, etc are used as argument mappings of function
@@ -195,7 +198,7 @@
 (define (regs->vector regs)
   (vector (regs-r0 regs) (regs-r1 regs) (regs-r2 regs) (regs-r3 regs)
           (regs-r4 regs) (regs-r5 regs) (regs-r6 regs) (regs-r7 regs)
-          (regs-r8 regs) (regs-r9 regs) (regs-r10 regs)))
+          (regs-r8 regs) (regs-r9 regs) (regs-r10 regs) (regs-ax regs)))
 
 (define (reg-idx reg)
   (case reg
@@ -210,11 +213,12 @@
     [(r8) 8]
     [(r9) 9]
     [(r10 fp) 10]
+    [(ax) 11]
     [else (core:bug #:msg (format "reg-idx: Unknown reg ~v" reg)
                     #:dbg current-pc-debug)]))
 
 (define (make-regs [value #f])
-  (apply regs (make-list 11 value)))
+  (apply regs (make-list MAX_BPF_JIT_REG value)))
 
 (define (init-cpu [ctx #f] [fdtable (vector)] [make-memmgr core:make-flat-memmgr])
   ; initially regs are uninitialized and must be written before read
@@ -244,6 +248,7 @@
     [(r9) (set-regs-r9! regs val)]
     [(r10 fp) (core:bug #:msg "reg-set!: R10/FP is read-only"
                         #:dbg current-pc-debug)]
+    [(ax) (set-regs-ax! regs val)]
     [else (core:bug #:msg (format "reg-set!: Unknown register ~v" reg)
                     #:dbg current-pc-debug)]))
 
@@ -267,6 +272,7 @@
       [(r8) (regs-r8 regs)]
       [(r9) (regs-r9 regs)]
       [(r10 fp) (regs-r10 regs)]
+      [(ax) (regs-ax regs)]
       [else (core:bug #:msg (format "reg-ref: unknown reg ~v" reg)
                       #:dbg current-pc-debug)]))
   (core:bug-on (boolean? val)
