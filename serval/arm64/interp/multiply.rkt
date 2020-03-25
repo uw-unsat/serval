@@ -1,8 +1,7 @@
 #lang rosette
 
 (require
-  "common.rkt"
-  (prefix-in core: "../../lib/core.rkt"))
+  "common.rkt")
 
 (provide
   madd msub)

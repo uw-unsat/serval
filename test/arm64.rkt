@@ -6,7 +6,7 @@
   serval/unicorn
   serval/lib/unittest
   (prefix-in core: serval/lib/core)
-  (prefix-in arm64: "../serval/arm64.rkt"))
+  (prefix-in arm64: serval/arm64))
 
 ; generators
 

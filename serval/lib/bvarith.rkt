@@ -74,6 +74,16 @@
 (define (bvsub1 x)
   (bvsub x (bv 1 (type-of x))))
 
+(define (bvrol x y)
+  (define n (bv (bv-size y) (bv-size y)))
+  (define count (bvurem y n))
+  (bvor (bvshl x count) (bvlshr x (bvsub n count))))
+
+(define (bvror x y)
+  (define n (bv (bv-size y) (bv-size y)))
+  (define count (bvurem y n))
+  (bvor (bvlshr x count) (bvshl x (bvsub n count))))
+
 (define (bool->bitvector x)
   (if x (bv 1 1) (bv 0 1)))
 

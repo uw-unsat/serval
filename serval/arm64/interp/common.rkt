@@ -9,7 +9,8 @@
   (all-defined-out)
   (all-from-out
     "define.rkt"
-    "../base.rkt"))
+    "../base.rkt"
+    "../../lib/core.rkt"))
 
 
 ; common library
@@ -28,13 +29,6 @@
 (define (branch-to cpu target)
   (cpu-pc-set! cpu target)
   #f)
-
-(define (bvror x shift)
-  (define n (let ([N (core:bv-size shift)]) (bv N N)))
-  (if (core:bvzero? shift)
-      x
-      (let ([m (bvurem shift n)])
-        (bvor (bvlshr x m) (bvshl x (bvsub n m))))))
 
 (define (condition-holds cpu cc)
   ; Evaluate base condition.
@@ -154,7 +148,7 @@
     (define welem (bvlshr (ones esize) (bvsub (bv (sub1 esize) esize) (zero-extend S (bitvector esize)))))
     (define telem (bvlshr (ones esize) (bvsub (bv (sub1 esize) esize) (zero-extend d (bitvector esize)))))
 
-    (define wmask (replicate (bvror welem (zero-extend R (bitvector esize))) (quotient M esize)))
+    (define wmask (replicate (core:bvror welem (zero-extend R (bitvector esize))) (quotient M esize)))
     (define tmask (replicate telem (quotient M esize)))
     (list wmask tmask)))
 
@@ -177,4 +171,4 @@
     [(LSL) (bvshl result amount)]
     [(LSR) (bvlshr result amount)]
     [(ASR) (bvashr result amount)]
-    [(ROR) (bvror result amount)]))
+    [(ROR) (core:bvror result amount)]))
