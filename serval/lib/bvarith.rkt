@@ -56,6 +56,9 @@
 (define (bvzero? x)
   (bveq x (bv 0 (type-of x))))
 
+(define (bvaligned? value alignment)
+  (bvzero? (bvurem value alignment)))
+
 (define (bvsmax t)
   (bv (sub1 (arithmetic-shift 1 (sub1 (bitvector-size t)))) t))
 

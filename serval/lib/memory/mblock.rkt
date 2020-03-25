@@ -26,9 +26,6 @@
 (define (bvpointer x)
   (bv x (target-pointer-bitwidth)))
 
-(define (bvaligned? x alignment)
-  (bvzero? (bvurem x (bvpointer alignment))))
-
 (define-generics mblock
   (mblock-size mblock)
   (mblock-init! mblock name [domain])
