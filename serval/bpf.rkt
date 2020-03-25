@@ -136,22 +136,22 @@
 ; Memory load, dst_reg = *(uint *) (src_reg + off16)
 
 (define-syntax-rule (BPF_LDX_MEM SIZE DST SRC OFF)
-  (make-insn '(BPF_LDX SIZE BPF_MEM) DST SRC OFF #f))
+  (make-insn '(BPF_LDX BPF_MEM SIZE) DST SRC OFF #f))
 
 ; Memory store, *(uint *) (dst_reg + off16) = src_reg
 
 (define-syntax-rule (BPF_STX_MEM SIZE DST SRC OFF)
-  (make-insn '(BPF_STX SIZE BPF_MEM) DST SRC OFF #f))
+  (make-insn '(BPF_STX BPF_MEM SIZE) DST SRC OFF #f))
 
 ; Atomic memory add, *(uint *)(dst_reg + off16) += src_reg
 
 (define-syntax-rule (BPF_STX_XADD SIZE DST SRC OFF)
-  (make-insn '(BPF_STX SIZE BPF_XADD) DST SRC OFF #f))
+  (make-insn '(BPF_STX BPF_XADD SIZE) DST SRC OFF #f))
 
 ; Memory store, *(uint *) (dst_reg + off16) = imm32
 
 (define-syntax-rule (BPF_ST_MEM SIZE DST OFF IMM)
-  (make-insn '(BPF_ST SIZE BPF_MEM) DST #f OFF IMM))
+  (make-insn '(BPF_ST BPF_MEM SIZE) DST #f OFF IMM))
 
 ; Conditional jumps against registers, if (dst_reg 'op' src_reg) goto pc + off16
 
@@ -510,23 +510,23 @@
                  (list BPF_REG_1 BPF_REG_2 BPF_REG_3 BPF_REG_4 BPF_REG_5))]
 
     ; load operations
-    [(list 'BPF_LDX size 'BPF_MEM)
+    [(list 'BPF_LDX 'BPF_MEM size)
       (define addr (reg-ref cpu src))
       (define value (load-bytes cpu addr off (bpf-size->integer size)))
       (reg-set! cpu dst (zero-extend value (bitvector 64)))]
 
     ; store operations
-    [(list 'BPF_ST size 'BPF_MEM)
+    [(list 'BPF_ST 'BPF_MEM size)
       (define addr (reg-ref cpu dst))
       (store-bytes! cpu addr off (sign-imm64 imm) (bpf-size->integer size))]
 
-    [(list 'BPF_STX size 'BPF_MEM)
+    [(list 'BPF_STX 'BPF_MEM size)
       (define addr (reg-ref cpu dst))
       (define value (reg-ref cpu src))
       (store-bytes! cpu addr off value (bpf-size->integer size))]
 
     ; xadd operations
-    [(list 'BPF_STX 'BPF_W 'BPF_XADD)
+    [(list 'BPF_STX 'BPF_XADD 'BPF_W)
       (define addr (reg-ref cpu dst))
       (core:memmgr-atomic-begin memmgr)
       (define old (load-bytes cpu addr off 4))
@@ -534,7 +534,7 @@
       (store-bytes! cpu addr off new 4)
       (core:memmgr-atomic-end memmgr)]
 
-    [(list 'BPF_STX 'BPF_DW 'BPF_XADD)
+    [(list 'BPF_STX 'BPF_XADD 'BPF_DW)
       (define addr (reg-ref cpu dst))
       (core:memmgr-atomic-begin memmgr)
       (define old (load-bytes cpu addr off 8))
