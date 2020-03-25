@@ -126,7 +126,7 @@
   (BPF_LD_IMM64_RAW DST #f IMM))
 
 (define (BPF_LD_IMM64_RAW DST SRC IMM)
-  (list (make-insn '(BPF_LD BPF_DW BPF_IMM) DST SRC #f (bitwise-and IMM #xffffffff))
+  (list (make-insn '(BPF_LD BPF_IMM BPF_DW) DST SRC #f (bitwise-and IMM #xffffffff))
         (make-insn #f #f #f #f (arithmetic-shift IMM -32))))
 
 ; pseudo BPF_LD_IMM64 insn used to refer to process-local map_fd
@@ -410,7 +410,7 @@
 ; to the next instruction in the program. It is 1 for all instructions except ld64, which is unique.
 (define (insn-size insn)
   (case (insn-code insn)
-    [((BPF_LD BPF_DW BPF_IMM)) (bv 2 64)]
+    [((BPF_LD BPF_IMM BPF_DW)) (bv 2 64)]
     [else (bv 1 64)]))
 
 ; Interpret an instruction.
@@ -425,10 +425,10 @@
 
   (match code
     ; 64-bit immediate load
-    [(list 'BPF_LD 'BPF_DW 'BPF_IMM)
+    [(list 'BPF_LD 'BPF_IMM 'BPF_DW)
       ; Use this instruction for imm[31:0], next instruction for imm[63:32]
       (core:bug-on (! (insn? next-insn))
-                   #:msg "interpret-insn: must pass next instruction for BPF_LD BPF_DW BPF_IMM"
+                   #:msg "interpret-insn: must pass next instruction for BPF_LD BPF_IMM BPF_DW"
                    #:dbg current-pc-debug)
       (define lower imm)
       (define upper (insn-imm next-insn))
@@ -607,7 +607,7 @@
               (extract 31 0 (reg-ref cpu BPF_REG_0))]
 
             ; ld64
-            [((BPF_LD BPF_DW BPF_IMM))
+            [((BPF_LD BPF_IMM BPF_DW))
               ; Fetch next instruction.
               (define pc2 (core:bvadd1 pc))
               (core:bug-on (! (hash-has-key? instructions pc2))
