@@ -370,6 +370,8 @@
 
 (define (store-bytes! cpu addr off data sizen)
   (define memmgr (cpu-memmgr cpu))
+  ; Truncate addr to underlying memory model bitwidth.
+  (set! addr (extract (- (core:memmgr-bitwidth memmgr) 1) 0 addr))
   (set! data (extract (- (* 8 sizen) 1) 0 data))
   (set! off (sign-extend off (type-of addr)))
   (core:memmgr-store! memmgr addr off data (bv sizen 64)
@@ -377,6 +379,8 @@
 
 (define (load-bytes cpu addr off sizen)
   (define memmgr (cpu-memmgr cpu))
+  ; Truncate addr to underlying memory model bitwidth.
+  (set! addr (extract (- (core:memmgr-bitwidth memmgr) 1) 0 addr))
   (set! off (sign-extend off (type-of addr)))
   (define value (core:memmgr-load memmgr addr off (bv sizen 64)
                 #:dbg current-pc-debug))
