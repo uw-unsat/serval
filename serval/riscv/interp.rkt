@@ -40,7 +40,9 @@
       [else (core:bug #:msg (format "insn->ptr: bad insn type ~v" insn) #:dbg current-pc-debug)]))
 
   ; (ptr addr off size)
-  (ptr (gpr-ref cpu reg) (sign-extend off (bitvector (cpu-xlen cpu))) (core:bvpointer (memop->size type))))
+  (ptr (gpr-ref cpu reg)
+       (sign-extend off (bitvector (cpu-xlen cpu)))
+       (integer->bitvector (memop->size type) (bitvector (cpu-xlen cpu)))))
 
 ; conditionals
 
