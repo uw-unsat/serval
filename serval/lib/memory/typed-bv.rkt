@@ -57,6 +57,7 @@
    (define memmgr-load typed-bv-memmgr-load)
    (define memmgr-store! typed-bv-memmgr-store!)
    (define memmgr-memset! typed-bv-memmgr-memset!)
+   (define (memmgr-bitwidth b) (target-pointer-bitwidth))
    (define memmgr-invariants (lambda (mm) #t))])
 
 (provide

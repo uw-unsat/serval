@@ -7,9 +7,6 @@
 
 (require "manager.rkt" "../bvarith.rkt" "../uf.rkt" "../debug.rkt")
 
-(define (flat-memmgr-alloc! memmgr size alignment proc #:dbg dbg)
-  (bug #:dbg dbg #:msg "flat memory manager: no allocator!"))
-
 (define (check-addr-off addr off #:dbg dbg)
   (bug-on (! (equal? (bv-size (bvadd addr off)) (target-pointer-bitwidth)))
           #:msg "flat memory model: addr size wrong"
@@ -34,18 +31,17 @@
 
   (apply concat (reverse Bytes)))
 
-(define (flat-memmgr-memset! memmgr addr value len #:dbg dbg)
-  (bug #:dbg dbg #:msg "flat memset not implemented yet"))
+(define (make-flat-memmgr #:bitwidth [bitwidth #f])
+  (when (equal? bitwidth #f)
+    (set! bitwidth (target-pointer-bitwidth)))
 
-(define (make-flat-memmgr)
   (define-symbolic* memory (~> (bitvector (target-pointer-bitwidth))
                                (bitvector 8)))
-  (flat-memmgr memory))
+  (flat-memmgr memory bitwidth))
 
-(struct flat-memmgr (memory) #:transparent #:mutable
+(struct flat-memmgr (memory bitwidth) #:transparent #:mutable
   #:methods gen:memmgr
-  [(define memmgr-alloc! flat-memmgr-alloc!)
-   (define memmgr-load flat-memmgr-load)
+  [(define memmgr-load flat-memmgr-load)
    (define memmgr-store! flat-memmgr-store!)
-   (define memmgr-memset! flat-memmgr-memset!)
+   (define (memmgr-bitwidth m) (flat-memmgr-bitwidth m))
    (define memmgr-invariants (lambda (mm) #t))])
