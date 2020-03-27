@@ -62,6 +62,9 @@
 
   result)
 
+(define (extend x N unsigned)
+  ((if unsigned zero-extend sign-extend) x (bitvector N)))
+
 (define (highest-set-bit x)
   (define lst (reverse (range (core:bv-size x))))
   ; if bit i is set, return i (otherwise #f)
@@ -155,6 +158,46 @@
   ; As values is not lifted by Rosette, use list inside for/all and
   ; values after merging.
   (apply values lst))
+
+
+(define (decode-reg-extend op)
+  (cond
+    [(bveq op (bv #b000 3)) 'UXTB]
+    [(bveq op (bv #b001 3)) 'UXTH]
+    [(bveq op (bv #b010 3)) 'UXTW]
+    [(bveq op (bv #b011 3)) 'UXTX]
+    [(bveq op (bv #b100 3)) 'SXTB]
+    [(bveq op (bv #b101 3)) 'SXTH]
+    [(bveq op (bv #b110 3)) 'SXTW]
+    [(bveq op (bv #b111 3)) 'SXTX]))
+
+(define (extend-reg N cpu reg exttype shift)
+  (assert (&& (>= shift 0) (<= shift 4)))
+  (define val (trunc N (cpu-gpr-ref cpu reg)))
+  (define-values (unsigned len)
+    (case exttype
+      [(SXTB) (values #f 8)]
+      [(SXTH) (values #f 16)]
+      [(SXTW) (values #f 32)]
+      [(SXTX) (values #f 64)]
+      [(UXTB) (values #t 8)]
+      [(UXTH) (values #t 16)]
+      [(UXTW) (values #t 32)]
+      [(UXTX) (values #t 64)]))
+
+  ; Note the extended width of the intermediate value and
+  ; that sign extension occurs from bit <len+shift-1>, not
+  ; from bit <len-1>. This is equivalent to the instruction
+  ;   [SU]BFIZ Rtmp, Rreg, #shift, #len
+  ; It may also be seen as a sign/zero extend followed by a shift:
+  ;   LSL(Extend(val<len-1:0>, N, unsigned), shift);
+
+  (set! len (min len (- N shift)))
+  (set! val (trunc len val))
+  (unless (zero? shift)
+    (set! val (concat val (zeros shift))))
+  (extend val N unsigned))
+
 
 (define (decode-shift op)
   (cond

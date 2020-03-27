@@ -31,7 +31,7 @@
   (bv n 5))
 
 ; ignore v0-v31, fpcr, fpsr, daif
-(struct cpu (pc sp xn nzcv) #:mutable #:transparent)
+(struct cpu (pc sp xn nzcv memmgr) #:mutable #:transparent)
 
 (define cpu-pc-ref cpu-pc)
 (define cpu-pc-set! set-cpu-pc!)
@@ -71,11 +71,11 @@
 (define (cpu-pstate.c cpu) (nzcv-c (cpu-nzcv-ref cpu)))
 (define (cpu-pstate.v cpu) (nzcv-v (cpu-nzcv-ref cpu)))
 
-(define (init-cpu)
+(define (init-cpu memmgr)
   (define-symbolic* pc sp (bitvector 64))
   (define-symbolic* xn (bitvector 64) [31])
   (define-symbolic* n z c v (bitvector 1))
-  (cpu pc sp (list->vector xn) (nzcv n z c v)))
+  (cpu pc sp (list->vector xn) (nzcv n z c v) memmgr))
 
 (define-generics instruction
   (instruction-encode instruction)

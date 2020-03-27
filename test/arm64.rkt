@@ -74,13 +74,13 @@
     (for/vector ([i (range 31)])
       (bv (uc-reg-read uc (integer->xn i)) 64)))
   (define nzcv (bv (uc-reg-read uc 'nzcv) 32))
-  (arm64:cpu pc sp xn (arm64:bitvector->nzcv nzcv)))
+  (arm64:cpu pc sp xn (arm64:bitvector->nzcv nzcv) #f))
 
 (define (check-insn #:fixup [fixup void] ctor generators)
   (define args (map arbitrary generators))
   (define insn (apply ctor args))
 
-  (define cpu (arbitrary (arm64:init-cpu)))
+  (define cpu (arbitrary (arm64:init-cpu #f)))
   (fixup insn cpu)
 
   (with-check-info [('insn insn)]
