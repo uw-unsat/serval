@@ -10,6 +10,7 @@
 (require
   "interp/arithmetic-immediate.rkt"
   "interp/arithmetic-shifted-register.rkt"
+  "interp/atomic.rkt"
   "interp/bit-operation.rkt"
   "interp/bitfield-move.rkt"
   "interp/conditional-branch.rkt"
@@ -25,6 +26,7 @@
 (provide (all-from-out
   "interp/arithmetic-immediate.rkt"
   "interp/arithmetic-shifted-register.rkt"
+  "interp/atomic.rkt"
   "interp/bit-operation.rkt"
   "interp/bitfield-move.rkt"
   "interp/conditional-branch.rkt"

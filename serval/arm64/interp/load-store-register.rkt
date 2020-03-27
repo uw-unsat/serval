@@ -35,7 +35,9 @@
 
   (define address
     (if (bveq n (integer->gpr 31))
-        (cpu-sp-ref cpu)
+        (begin
+          (check-sp-alignment cpu)
+          (cpu-sp-ref cpu))
         (cpu-gpr-ref cpu n)))
 
   (define data (core:memmgr-load (cpu-memmgr cpu) address offset (bv (quotient datasize 8) 64) #:dbg (cpu-pc-ref cpu)))
@@ -60,7 +62,9 @@
 
   (define address
     (if (bveq n (integer->gpr 31))
-        (cpu-sp-ref cpu)
+        (begin
+          (check-sp-alignment cpu)
+          (cpu-sp-ref cpu))
         (cpu-gpr-ref cpu n)))
 
   (define data (trunc datasize (cpu-gpr-ref cpu t)))

@@ -100,7 +100,85 @@
   (bv 0 n))
 
 
-; arm64 library
+; aarch64/functions/memory/
+
+(define (check-sp-alignment cpu)
+  ; Skip for now
+  (void))
+
+(define (mem-atomic cpu address op value ldacctype stacctype)
+  (define offset (bv 0 64))
+  (define size (core:bv-size value))
+  (define mm (cpu-memmgr cpu))
+
+  ; Ignore ldacctype and stacctype for now
+  (core:memmgr-atomic-begin mm)
+
+  (define oldvalue
+    (core:memmgr-load mm address offset (bv (quotient size 8) 64) #:dbg (cpu-pc-ref cpu)))
+
+  (define newvalue
+    (case op
+      [(ADD) (bvadd oldvalue value)]
+      [(BIC) (bvand oldvalue (bvnot value))]
+      [(EOR) (bvxor oldvalue value)]
+      [(ORR) (bvor oldvalue value)]
+      [(SMAX) (if (bvsgt oldvalue value) oldvalue value)]
+      [(SMIN) (if (bvsgt oldvalue value) value oldvalue)]
+      [(UMAX) (if (bvugt oldvalue value) oldvalue value)]
+      [(SMIN) (if (bvsgt oldvalue value) value oldvalue)]
+      [(SWP)  value]))
+
+  (core:memmgr-store! mm address offset newvalue (bv (quotient size 8) 64) #:dbg (cpu-pc-ref cpu))
+
+  (core:memmgr-atomic-end mm)
+
+  ; Load operations return the old (pre-operation) value
+  oldvalue)
+
+
+; aarch64/instrs/extendreg/
+
+(define (decode-reg-extend op)
+  (cond
+    [(bveq op (bv #b000 3)) 'UXTB]
+    [(bveq op (bv #b001 3)) 'UXTH]
+    [(bveq op (bv #b010 3)) 'UXTW]
+    [(bveq op (bv #b011 3)) 'UXTX]
+    [(bveq op (bv #b100 3)) 'SXTB]
+    [(bveq op (bv #b101 3)) 'SXTH]
+    [(bveq op (bv #b110 3)) 'SXTW]
+    [(bveq op (bv #b111 3)) 'SXTX]))
+
+(define (extend-reg N cpu reg exttype shift)
+  (assert (&& (>= shift 0) (<= shift 4)))
+  (define val (trunc N (cpu-gpr-ref cpu reg)))
+  (define-values (unsigned len)
+    (case exttype
+      [(SXTB) (values #f 8)]
+      [(SXTH) (values #f 16)]
+      [(SXTW) (values #f 32)]
+      [(SXTX) (values #f 64)]
+      [(UXTB) (values #t 8)]
+      [(UXTH) (values #t 16)]
+      [(UXTW) (values #t 32)]
+      [(UXTX) (values #t 64)]))
+
+  ; Note the extended width of the intermediate value and
+  ; that sign extension occurs from bit <len+shift-1>, not
+  ; from bit <len-1>. This is equivalent to the instruction
+  ;   [SU]BFIZ Rtmp, Rreg, #shift, #len
+  ; It may also be seen as a sign/zero extend followed by a shift:
+  ;   LSL(Extend(val<len-1:0>, N, unsigned), shift);
+
+  (set! len (min len (- N shift)))
+  (set! val (trunc len val))
+  (unless (zero? shift)
+    (set! val (concat val (zeros shift))))
+  (extend val N unsigned))
+
+
+; aarch64/instrs/integer/bitmasks/
 
 ; immN: (bitvector 1)
 ; immr, immr: (bitvector 6)
@@ -160,44 +238,7 @@
   (apply values lst))
 
 
-(define (decode-reg-extend op)
-  (cond
-    [(bveq op (bv #b000 3)) 'UXTB]
-    [(bveq op (bv #b001 3)) 'UXTH]
-    [(bveq op (bv #b010 3)) 'UXTW]
-    [(bveq op (bv #b011 3)) 'UXTX]
-    [(bveq op (bv #b100 3)) 'SXTB]
-    [(bveq op (bv #b101 3)) 'SXTH]
-    [(bveq op (bv #b110 3)) 'SXTW]
-    [(bveq op (bv #b111 3)) 'SXTX]))
-
-(define (extend-reg N cpu reg exttype shift)
-  (assert (&& (>= shift 0) (<= shift 4)))
-  (define val (trunc N (cpu-gpr-ref cpu reg)))
-  (define-values (unsigned len)
-    (case exttype
-      [(SXTB) (values #f 8)]
-      [(SXTH) (values #f 16)]
-      [(SXTW) (values #f 32)]
-      [(SXTX) (values #f 64)]
-      [(UXTB) (values #t 8)]
-      [(UXTH) (values #t 16)]
-      [(UXTW) (values #t 32)]
-      [(UXTX) (values #t 64)]))
-
-  ; Note the extended width of the intermediate value and
-  ; that sign extension occurs from bit <len+shift-1>, not
-  ; from bit <len-1>. This is equivalent to the instruction
-  ;   [SU]BFIZ Rtmp, Rreg, #shift, #len
-  ; It may also be seen as a sign/zero extend followed by a shift:
-  ;   LSL(Extend(val<len-1:0>, N, unsigned), shift);
-
-  (set! len (min len (- N shift)))
-  (set! val (trunc len val))
-  (unless (zero? shift)
-    (set! val (concat val (zeros shift))))
-  (extend val N unsigned))
-
+; aarch64/instrs/integer/shiftreg/
 
 (define (decode-shift op)
   (cond

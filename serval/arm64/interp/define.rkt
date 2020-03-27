@@ -64,5 +64,6 @@
 (define-guard Rd (bitvector 5))
 (define-guard Rm (bitvector 5))
 (define-guard Rn (bitvector 5))
+(define-guard Rs (bitvector 5))
 (define-guard Rt (bitvector 5))
 (define-guard S (bitvector 1))
