@@ -12,7 +12,37 @@
 
 (struct insn (code dst src off imm) #:transparent)
 
-(struct cpu (pc regs fdtable memmgr) #:mutable #:transparent
+; Callmgr decides how to handle BPF_CALL / BPF_TAIL_CALL insns
+(define-generics callmgr
+  (callmgr-handle-call callmgr bpf-cpu bpf-insn))
+
+(define (fd->map cpu fd)
+  (vector-ref (cpu-fdtable cpu) (bitvector->natural fd)))
+
+(define (evaluate-call-map_lookup_elem cpu)
+  (define fd (reg-ref cpu BPF_REG_ARG1))
+  (define keyp (reg-ref cpu BPF_REG_ARG2))
+  (bpf-map-lookup (fd->map cpu fd) keyp))
+
+(define bpf-calls (vector #f
+  evaluate-call-map_lookup_elem))
+
+; Default callmgr dispatches to a vector of (Racket) functions using immediate in instruction.
+(struct default-callmgr (calltable) #:transparent
+  #:methods gen:callmgr
+  [(define (callmgr-handle-call callmgr cpu insn)
+    (define code (insn-code insn))
+    (core:bug-on (equal? code '(BPF_JMP BPF_TAIL_CALL)) #:msg "default-callmgr: no tail calls")
+    (define imm (insn-imm insn))
+    (define f (vector-ref (default-callmgr-calltable callmgr) (bitvector->natural imm)))
+    (reg-set! cpu BPF_REG_0 (f cpu))
+    (for-each (lambda (r) (reg-havoc! cpu r))
+              (list BPF_REG_1 BPF_REG_2 BPF_REG_3 BPF_REG_4 BPF_REG_5)))])
+
+(define (make-default-callmgr [calltable bpf-calls])
+  (default-callmgr calltable))
+
+(struct cpu (pc regs fdtable memmgr callmgr) #:mutable #:transparent
   #:methods gen:custom-write
   [(define (write-proc cpu port mode)
      (define regs (cpu-regs cpu))
@@ -237,7 +267,7 @@
 (define (make-regs [value #f])
   (apply regs (make-list MAX_BPF_JIT_REG value)))
 
-(define (init-cpu [ctx #f] [fdtable (vector)] [make-memmgr core:make-flat-memmgr])
+(define (init-cpu [ctx #f] [fdtable (vector)] [make-memmgr core:make-flat-memmgr] [make-callmgr make-default-callmgr])
   ; initially regs are uninitialized and must be written before read
   (define regs (make-regs))
   ; R1 points to context
@@ -245,7 +275,7 @@
   ; R10 points to the stack, which is uninitialized
   (define-symbolic* stack (bitvector 64))
   (set-regs-r10! regs stack)
-  (cpu (bv 0 64) regs fdtable (make-memmgr)))
+  (cpu (bv 0 64) regs fdtable (make-memmgr) (make-callmgr)))
 
 (define (reg-set! cpu reg val)
   (core:bug-on (! (bv? val))
@@ -344,17 +374,6 @@
     [else (core:bug #:dbg current-pc-debug
                     #:msg (format "no such comparison op: ~e\n" op))]))
 
-(define (fd->map cpu fd)
-  (vector-ref (cpu-fdtable cpu) (bitvector->natural fd)))
-
-(define (evaluate-call-map_lookup_elem cpu)
-  (define fd (reg-ref cpu BPF_REG_ARG1))
-  (define keyp (reg-ref cpu BPF_REG_ARG2))
-  (bpf-map-lookup (fd->map cpu fd) keyp))
-
-(define bpf-calls (vector #f
-  evaluate-call-map_lookup_elem))
-
 (define (bpf-size->integer size)
   (case size
     [(BPF_B) 1]
@@ -426,6 +445,7 @@
   (define imm (insn-imm insn))
   (define size (insn-size insn))
   (define memmgr (cpu-memmgr cpu))
+  (define callmgr (cpu-callmgr cpu))
 
   (match code
     ; 64-bit immediate load
@@ -505,13 +525,9 @@
      (when (evaluate-cond op (extract 31 0 (reg-ref cpu dst)) (extract 31 0 (reg-ref cpu src)))
        (cpu-next! cpu (sign-imm64 off)))]
 
-    ; call
-    [(list 'BPF_JMP 'BPF_CALL)
-     (let ([f (vector-ref bpf-calls (bitvector->natural imm))])
-       (reg-set! cpu BPF_REG_0 (f cpu)))
-       ; scratch R1-R5
-       (for-each (lambda (r) (reg-havoc! cpu r))
-                 (list BPF_REG_1 BPF_REG_2 BPF_REG_3 BPF_REG_4 BPF_REG_5))]
+    ; call / tail call
+    [(list 'BPF_JMP (or 'BPF_CALL 'BPF_TAIL_CALL))
+      ((callmgr-handle-call callmgr) cpu insn)]
 
     ; load operations
     [(list 'BPF_LDX 'BPF_MEM size)
