@@ -50,12 +50,12 @@ RUN git clone 'https://github.com/emina/rosette.git' && \
     cd rosette && \
     raco pkg install --auto -i --no-setup && raco setup -Dl rosette
 
-# Install Boolector version v3.2.0
+# Install Boolector version v3.2.1
 RUN git clone 'https://github.com/boolector/boolector.git' && \
-    cd boolector && git checkout '365eaab616562eedb1680ebbf8784cf8ecb25d1a' && \
+    cd boolector && git checkout '3.2.1' && \
     ./contrib/setup-lingeling.sh && \
     ./contrib/setup-btor2tools.sh && \
-    ./configure.sh --prefix /opt/boolector/3.2.0 && cd build && make -j4 && make install && \
+    ./configure.sh --prefix /opt/boolector/3.2.1 && cd build && make -j4 && make install && \
     cd /code && rm -rfv ./boolector
 
 # Install Z3 v4.8.7
