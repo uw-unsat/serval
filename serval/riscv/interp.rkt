@@ -1,12 +1,14 @@
 #lang rosette
 
-(require
-  (prefix-in core: "../lib/core.rkt")
-  "../lib/memmgr.rkt"
-  (only-in racket/base hash-has-key? hash-ref)
-  "base.rkt")
+(require (prefix-in core: "../lib/core.rkt")
+         (only-in racket/base hash-has-key? hash-ref)
+         "../lib/memmgr.rkt"
+         "base.rkt"
+         "symopt.rkt")
 
-(provide (all-defined-out) (all-from-out "base.rkt"))
+(provide (all-defined-out)
+         (all-from-out "base.rkt")
+         (all-from-out "symopt.rkt"))
 
 (struct program (base instructions) #:transparent)
 
