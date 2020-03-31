@@ -531,7 +531,7 @@
 
     ; call / tail call
     [(list 'BPF_JMP (or 'BPF_CALL 'BPF_TAIL_CALL))
-      ((callmgr-handle-call callmgr) cpu insn)]
+      (callmgr-handle-call callmgr cpu insn)]
 
     ; load operations
     [(list 'BPF_LDX 'BPF_MEM size)
