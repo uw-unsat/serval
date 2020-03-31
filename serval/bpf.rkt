@@ -267,7 +267,11 @@
 (define (make-regs [value #f])
   (apply regs (make-list MAX_BPF_JIT_REG value)))
 
-(define (init-cpu [ctx #f] [fdtable (vector)] [make-memmgr core:make-flat-memmgr] [make-callmgr make-default-callmgr])
+(define (init-cpu [ctx #f]
+                  [fdtable (vector)]
+                  #:make-memmgr [make-memmgr core:make-flat-memmgr]
+                  #:make-callmgr [make-callmgr make-default-callmgr])
+
   ; initially regs are uninitialized and must be written before read
   (define regs (make-regs))
   ; R1 points to context
