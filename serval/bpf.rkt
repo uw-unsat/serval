@@ -306,7 +306,8 @@
   (core:bug-on (equal? reg BPF_REG_10)
                #:msg (format "reg-havoc!: R10 is read-only")
                #:dbg current-pc-debug)
-  (reg-set! cpu reg #f))
+  (define-symbolic* havoc (bitvector 64))
+  (reg-set! cpu reg havoc))
 
 (define (@reg-ref regs reg)
   (define val
