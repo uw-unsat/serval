@@ -281,11 +281,7 @@
   (set-regs-r10! regs stack)
   (cpu (bv 0 64) regs fdtable (make-memmgr) (make-callmgr)))
 
-(define (reg-set! cpu reg val)
-  (core:bug-on (! (bv? val))
-               #:msg (format "reg-set!: not a bitvector ~e" val)
-               #:dbg current-pc-debug)
-  (define regs (cpu-regs cpu))
+(define (@reg-set! regs reg val)
   (case reg
     [(r0) (set-regs-r0! regs val)]
     [(r1) (set-regs-r1! regs val)]
@@ -302,6 +298,9 @@
     [(ax) (set-regs-ax! regs val)]
     [else (core:bug #:msg (format "reg-set!: Unknown register ~v" reg)
                     #:dbg current-pc-debug)]))
+
+(define (reg-set! cpu reg val)
+  (@reg-set! (cpu-regs cpu) reg val))
 
 (define (reg-havoc! cpu reg)
   (core:bug-on (equal? reg BPF_REG_10)
@@ -326,9 +325,6 @@
       [(ax) (regs-ax regs)]
       [else (core:bug #:msg (format "reg-ref: unknown reg ~v" reg)
                       #:dbg current-pc-debug)]))
-  (core:bug-on (boolean? val)
-               #:dbg current-pc-debug
-               #:msg (format "reg-ref: uninitialized register: ~e" reg))
   val)
 
 (define (reg-ref cpu reg)
