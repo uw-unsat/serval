@@ -64,7 +64,7 @@
     (cond
       [path (boolector #:path path #:logic (if logic logic (solver-logic)) #:options options)]
       [(boolector-available?) (boolector #:logic (if logic logic (solver-logic)) #:options options)]
-      [required (error "No Boolector found and Boolector en not set!")]
+      [required (error "boolector not in PATH and BOOLECTOR environment variable not set!")]
       [else #f])))
 
 (define (get-prefer-boolector)
