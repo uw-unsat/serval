@@ -93,7 +93,7 @@
 
 (define (get-prefer-boolector)
   (let ([boolector (get-boolector #:required #f)])
-    (if boolector boolector (begin (printf "Could not find boolector, falling back to Z3\n")
+    (if boolector boolector (begin (printf "Could not find boolector, falling back to the default solver\n")
                                    (get-default-solver)))))
 
 ; Set the global default solver. If test cases don't specify any other solver,
