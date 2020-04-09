@@ -55,7 +55,7 @@ SERVAL_LLVM             := racket $(SERVAL_DIR)/serval/bin/serval-llvm.rkt
 RACKET_TEST_C_SRCS      := $(wildcard *.c)
 RACKET_TEST_S_SRCS      := $(wildcard *.S)
 
-all: check-racket check-bpf check-riscv-tests
+all: check-racket check-arm32 check-bpf check-riscv-tests
 
 %.ll.rkt: %.ll
 	$(QUIET_GEN)$(SERVAL_LLVM) < $< > $@~
@@ -150,6 +150,9 @@ check-racket: $(wildcard *.rkt)
 	$(RACO_TEST) $^
 
 check-racket-%: %.rkt
+	$(RACO_TEST) $^
+
+check-arm32: $(wildcard arm32/*.rkt)
 	$(RACO_TEST) $^
 
 include bpf/bpf.mk

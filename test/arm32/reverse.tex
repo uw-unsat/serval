@@ -1,0 +1,14 @@
+#lang racket/base
+
+(require
+  "lib.rkt")
+
+(define tests
+  (test-suite+ "Reverse Bit/Byte"
+    (arm32-case* [choose-reg/no-r15 choose-reg/no-r15]
+      rev
+      rev16)
+))
+
+(module+ test
+  (time (run-tests tests)))
