@@ -8,6 +8,11 @@
   (prefix-in core: serval/lib/core)
   (prefix-in arm64: serval/arm64))
 
+(provide
+  (all-defined-out)
+  (all-from-out
+    serval/lib/unittest))
+
 ; generators
 
 (define choose-cond
@@ -134,89 +139,3 @@
     [(_ [generators ...] op ...)
      (syntax/loc stx
        (begin (arm64-case [generators ...] op) ...))]))
-
-(define arm64-tests
-  (test-suite+ "Tests for arm64 instructions"
-    ; Conditional branch
-     (arm64-case* [choose-imm19 choose-cond]
-      b.cond)
-    ; Unconditional branch (immediate)
-     (arm64-case* [choose-imm26]
-      b
-      bl)
-    ; Arithmetic (immediate)
-    (arm64-case* [choose-sf choose-sh choose-imm12 choose-reg choose-reg]
-      add-immediate
-      adds-immediate
-      sub-immediate
-      subs-immediate)
-    ; Logical (immediate)
-    (arm64-case* [choose-sf choose-sf choose-imm6 choose-imm6 choose-reg choose-reg]
-      and-immediate
-      ands-immediate
-      eor-immediate
-      orr-immediate)
-    ; Move (wide immediate)
-    (arm64-case* [choose-sf choose-hw choose-imm16 choose-reg]
-      movn
-      movz
-      movk)
-    ; Bitfield move
-    (arm64-case* [choose-sf choose-imm6 choose-imm6 choose-reg choose-reg]
-      sbfm
-      bfm
-      ubfm)
-    ; Shift (immediate), aliases of sbfm/ubfm
-    (arm64-case* [choose-sf choose-imm6 choose-reg choose-reg]
-      ; no ror yet
-      asr
-      lsl
-      lsr)
-    ; Sign-extend and Zero-extend, aliaes of sbfm/ubfm
-    (arm64-case* [choose-sf choose-reg choose-reg]
-      sxtb
-      sxth)
-    (arm64-case* [choose-reg choose-reg]
-      sxtw
-      uxtb
-      uxth)
-    ; Arithemtic (shifted register)
-    (arm64-case* [choose-sf choose-shift choose-reg choose-imm6 choose-reg choose-reg]
-      add-shifted-register
-      adds-shifted-register
-      sub-shifted-register
-      subs-shifted-register)
-    ; Multiply
-    (arm64-case* [choose-sf choose-reg choose-reg choose-reg choose-reg]
-      madd
-      msub)
-    ; Divide
-    (arm64-case* [choose-sf choose-reg choose-reg choose-reg]
-      udiv
-      sdiv)
-    ; Logical (shifted register)
-    (arm64-case* [choose-sf choose-shift choose-reg choose-imm6 choose-reg choose-reg]
-      and-shifted-register
-      bic-shifted-register
-      orr-shifted-register
-      orn-shifted-register
-      eor-shifted-register
-      eon-shifted-register
-      ands-shifted-register
-      bics-shifted-register)
-    ; Shift (register)
-    (arm64-case* [choose-sf choose-reg choose-reg choose-reg]
-      lslv
-      lsrv
-      asrv
-      rorv)
-    ; Bit operation
-    (arm64-case* [choose-sf choose-reg choose-reg]
-      rev
-      rev16)
-    (arm64-case* [choose-reg choose-reg]
-      rev32)
-))
-
-(module+ test
-  (time (run-tests arm64-tests)))
