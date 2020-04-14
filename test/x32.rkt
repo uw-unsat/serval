@@ -104,7 +104,7 @@
 (define (fixup-div-r32 insn cpu)
   (x32:gpr-set! cpu 'edx (bv 0 32))
   (match-let ([(div-r32 src) insn])
-    (when (core:bvzero? (x32:gpr-ref cpu src))
+    (when (bvzero? (x32:gpr-ref cpu src))
       (x32:gpr-set! cpu src (bv 1 32)))))
 
 (define (fixup-sbb cpu dst v2)

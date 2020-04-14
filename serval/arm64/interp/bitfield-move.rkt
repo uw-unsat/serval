@@ -41,7 +41,7 @@
   (define src (trunc datasize (cpu-gpr-ref cpu n)))
 
   ; perform bitfield move on low bits
-  (define bot (bvand (core:bvror src R) wmask))
+  (define bot (bvand (bvror src R) wmask))
 
   ; determine extension bits (sign, zero or dest register)
   (define top (replicate (bv-bit S src) datasize))
@@ -58,7 +58,7 @@
 
   ; perform bitfield move on low bits
   (define bot (bvor (bvand dst (bvnot wmask))
-                    (bvand (core:bvror src R) wmask)))
+                    (bvand (bvror src R) wmask)))
 
   ; combine extension bits and result bits
   (cpu-gpr-set! cpu d (bvor (bvand dst (bvnot tmask))
@@ -70,7 +70,7 @@
   (define src (trunc datasize (cpu-gpr-ref cpu n)))
 
   ; perform bitfield move on low bits
-  (define bot (bvand (core:bvror src R) wmask))
+  (define bot (bvand (bvror src R) wmask))
 
   ; combine extension bits and result bits
   (cpu-gpr-set! cpu d (bvand bot tmask)))

@@ -95,7 +95,7 @@
   (define type (overflow-data-type data))
   (define-evaluate (msg lhs rhs)
     (cond
-      [(core:bvzero? rhs)
+      [(bvzero? rhs)
        "division by zero"]
       [else
        (format "division of ~a by -1 cannot be represented in type ~a"

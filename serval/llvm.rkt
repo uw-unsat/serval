@@ -142,12 +142,12 @@
       (if (car mergepoint)
         (begin
           (set-machine-merge-stack! (current-machine) (cons (cdr mergepoint) stack))
-          (if (core:bitvector->bool test)
+          (if (bitvector->bool test)
             (enter! succ-true)
             (enter! succ-false))
           ((car mergepoint)))
         (begin
-          (enter! (if (core:bitvector->bool test) succ-true succ-false))))]))
+          (enter! (if (bitvector->bool test) succ-true succ-false))))]))
 
 ; undef
 
@@ -164,37 +164,37 @@
 ; comparisons
 
 (define (icmp/eq x y)
-  (core:bool->bitvector (equal? x y)))
+  (bool->bitvector (equal? x y)))
 
 (define (icmp/ne x y)
-  (core:bool->bitvector (not (equal? x y))))
+  (bool->bitvector (not (equal? x y))))
 
 (define (icmp/ugt x y)
-  (core:bool->bitvector (bvugt x y)))
+  (bool->bitvector (bvugt x y)))
 
 (define (icmp/uge x y)
-  (core:bool->bitvector (bvuge x y)))
+  (bool->bitvector (bvuge x y)))
 
 (define (icmp/ult x y)
-  (core:bool->bitvector (bvult x y)))
+  (bool->bitvector (bvult x y)))
 
 (define (icmp/ule x y)
-  (core:bool->bitvector (bvule x y)))
+  (bool->bitvector (bvule x y)))
 
 (define (icmp/sgt x y)
-  (core:bool->bitvector (bvsgt x y)))
+  (bool->bitvector (bvsgt x y)))
 
 (define (icmp/sge x y)
-  (core:bool->bitvector (bvsge x y)))
+  (bool->bitvector (bvsge x y)))
 
 (define (icmp/slt x y)
-  (core:bool->bitvector (bvslt x y)))
+  (bool->bitvector (bvslt x y)))
 
 (define (icmp/sle x y)
-  (core:bool->bitvector (bvsle x y)))
+  (bool->bitvector (bvsle x y)))
 
 (define (select cond x y)
-  (if (core:bitvector->bool cond) x y))
+  (if (bitvector->bool cond) x y))
 
 ; arithmetic operations
 
@@ -209,20 +209,20 @@
 (define mul bvmul)
 
 (define (udiv x y)
-  (@bug-on (core:bvzero? y) "udiv: division by zero")
+  (@bug-on (bvzero? y) "udiv: division by zero")
   (bvudiv x y))
 
 (define (urem x y)
-  (@bug-on (core:bvzero? y) "urem: division by zero")
+  (@bug-on (bvzero? y) "urem: division by zero")
   (bvurem x y))
 
 (define (sdiv x y)
-  (@bug-on (core:bvzero? y) "sdiv: division by zero")
+  (@bug-on (bvzero? y) "sdiv: division by zero")
   (@bug-on (core:bvsdiv-overflow? x y) "sdiv: signed division overflow")
   (bvsdiv x y))
 
 (define (srem x y)
-  (@bug-on (core:bvzero? y) "srem: division by zero")
+  (@bug-on (bvzero? y) "srem: division by zero")
   (@bug-on (core:bvsdiv-overflow? x y) "srem: signed division overflow")
   (bvsrem x y))
 
@@ -361,7 +361,7 @@
 
 (define (llvm.sadd.with.overflow x y)
   (list (bvadd x y)
-        (core:bool->bitvector (core:bvsadd-overflow? x y))))
+        (bool->bitvector (core:bvsadd-overflow? x y))))
 
 (define llvm.sadd.with.overflow.i16 llvm.sadd.with.overflow)
 (define llvm.sadd.with.overflow.i32 llvm.sadd.with.overflow)
@@ -369,7 +369,7 @@
 
 (define (llvm.uadd.with.overflow x y)
   (list (bvadd x y)
-        (core:bool->bitvector (core:bvuadd-overflow? x y))))
+        (bool->bitvector (core:bvuadd-overflow? x y))))
 
 (define llvm.uadd.with.overflow.i16 llvm.uadd.with.overflow)
 (define llvm.uadd.with.overflow.i32 llvm.uadd.with.overflow)
@@ -377,7 +377,7 @@
 
 (define (llvm.ssub.with.overflow x y)
   (list (bvsub x y)
-        (core:bool->bitvector (core:bvssub-overflow? x y))))
+        (bool->bitvector (core:bvssub-overflow? x y))))
 
 (define llvm.ssub.with.overflow.i16 llvm.ssub.with.overflow)
 (define llvm.ssub.with.overflow.i32 llvm.ssub.with.overflow)
@@ -385,7 +385,7 @@
 
 (define (llvm.usub.with.overflow x y)
   (list (bvsub x y)
-        (core:bool->bitvector (core:bvusub-overflow? x y))))
+        (bool->bitvector (core:bvusub-overflow? x y))))
 
 (define llvm.usub.with.overflow.i16 llvm.usub.with.overflow)
 (define llvm.usub.with.overflow.i32 llvm.usub.with.overflow)
@@ -393,7 +393,7 @@
 
 (define (llvm.smul.with.overflow x y)
   (list (bvmul x y)
-        (core:bool->bitvector (core:bvsmul-overflow? x y))))
+        (bool->bitvector (core:bvsmul-overflow? x y))))
 
 (define llvm.smul.with.overflow.i16 llvm.smul.with.overflow)
 (define llvm.smul.with.overflow.i32 llvm.smul.with.overflow)
@@ -401,7 +401,7 @@
 
 (define (llvm.umul.with.overflow x y)
   (list (bvmul x y)
-        (core:bool->bitvector (core:bvumul-overflow? x y))))
+        (bool->bitvector (core:bvumul-overflow? x y))))
 
 (define llvm.umul.with.overflow.i16 llvm.umul.with.overflow)
 (define llvm.umul.with.overflow.i32 llvm.umul.with.overflow)

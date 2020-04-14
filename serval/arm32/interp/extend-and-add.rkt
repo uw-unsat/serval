@@ -18,36 +18,36 @@
 
 (define (interpret-sxtb16 cpu Rd rotate Rm)
   (define-values (d m rotation) (decode Rd rotate Rm))
-  (define rotated (core:bvror (cpu-gpr-ref cpu m) rotation))
+  (define rotated (bvror (cpu-gpr-ref cpu m) rotation))
   (cpu-gpr-set! cpu d
     (concat (sign-extend (extract 23 16 rotated) (bitvector 16))
             (sign-extend (extract 7 0 rotated) (bitvector 16)))))
 
 (define (interpret-sxtb cpu Rd rotate Rm)
   (define-values (d m rotation) (decode Rd rotate Rm))
-  (define rotated (core:bvror (cpu-gpr-ref cpu m) rotation))
+  (define rotated (bvror (cpu-gpr-ref cpu m) rotation))
   (cpu-gpr-set! cpu d (sign-extend (extract 7 0 rotated) (bitvector 32))))
 
 (define (interpret-sxth cpu Rd rotate Rm)
   (define-values (d m rotation) (decode Rd rotate Rm))
-  (define rotated (core:bvror (cpu-gpr-ref cpu m) rotation))
+  (define rotated (bvror (cpu-gpr-ref cpu m) rotation))
   (cpu-gpr-set! cpu d (sign-extend (extract 15 0 rotated) (bitvector 32))))
 
 (define (interpret-uxtb16 cpu Rd rotate Rm)
   (define-values (d m rotation) (decode Rd rotate Rm))
-  (define rotated (core:bvror (cpu-gpr-ref cpu m) rotation))
+  (define rotated (bvror (cpu-gpr-ref cpu m) rotation))
   (cpu-gpr-set! cpu d
     (concat (zero-extend (extract 23 16 rotated) (bitvector 16))
             (zero-extend (extract 7 0 rotated) (bitvector 16)))))
 
 (define (interpret-uxtb cpu Rd rotate Rm)
   (define-values (d m rotation) (decode Rd rotate Rm))
-  (define rotated (core:bvror (cpu-gpr-ref cpu m) rotation))
+  (define rotated (bvror (cpu-gpr-ref cpu m) rotation))
   (cpu-gpr-set! cpu d (zero-extend (extract 7 0 rotated) (bitvector 32))))
 
 (define (interpret-uxth cpu Rd rotate Rm)
   (define-values (d m rotation) (decode Rd rotate Rm))
-  (define rotated (core:bvror (cpu-gpr-ref cpu m) rotation))
+  (define rotated (bvror (cpu-gpr-ref cpu m) rotation))
   (cpu-gpr-set! cpu d (zero-extend (extract 15 0 rotated) (bitvector 32))))
 
 (define-insn (Rd rotate Rm)

@@ -962,12 +962,12 @@
 ; The following specification is more restricted, requiring EDX to be zero.
 ; this means that SRC must not be EDX.
 (define (interpret-div cpu v2)
-  (core:bug-on (core:bvzero? v2)
+  (core:bug-on (bvzero? v2)
    #:dbg current-pc-debug
    #:msg "interpret-div: div by zero")
 
   (define edx (gpr-ref cpu 'edx))
-  (core:bug-on (! (core:bvzero? edx))
+  (core:bug-on (! (bvzero? edx))
    #:dbg current-pc-debug
    #:msg (format "interpret-div: edx is restricted to be zero: ~a" edx))
 
@@ -988,8 +988,8 @@
   (gpr-set! cpu 'eax ((core:bvmul-proc) v1 v2))
   (gpr-set! cpu 'edx upper)
   ; OF/CF are set to 0 if upper is 0
-  (flag-set! cpu 'OF (! (core:bvzero? upper)))
-  (flag-set! cpu 'CF (! (core:bvzero? upper)))
+  (flag-set! cpu 'OF (! (bvzero? upper)))
+  (flag-set! cpu 'CF (! (bvzero? upper)))
   ; SF, ZF, AF, PF are undefined
   (flag-havoc! cpu 'SF)
   (flag-havoc! cpu 'ZF)
@@ -1002,7 +1002,7 @@
 
 (define (flag-set-shift! cpu count result)
   ; flags are unaffected if count is 0
-  (when (! (core:bvzero? count))
+  (when (! (bvzero? count))
     ; SF, ZF, and PF are set according to the result
     (flag-set-result! cpu result)
     ; too lazy to model CF/OF for shifts

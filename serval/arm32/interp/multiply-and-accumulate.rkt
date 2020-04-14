@@ -25,7 +25,7 @@
   (define result ((core:bvmul-proc) operand1 operand2))
   (cpu-gpr-set! cpu d result)
   (when setflags
-    (cpu-pstate.n-set! cpu (core:bit 31 result))
+    (cpu-pstate.n-set! cpu (bit 31 result))
     (cpu-pstate.z-set! cpu (is-zero-bit result))
     ; PSTATE.C, PSTATE.V unchanged
   ))
@@ -71,7 +71,7 @@
   (cpu-gpr-set! cpu dHi upper)
   (cpu-gpr-set! cpu dLo lower)
   (when setflags
-    (cpu-pstate.n-set! cpu (core:bit 63 result))
+    (cpu-pstate.n-set! cpu (bit 63 result))
     (cpu-pstate.z-set! cpu (is-zero-bit result))
     ; PSTATE.C, PSTATE.V unchanged
   ))

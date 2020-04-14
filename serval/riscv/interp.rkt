@@ -76,8 +76,8 @@
     ; our code doesn't really use divisions - just add for completeness
     ; smtlib seems to have a different div-by-zero semantics for bvsdiv
     ; (bvsdiv -1 0) returns 1, while riscv returns -1
-    [(divw div) (if (core:bvzero? v2) (bv -1 (core:bv-size v1)) ((core:bvsdiv-proc) v1 v2))]
-    [(remw rem) (if (core:bvzero? v2) v1 ((core:bvsrem-proc) v1 v2))]
+    [(divw div) (if (bvzero? v2) (bv -1 (core:bv-size v1)) ((core:bvsdiv-proc) v1 v2))]
+    [(remw rem) (if (bvzero? v2) v1 ((core:bvsrem-proc) v1 v2))]
     [(divuw divu) ((core:bvudiv-proc) v1 v2)]
     [(remuw remu) ((core:bvurem-proc) v1 v2)]
     [(amomax.w amomax.d) (if (bvsge v1 v2) v1 v2)]
@@ -100,7 +100,7 @@
   (set-cpu-pc! cpu target))
 
 (define (do-csr-op cpu op dst csr value)
-  (when (! (core:bvzero? (gpr->idx dst)))
+  (when (! (bvzero? (gpr->idx dst)))
     (gpr-set! cpu dst (zero-extend (csr-ref cpu csr) (bitvector (cpu-xlen cpu)))))
   (case op
     [(csrrw csrrwi)

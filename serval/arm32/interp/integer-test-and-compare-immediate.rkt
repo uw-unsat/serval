@@ -18,7 +18,7 @@
 (define (interpret-t* proc cpu Rn imm12)
   (define-values (n imm32 carry) (decode cpu Rn imm12))
   (define result (proc (cpu-gpr-ref cpu n) imm32))
-  (cpu-pstate.n-set! cpu (core:bit 31 result))
+  (cpu-pstate.n-set! cpu (bit 31 result))
   (cpu-pstate.z-set! cpu (is-zero-bit result))
   (cpu-pstate.c-set! cpu carry)
   ; PSTATE.V unchanged

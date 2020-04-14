@@ -180,9 +180,9 @@
   (core:bug-on (! ((bitvector 32) val))
    #:msg (format "flag-set!: not bv32: ~e" val)
    #:dbg current-pc-debug)
-  (flag-set! cpu 'PF (core:bitvector->bool (parity (extract 7 0 val))))
-  (flag-set! cpu 'ZF (core:bvzero? val))
-  (flag-set! cpu 'SF (core:bitvector->bool (core:msb val))))
+  (flag-set! cpu 'PF (bitvector->bool (parity (extract 7 0 val))))
+  (flag-set! cpu 'ZF (bvzero? val))
+  (flag-set! cpu 'SF (bitvector->bool (msb val))))
 
 (define (flag-havoc! cpu flag)
   (define-symbolic* havoc boolean?)
@@ -213,7 +213,7 @@
   (define lst
     (for/list ([flag '(CF PF AF ZF SF OF)])
       (define i (flag->idx flag))
-      (core:bitvector->bool (extract i i v))))
+      (bitvector->bool (extract i i v))))
   (apply flags lst))
 
 (struct ModOpcodeR/M (mod+opcode r/m) #:transparent)

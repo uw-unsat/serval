@@ -337,12 +337,12 @@
     [(BPF_SUB) (bvsub v1 v2)]
     [(BPF_MUL) ((core:bvmul-proc) v1 v2)]
     [(BPF_DIV)
-     (core:bug-on (core:bvzero? v2)
+     (core:bug-on (bvzero? v2)
                   #:dbg current-pc-debug
                   #:msg (format "evaluate-alu64: div by zero, dividend: ~v" v2))
      ((core:bvudiv-proc) v1 v2)]
     [(BPF_MOD)
-     (core:bug-on (core:bvzero? v2)
+     (core:bug-on (bvzero? v2)
                   #:dbg current-pc-debug
                   #:msg (format "evaluate-alu64: mod by zero, dividend: ~v" v2))
      ((core:bvurem-proc) v1 v2)]
@@ -367,7 +367,7 @@
     [(BPF_JLT) (bvult v1 v2)]
     [(BPF_JGE) (bvuge v1 v2)]
     [(BPF_JLE) (bvule v1 v2)]
-    [(BPF_JSET) (! (core:bvzero? (bvand v1 v2)))]
+    [(BPF_JSET) (! (bvzero? (bvand v1 v2)))]
     [(BPF_JSGT) (bvsgt v1 v2)]
     [(BPF_JSLT) (bvslt v1 v2)]
     [(BPF_JSGE) (bvsge v1 v2)]
@@ -630,7 +630,7 @@
             ; ld64
             [((BPF_LD BPF_IMM BPF_DW))
               ; Fetch next instruction.
-              (define pc2 (core:bvadd1 pc))
+              (define pc2 (bvadd1 pc))
               (core:bug-on (! (hash-has-key? instructions pc2))
                           #:msg (format "no instruction after LD64 @ ~e\n" pc)
                           #:dbg current-pc-debug)

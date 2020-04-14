@@ -20,7 +20,7 @@
   (define-values (d n m) (decode Rd Rm Rn))
   (define operand1 (cpu-gpr-ref cpu n))
   (define operand2 (cpu-gpr-ref cpu m))
-  (define result (if (core:bvzero? operand2) (bv 0 32) ((proc) operand1 operand2)))
+  (define result (if (bvzero? operand2) (bv 0 32) ((proc) operand1 operand2)))
   (cpu-gpr-set! cpu d result))
 
 (define interpret-sdiv

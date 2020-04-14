@@ -11,7 +11,7 @@
 (define (decode size Rm option S Rn Rt)
   (define scale (bitvector->natural size))
 
-  (when (bveq (core:bit 1 option) (bv #b0 1))
+  (when (bveq (bit 1 option) (bv #b0 1))
     (undefined))
 
   (define extend_type (decode-reg-extend option))

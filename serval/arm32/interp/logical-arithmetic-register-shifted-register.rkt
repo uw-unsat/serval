@@ -26,7 +26,7 @@
   (define result (proc cpu n shifted))
   (cpu-gpr-set! cpu d result)
   (when setflags
-    (cpu-pstate.n-set! cpu (core:bit 31 result))
+    (cpu-pstate.n-set! cpu (bit 31 result))
     (cpu-pstate.z-set! cpu (is-zero-bit result))
     (cpu-pstate.c-set! cpu carry)
     ; PSTATE.V unchanged

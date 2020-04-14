@@ -20,7 +20,7 @@
   (define-values (n m shift_t shift_n) (decode Rn imm5 stype Rm))
   (define-values (shifted carry) (shift_c (cpu-gpr-ref cpu m) shift_t shift_n (cpu-pstate.c cpu)))
   (define result (proc (cpu-gpr-ref cpu n) shifted))
-  (cpu-pstate.n-set! cpu (core:bit 31 result))
+  (cpu-pstate.n-set! cpu (bit 31 result))
   (cpu-pstate.z-set! cpu (is-zero-bit result))
   (cpu-pstate.c-set! cpu carry)
   ; PSTATE.V unchanged

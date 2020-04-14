@@ -59,7 +59,7 @@
 (define (rrx_c x carry_in)
   (define n (core:bv-size x))
   (define result (concat carry_in (extract (sub1 n) 1 x)))
-  (define carry_out (core:lsb x))
+  (define carry_out (lsb x))
   (list result carry_out))
 
 (define (shift value srtype amount carry_in)
@@ -69,7 +69,7 @@
 (define (shift_c value srtype amount carry_in)
   (assert (! (&& (equal? srtype 'RRX) (! (bveq amount (bv 1 32))))))
   (define result
-    (if (core:bvzero? amount)
+    (if (bvzero? amount)
         (list value carry_in)
         (case srtype
           [(LSL) (lsl_c value amount)]
@@ -95,7 +95,7 @@
 
 (define (bx-write-pc cpu address branch_type)
   (cond
-    [(bveq (core:bit 0 address) (bv #b1 1))
+    [(bveq (bit 0 address) (bv #b1 1))
      ; SelectInstrSet(InstrSet_T32);
      (set! address (concat (extract 31 1 address) (bv #b0 1)))]
     [else
@@ -118,32 +118,32 @@
 ; shared/functions/common/
 
 (define (asr_c x shift)
-  (assert (! (core:bvzero? shift)))
+  (assert (! (bvzero? shift)))
   (define result (bvashr x shift))
-  (define carry_out (core:lsb (bvashr x (core:bvsub1 shift))))
+  (define carry_out (lsb (bvashr x (bvsub1 shift))))
   (list result carry_out))
 
 (define (is-zero x)
-  (core:bvzero? x))
+  (bvzero? x))
 
 (define (is-zero-bit x)
   (if (is-zero x) (bv #b1 1) (bv #b0 1)))
 
 (define (lsl_c x shift)
-  (assert (! (core:bvzero? shift)))
+  (assert (! (bvzero? shift)))
   (define result (bvshl x shift))
-  (define carry_out (core:msb (bvshl x (core:bvsub1 shift))))
+  (define carry_out (msb (bvshl x (bvsub1 shift))))
   (list result carry_out))
 
 (define (lsr_c x shift)
-  (assert (! (core:bvzero? shift)))
+  (assert (! (bvzero? shift)))
   (define result (bvlshr x shift))
-  (define carry_out (core:lsb (bvlshr x (core:bvsub1 shift))))
+  (define carry_out (lsb (bvlshr x (bvsub1 shift))))
   (list result carry_out))
 
 (define (ror_c x shift)
-  (define result (core:bvror x shift))
-  (define carry_out (core:msb result))
+  (define result (bvror x shift))
+  (define carry_out (msb result))
   (list result carry_out))
 
 
@@ -151,9 +151,9 @@
 
 (define (add-with-carry x y carry_in)
   (define N (core:bv-size x))
-  (define carry? (core:bitvector->bool carry_in))
+  (define carry? (bitvector->bool carry_in))
   (define result (bvadd x y (if carry? (bv #b1 N) (bv #b0 N))))
-  (define n (core:bit (sub1 N) result))
+  (define n (bit (sub1 N) result))
   (define z (if (is-zero result) (bv #b1 1) (bv #b0 1)))
   (define c (if (core:bvuadd-overflow? x y carry?) (bv #b1 1) (bv #b0 1)))
   (define v (if (core:bvsadd-overflow? x y carry?) (bv #b1 1) (bv #b0 1)))

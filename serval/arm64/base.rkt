@@ -5,7 +5,6 @@
 
 (provide (all-defined-out))
 
-(define bit core:bit)
 (define bv-bit core:bv-bit)
 
 (define (trunc n x)

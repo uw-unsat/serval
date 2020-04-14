@@ -17,7 +17,7 @@
 
 (define (add-with-carry x y carry_in)
   (define N (core:bv-size x))
-  (define carry? (core:bitvector->bool carry_in))
+  (define carry? (bitvector->bool carry_in))
   (define result (bvadd x y (if carry? (bv #b1 N) (bv #b0 N))))
   (define n (bit (sub1 N) result))
   (define z (if (is-zero result) (bv #b1 1) (bv #b0 1)))
@@ -75,7 +75,7 @@
   (if pos pos -1))
 
 (define (is-zero x)
-  (core:bvzero? x))
+  (bvzero? x))
 
 (define (is-zero-bit x)
   (if (is-zero x) (bv #b1 1) (bv #b0 1)))
@@ -229,7 +229,7 @@
     (define welem (bvlshr (ones esize) (bvsub (bv (sub1 esize) esize) (zero-extend S (bitvector esize)))))
     (define telem (bvlshr (ones esize) (bvsub (bv (sub1 esize) esize) (zero-extend d (bitvector esize)))))
 
-    (define wmask (replicate (core:bvror welem (zero-extend R (bitvector esize))) (quotient M esize)))
+    (define wmask (replicate (bvror welem (zero-extend R (bitvector esize))) (quotient M esize)))
     (define tmask (replicate telem (quotient M esize)))
     (list wmask tmask)))
 
@@ -255,4 +255,4 @@
     [(LSL) (bvshl result amount)]
     [(LSR) (bvlshr result amount)]
     [(ASR) (bvashr result amount)]
-    [(ROR) (core:bvror result amount)]))
+    [(ROR) (bvror result amount)]))

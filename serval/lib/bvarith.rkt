@@ -33,10 +33,6 @@
 (define (bv-size x)
   (bitvector-size (type-of x)))
 
-; i must be an integer
-(define (bit i x)
-  (extract i i x))
-
 ; i can be a symbolic bitvector
 (define (bv-bit i x)
   (define mask (bvshl (bv 1 (bv-size i)) i))
@@ -44,17 +40,7 @@
       (bv 0 1)
       (bv 1 1)))
 
-(define (msb x)
-  (let ([pos (sub1 (bv-size x))])
-    (bit pos x)))
-
 (define bv-sign msb)
-
-(define (lsb x)
-  (bit 0 x))
-
-(define (bvzero? x)
-  (bveq x (bv 0 (type-of x))))
 
 (define (bvaligned? value alignment)
   (bvzero? (bvurem value alignment)))
@@ -70,28 +56,6 @@
 
 (define (bvsmin? x)
   (bveq x (bvsmin (type-of x))))
-
-(define (bvadd1 x)
-  (bvadd x (bv 1 (type-of x))))
-
-(define (bvsub1 x)
-  (bvsub x (bv 1 (type-of x))))
-
-(define (bvrol x y)
-  (define n (bv (bv-size y) (bv-size y)))
-  (define count (bvurem y n))
-  (bvor (bvshl x count) (bvlshr x (bvsub n count))))
-
-(define (bvror x y)
-  (define n (bv (bv-size y) (bv-size y)))
-  (define count (bvurem y n))
-  (bvor (bvlshr x count) (bvshl x (bvsub n count))))
-
-(define (bool->bitvector x)
-  (if x (bv 1 1) (bv 0 1)))
-
-(define (bitvector->bool x)
-  (not (bvzero? x)))
 
 ; list of (bitvector 8) -> (bitvector N), big endian
 (define (list->bitvector/be lst)

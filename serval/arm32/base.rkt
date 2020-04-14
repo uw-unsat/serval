@@ -18,7 +18,7 @@
   (concat (pstate-n x) (pstate-z x) (pstate-c x) (pstate-v x) (bv 0 23) (bv #b10011 5)))
 
 (define (bitvector->pstate x)
-  (pstate (core:bit 31 x) (core:bit 30 x) (core:bit 29 x) (core:bit 28 x)))
+  (pstate (bit 31 x) (bit 30 x) (bit 29 x) (bit 28 x)))
 
 (define (integer->gpr n)
   (box (bv n 4)))
@@ -99,7 +99,7 @@
 
   ; Condition flag values in the set '111x' indicate always true.
   ; Otherwise, invert condition if necessary.
-  (if (&& (bveq (core:bit 0 cc) (bv #b1 1)) (! (bveq cc (bv #b1111 4))))
+  (if (&& (bveq (bit 0 cc) (bv #b1 1)) (! (bveq cc (bv #b1111 4))))
       (! result)
       result))
 
