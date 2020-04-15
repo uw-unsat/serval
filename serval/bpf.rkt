@@ -530,6 +530,10 @@
     [(list 'BPF_JMP (or 'BPF_CALL 'BPF_TAIL_CALL))
       (callmgr-handle-call callmgr cpu insn)]
 
+    [(list 'BPF_JMP 'BPF_EXIT)
+      ; Mark end of execution by setting PC to #f.
+      (set-cpu-pc! cpu #f)]
+
     ; load operations
     [(list 'BPF_LDX 'BPF_MEM size)
       (define addr (reg-ref cpu src))
@@ -604,7 +608,8 @@
                  #:msg (format "interpret-insn: no semantics for instruction ~e\n" code))])
 
   ; size == (bv 1 64) for all instructions except ld64.
-  (cpu-next! cpu size))
+  (when (cpu-pc cpu)
+    (cpu-next! cpu size)))
 
 ; Interpret a BPF program until BPF_JMP BPF_EXIT.
 ; cpu -> A BPF cpu struct
@@ -614,20 +619,16 @@
     (begin
       (set-cpu-pc! cpu pc)
       (cond
+        ; A #f PC indicates that execution has terminated via BPF_EXIT.
+        [(false? pc)
+          (extract 31 0 (reg-ref cpu BPF_REG_0))]
         [(hash-has-key? instructions pc)
           (define this-insn (hash-ref instructions pc))
           (core:bug-on (! (insn? this-insn))
                        #:msg (format "interpret-program: need insn?, got ~v" this-insn)
                        #:dbg current-pc-debug)
-          ; Handle the instructions that need to be treated specially in the outer loop.
-          ; These are EXITs (because they end execution), and ld64 because it depends on the following
-          ; instruction.
           (case (insn-code this-insn)
-            ; exit
-            [((BPF_JMP BPF_EXIT))
-              (extract 31 0 (reg-ref cpu BPF_REG_0))]
-
-            ; ld64
+            ; Handle ld64 specially because it requires fetching the next instruction.
             [((BPF_LD BPF_IMM BPF_DW))
               ; Fetch next instruction.
               (define pc2 (bvadd1 pc))
