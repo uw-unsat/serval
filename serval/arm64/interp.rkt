@@ -21,7 +21,8 @@
   "interp/move-wide-immediate.rkt"
   "interp/multiply.rkt"
   "interp/shift-register.rkt"
-  "interp/unconditional-branch-immediate.rkt")
+  "interp/unconditional-branch-immediate.rkt"
+  "interp/unconditional-branch-register.rkt")
 
 (provide (all-from-out
   "interp/arithmetic-immediate.rkt"
@@ -37,4 +38,5 @@
   "interp/move-wide-immediate.rkt"
   "interp/multiply.rkt"
   "interp/shift-register.rkt"
-  "interp/unconditional-branch-immediate.rkt"))
+  "interp/unconditional-branch-immediate.rkt"
+  "interp/unconditional-branch-register.rkt"))
