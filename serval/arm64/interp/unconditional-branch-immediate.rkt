@@ -20,10 +20,10 @@
   (branch-to cpu (bvadd (cpu-pc-ref cpu) offset)))
 
 
-(define (unconditional-branch-register op)
+(define (unconditional-branch-immediate op)
   (lambda (imm26)
     (concat (bv op 1) (bv #b00101 5) imm26)))
 
-(define-insn unconditional-branch-register (imm26)
+(define-insn unconditional-branch-immediate (imm26)
   [(#b0) b  interpret-b]
   [(#b1) bl interpret-bl])
