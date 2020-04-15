@@ -64,11 +64,8 @@
   (cpu-gpr-set! cpu d result))
 
 
-(define (logical-immediate opc)
-  (lambda (sf N immr imms Rn Rd)
-    (concat sf (bv opc 2) (bv #b100100 6) N immr imms Rn Rd)))
-
-(define-insn logical-immediate (sf N immr imms Rn Rd)
+(define-insn (sf N immr imms Rn Rd)
+  #:encode (lambda (opc) (list sf (bv opc 2) (bv #b100100 6) N immr imms Rn Rd))
   [(#b00) and-immediate interpret-and-immediate]
   [(#b01) orr-immediate interpret-orr-immediate]
   [(#b10) eor-immediate interpret-eor-immediate]

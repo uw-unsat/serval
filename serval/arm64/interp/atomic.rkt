@@ -37,11 +37,8 @@
     (cpu-gpr-set! t (zero-extend data (bitvector regsize)))))
 
 
-(define (atomic V o3 opc)
-  (lambda (size A R Rs Rn Rt)
-    (concat size (bv #b111 3) (bv V 1) (bv #b00 2) A R (bv #b1 1) Rs (bv o3 1) (bv opc 3) (bv #b00 2) Rn Rt)))
-
-(define-insn atomic (size A R Rs Rn Rt)
+(define-insn (size A R Rs Rn Rt)
+  #:encode (lambda (V o3 opc) (list size (bv #b111 3) (bv V 1) (bv #b00 2) A R (bv #b1 1) Rs (bv o3 1) (bv opc 3) (bv #b00 2) Rn Rt))
   [(#b0 #b0 #b000) ldadd* interpret-ldadd*])
 
 (define (ldadd32 Rs Rn Rt)

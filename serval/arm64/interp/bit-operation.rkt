@@ -55,11 +55,8 @@
   (cpu-gpr-set! cpu d (apply concat (reverse (vector->list result)))))
 
 
-(define (rev*)
-  (lambda (sf opc Rn Rd)
-    (concat sf (bv #b1 1) (bv #b0 1) (bv #b11010110 8) (bv #b00000 5) (bv #b0000 4) opc Rn Rd)))
-
-(define-insn rev* (sf opc Rn Rd)
+(define-insn (sf opc Rn Rd)
+  #:encode (lambda () (list sf (bv #b1 1) (bv #b0 1) (bv #b11010110 8) (bv #b00000 5) (bv #b0000 4) opc Rn Rd))
   [() rev   interpret-rev*]
   [() rev16 interpret-rev*]
   [() rev32 interpret-rev*])

@@ -57,11 +57,8 @@
   (cpu-gpr-set! cpu t (zero-extend data (bitvector regsize))))
 
 
-(define (load-store-register opc)
-  (lambda (size Rm option S Rn Rt)
-    (concat (bv #b111 3) (bv #b0 1) (bv #b00 2) (bv opc 2) (bv #b1 1) Rm option S (bv #b10 2) Rn Rt)))
-
-(define-insn load-store-register (size Rm option S Rn Rt)
+(define-insn (size Rm option S Rn Rt)
+  #:encode (lambda (opc) (list (bv #b111 3) (bv #b0 1) (bv #b00 2) (bv opc 2) (bv #b1 1) Rm option S (bv #b10 2) Rn Rt))
   [(#b00) store-register interpret-store-register]
   [(#b01) load-register interpret-load-register])
 

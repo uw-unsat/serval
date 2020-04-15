@@ -76,11 +76,8 @@
   (cpu-gpr-set! cpu d (bvand bot tmask)))
 
 
-(define (bitfield-move opc)
-  (lambda (sf N immr imms Rn Rd)
-    (concat sf (bv opc 2) (bv #b100110 6) N immr imms Rn Rd)))
-
-(define-insn bitfield-move (sf N immr imms Rn Rd)
+(define-insn (sf N immr imms Rn Rd)
+  #:encode (lambda (opc) (list sf (bv opc 2) (bv #b100110 6) N immr imms Rn Rd))
   [(#b00) sbfm interpret-sbfm]
   [(#b01) bfm  interpret-bfm]
   [(#b10) ubfm interpret-ubfm])

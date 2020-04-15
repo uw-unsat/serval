@@ -76,11 +76,8 @@
   (cpu-gpr-set! cpu d result))
 
 
-(define (move-wide-immediate opc)
-  (lambda (sf hw imm16 Rd)
-    (concat sf (bv opc 2) (bv #b100101 6) hw imm16 Rd)))
-
-(define-insn move-wide-immediate (sf hw imm16 Rd)
+(define-insn (sf hw imm16 Rd)
+  #:encode (lambda (opc) (list sf (bv opc 2) (bv #b100101 6) hw imm16 Rd))
   [(#b00) movn interpret-movn]
   [(#b10) movz interpret-movz]
   [(#b11) movk interpret-movk])

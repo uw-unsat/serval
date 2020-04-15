@@ -28,10 +28,7 @@
   (interpret-madd/msub cpu sf Rm Ra Rn Rd bvsub))
 
 
-(define (multiply o0)
-  (lambda (sf Rm Ra Rn Rd)
-    (concat sf (bv #b00 2) (bv #b11011 5) (bv #b00 3) Rm (bv o0 1) Ra Rn Rd)))
-
-(define-insn multiply (sf Rm Ra Rn Rd)
+(define-insn (sf Rm Ra Rn Rd)
+  #:encode (lambda (o0) (list sf (bv #b00 2) (bv #b11011 5) (bv #b00 3) Rm (bv o0 1) Ra Rn Rd))
   [(#b0) madd interpret-madd]
   [(#b1) msub interpret-msub])

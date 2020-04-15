@@ -23,11 +23,8 @@
   (cpu-gpr-set! cpu d result))
 
 
-(define (shift-register)
-  (lambda (sf Rm op2 Rn Rd)
-    (concat sf (bv #b0 1) (bv #b0 1) (bv #b11010110 8) Rm (bv #b0010 4) op2 Rn Rd)))
-
-(define-insn shift-register (sf Rm op2 Rn Rd)
+(define-insn (sf Rm op2 Rn Rd)
+  #:encode (lambda () (list sf (bv #b0 1) (bv #b0 1) (bv #b11010110 8) Rm (bv #b0010 4) op2 Rn Rd))
   [() shift-variable interpret-shift-variable])
 
 (define (lslv sf Rm Rn Rd)

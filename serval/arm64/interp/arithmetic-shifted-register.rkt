@@ -77,11 +77,8 @@
   (cpu-gpr-set! cpu d result))
 
 
-(define (arithmetic-shifted-register op S)
-  (lambda (sf shift Rm imm6 Rn Rd)
-    (concat sf (bv op 1) (bv S 1) (bv #b01011 5) shift (bv #b0 1) Rm imm6 Rn Rd)))
-
-(define-insn arithmetic-shifted-register (sf shift Rm imm6 Rn Rd)
+(define-insn (sf shift Rm imm6 Rn Rd)
+  #:encode (lambda (op S) (list sf (bv op 1) (bv S 1) (bv #b01011 5) shift (bv #b0 1) Rm imm6 Rn Rd))
   [(#b0 #b0) add-shifted-register  interpret-add-shifted-register]
   [(#b0 #b1) adds-shifted-register interpret-adds-shifted-register]
   [(#b1 #b0) sub-shifted-register  interpret-sub-shifted-register]

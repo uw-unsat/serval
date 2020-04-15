@@ -114,11 +114,8 @@
   (cpu-gpr-set! cpu d result))
 
 
-(define (logical-shifted-register opc N)
-  (lambda (sf shift Rm imm6 Rn Rd)
-    (concat sf (bv opc 2) (bv #b01010 5) shift (bv N 1) Rm imm6 Rn Rd)))
-
-(define-insn logical-shifted-register (sf shift Rm imm6 Rn Rd)
+(define-insn (sf shift Rm imm6 Rn Rd)
+  #:encode (lambda (opc N) (list sf (bv opc 2) (bv #b01010 5) shift (bv N 1) Rm imm6 Rn Rd))
   [(#b00 #b0) and-shifted-register interpret-and-shifted-register]
   [(#b00 #b1) bic-shifted-register interpret-bic-shifted-register]
   [(#b01 #b0) orr-shifted-register interpret-orr-shifted-register]

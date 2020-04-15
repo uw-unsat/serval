@@ -30,10 +30,7 @@
   (interpret-udiv/sdiv cpu sf Rm Rn Rd (core:bvsdiv-proc)))
 
 
-(define (divide o1)
-  (lambda (sf Rm Rn Rd)
-    (concat sf (bv #b0 1) (bv #b0 1) (bv #b11010110 8) Rm (bv #b00001 5) (bv o1 1) Rn Rd)))
-
-(define-insn divide (sf Rm Rn Rd)
+(define-insn (sf Rm Rn Rd)
+  #:encode (lambda (o1) (list sf (bv #b0 1) (bv #b0 1) (bv #b11010110 8) Rm (bv #b00001 5) (bv o1 1) Rn Rd))
   [(#b0) udiv interpret-udiv]
   [(#b1) sdiv interpret-sdiv])

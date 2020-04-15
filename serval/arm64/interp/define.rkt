@@ -12,17 +12,22 @@
 
 (define-syntax (define-insn stx)
   (syntax-case stx ()
-    [(_ type (arg ...) [(field ...) op interp] ...)
+    [(_ (arg ...) #:encode encode [(field ...) op interp] ...)
      #'(begin
          (struct op (arg ...)
           #:transparent
           #:guard (lambda (arg ... name)
-                    (guard arg) ...
-                    (values arg ...))
+                    (values
+                      ; split for type checking
+                      (for/all ([arg arg #:exhaustive])
+                        (guard arg)
+                        arg) ...))
           #:methods gen:instruction
           [(define (instruction-encode insn)
-             (match-let ([(op arg ...) insn])
-               ((type field ...) arg ...)))
+             (define lst
+               (match-let ([(op arg ...) insn])
+                 ((lambda (arg ...) (encode field ...)) arg ...)))
+             (apply concat (map (lambda (x) (if (box? x) (unbox x) x)) lst)))
            (define (instruction-run insn cpu)
              (match-let ([(op arg ...) insn])
                (interp cpu arg ...)))])

@@ -73,11 +73,8 @@
   (cpu-gpr-set! cpu d result))
 
 
-(define (arithmetic-immediate op S)
-  (lambda (sf sh imm12 Rn Rd)
-    (concat sf (bv op 1) (bv S 1) (bv #b100010 6) sh imm12 Rn Rd)))
-
-(define-insn arithmetic-immediate (sf sh imm12 Rn Rd)
+(define-insn (sf sh imm12 Rn Rd)
+  #:encode (lambda (op S) (list sf (bv op 1) (bv S 1) (bv #b100010 6) sh imm12 Rn Rd))
   [(#b0 #b0) add-immediate  interpret-add-immediate]
   [(#b0 #b1) adds-immediate interpret-adds-immediate]
   [(#b1 #b0) sub-immediate  interpret-sub-immediate]
