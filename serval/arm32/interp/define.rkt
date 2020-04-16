@@ -72,3 +72,4 @@
 (define-guard imm24 (bitvector 24))
 (define-guard rotate (bitvector 2))
 (define-guard stype (bitvector 2))
+(define-guard register_list (bitvector 16))

@@ -25,6 +25,19 @@
 (define (undefined)
   (core:bug #:msg "UNDEFINED"))
 
+(define (BitCount n)
+  (apply bvadd
+    (for/list ([i (in-range (bitvector-size (type-of n)))])
+      (zero-extend (bit i n) (type-of n)))))
+
+(define (LowestSetBit val)
+  (define N (bitvector-size (type-of val)))
+  (letrec ([loop (lambda (i)
+    (cond
+      [(>= i N) (bv N N)]
+      [(bitvector->bool (bit i val)) (bv i N)]
+      [else (loop (+ i 1))]))])
+    (loop 0)))
 
 ; aarch32/functions/common/
 
