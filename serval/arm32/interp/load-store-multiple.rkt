@@ -38,9 +38,7 @@
     (cpu-gpr-set! cpu Rn
                   (bvsub (cpu-gpr-ref cpu Rn)
                          (bvmul (bv 4 32)
-                                (zero-extend (bit-count registers) (bitvector 32))))))
-
-  (void))
+                                (zero-extend (bit-count registers) (bitvector 32)))))))
 
 (define-insn (W Rn register_list)
   #:encode (lambda (P U op L) (list (bv #b100 3) (bv P 1) (bv U 1) (bv op 1) W (bv L 1) Rn register_list))
