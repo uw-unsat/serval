@@ -25,14 +25,14 @@
 
   (for ([i (in-range 15)])
     (when (equal? (bit i registers) (bv 1 1))
-      (if (&& (equal? (bv i 4) n) wback (! (equal? (bv i (type-of registers)) (lowest-set-bit registers))))
+      (if (&& (equal? (integer->gpr i) n) wback (! (equal? (bv i (type-of registers)) (lowest-set-bit registers))))
           (unpredictable)
           (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu (integer->gpr i)) (bv 4 32) #:dbg #f))
 
       (set! address (bvadd address (bv 4 (type-of address))))))
 
   (when (equal? (bit 15 registers) (bv 1 1))
-    (core:memmgr-store! mm address (bv 0 32) (cpu-pc cpu) (bv 4 32) #:dbg #f))
+    (core:memmgr-store! mm address (bv 0 32) (pc-store-value cpu) (bv 4 32) #:dbg #f))
 
   (when wback
     (cpu-gpr-set! cpu Rn
