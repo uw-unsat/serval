@@ -10,7 +10,7 @@
   (define n Rn)
   (define registers register_list)
   (define wback (equal? W (bv 1 1)))
-  (when (|| (r15? n) (bvzero? (BitCount registers)))
+  (when (|| (r15? n) (bvzero? (bit-count registers)))
     (unpredictable))
   (values n registers wback))
 
@@ -21,11 +21,11 @@
 
   (define address (bvsub (cpu-gpr-ref cpu Rn)
                          (bvmul (bv 4 32)
-                                (zero-extend (BitCount registers) (bitvector 32)))))
+                                (zero-extend (bit-count registers) (bitvector 32)))))
 
   (for ([i (in-range 15)])
     (when (equal? (bit i registers) (bv 1 1))
-      (if (&& (equal? (bv i 4) n) wback (! (equal? (bv i (type-of registers)) (LowestSetBit registers))))
+      (if (&& (equal? (bv i 4) n) wback (! (equal? (bv i (type-of registers)) (lowest-set-bit registers))))
           (unpredictable)
           (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu (bv i 4)) (bv 4 32) #:dbg #f))
 
@@ -38,7 +38,7 @@
     (cpu-gpr-set! cpu Rn
                   (bvsub (cpu-gpr-ref cpu Rn)
                          (bvmul (bv 4 32)
-                                (zero-extend (BitCount registers) (bitvector 32))))))
+                                (zero-extend (bit-count registers) (bitvector 32))))))
 
   (void))
 

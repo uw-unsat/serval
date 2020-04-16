@@ -25,12 +25,12 @@
 (define (undefined)
   (core:bug #:msg "UNDEFINED"))
 
-(define (BitCount n)
+(define (bit-count val)
   (apply bvadd
-    (for/list ([i (in-range (bitvector-size (type-of n)))])
-      (zero-extend (bit i n) (type-of n)))))
+    (for/list ([b (bitvector->bits val)])
+      (zero-extend b (type-of val)))))
 
-(define (LowestSetBit val)
+(define (lowest-set-bit val)
   (define N (bitvector-size (type-of val)))
   (letrec ([loop (lambda (i)
     (cond
