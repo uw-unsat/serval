@@ -27,7 +27,7 @@
     (when (equal? (bit i registers) (bv 1 1))
       (if (&& (equal? (bv i 4) n) wback (! (equal? (bv i (type-of registers)) (lowest-set-bit registers))))
           (unpredictable)
-          (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu (bv i 4)) (bv 4 32) #:dbg #f))
+          (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu (integer->gpr i)) (bv 4 32) #:dbg #f))
 
       (set! address (bvadd address (bv 4 (type-of address))))))
 
