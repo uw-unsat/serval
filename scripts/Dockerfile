@@ -1,7 +1,7 @@
 FROM ubuntu:19.10
 
-ARG ROSETTE_VERSION=49b35f4190fa3406d552aef586033648bcc2884f
-ARG Z3_VERSION=z3-4.8.7
+ARG ROSETTE_VERSION=4669ab3ca8033cc5c6e57f5f2578d59d13a8bc61
+ARG Z3_VERSION=4.8.7
 ARG BOOLECTOR_VERSION=3.2.1
 
 RUN apt-get update && apt-get install -y \
@@ -49,18 +49,18 @@ RUN git clone 'https://github.com/unicorn-engine/unicorn.git' && \
     env UNICORN_ARCHS="x86,arm,aarch64" ./make.sh install && \
     cd /code && rm -rfv unicorn
 
-# Install Boolector version v3.2.1
+# Install Boolector
 RUN git clone 'https://github.com/boolector/boolector.git' && \
     cd boolector && git checkout ${BOOLECTOR_VERSION} && \
     ./contrib/setup-lingeling.sh && \
     ./contrib/setup-btor2tools.sh && \
-    ./configure.sh --prefix /opt/boolector/3.2.1 && cd build && make -j8 && make install && \
+    ./configure.sh --prefix /opt/boolector/${BOOLECTOR_VERSION} && cd build && make -j8 && make install && \
     cd /code && rm -rfv ./boolector
 
 # Install Z3
 RUN git clone 'https://github.com/Z3Prover/z3.git' && \
-    cd z3 && git checkout ${Z3_VERSION} && \
-    python scripts/mk_make.py --prefix '/opt/z3/4.8.7' && \
+    cd z3 && git checkout z3-${Z3_VERSION} && \
+    python scripts/mk_make.py --prefix /opt/z3/${Z3_VERSION} && \
     cd build && \
     make -j8 && make install && \
     cd .. && rm -rfv z3
