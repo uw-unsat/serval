@@ -42,7 +42,7 @@
 (define (make-default-callmgr [calltable bpf-calls])
   (default-callmgr calltable))
 
-(struct cpu (pc regs fdtable memmgr callmgr) #:mutable #:transparent
+(struct cpu (pc regs fdtable tail-call-cnt memmgr callmgr) #:mutable #:transparent
   #:methods gen:custom-write
   [(define (write-proc cpu port mode)
      (define regs (cpu-regs cpu))
@@ -279,7 +279,8 @@
   ; R10 points to the stack, which is uninitialized
   (define-symbolic* stack (bitvector 64))
   (set-regs-r10! regs stack)
-  (cpu (bv 0 64) regs fdtable (make-memmgr) (make-callmgr)))
+  (define-symbolic* tail-call-cnt (bitvector 32))
+  (cpu (bv 0 64) regs fdtable tail-call-cnt (make-memmgr) (make-callmgr)))
 
 (define (@reg-set! regs reg val)
   (case reg
