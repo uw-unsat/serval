@@ -7,7 +7,7 @@
   call-rel32)
 
 
-; E8 cw
+; E8 cd
 (define (interpret-relative-call cpu rel)
   (define mm (cpu-memmgr cpu))
   (define n (core:memmgr-bitwidth mm))
