@@ -22,6 +22,9 @@
   (concat (extract 19 19 imm) (extract 9 0 imm) (extract 10 10 imm) (extract 18 11 imm)
           rd (bv opcode 7)))
 
+(define (atomic-type funct5 aq rl rs2 rs1 funct3 rd)
+  (concat (bv funct5 5) aq rl rs2 rs1 (bv funct3 3) rd (bv #b0101111 7)))
+
 (define (encode-gpr r)
   (gpr->idx r))
 
@@ -255,6 +258,34 @@
         [(srlw)  (r-type #b0000000 rs2 rs1 #b101 rd #b0111011)]
         [(sraw)  (r-type #b0100000 rs2 rs1 #b101 rd #b0111011)]
         [else (unsupported insn)])]
+
+    [(rv_amo_insn? insn)
+      (define op (rv_amo_insn-op insn))
+      (define aq (rv_amo_insn-aq insn))
+      (define rl (rv_amo_insn-rl insn))
+      (define rd (encode-gpr (rv_amo_insn-rd insn)))
+      (define rs1 (encode-gpr (rv_amo_insn-rs1 insn)))
+      (define rs2 (encode-gpr (rv_amo_insn-rs2 insn)))
+      (case op
+        [(amoswap.w) (atomic-type #b00001 aq rl rs2 rs1 #b010 rd)]
+        [(amoadd.w)  (atomic-type #b00000 aq rl rs2 rs1 #b010 rd)]
+        [(amoxor.w)  (atomic-type #b00100 aq rl rs2 rs1 #b010 rd)]
+        [(amoand.w)  (atomic-type #b01100 aq rl rs2 rs1 #b010 rd)]
+        [(amoor.w)   (atomic-type #b01000 aq rl rs2 rs1 #b010 rd)]
+        [(amomin.w)  (atomic-type #b10000 aq rl rs2 rs1 #b010 rd)]
+        [(amomax.w)  (atomic-type #b10100 aq rl rs2 rs1 #b010 rd)]
+        [(amominu.w) (atomic-type #b11000 aq rl rs2 rs1 #b010 rd)]
+        [(amomaxu.w) (atomic-type #b11100 aq rl rs2 rs1 #b010 rd)]
+
+        [(amoswap.d) (atomic-type #b00001 aq rl rs2 rs1 #b011 rd)]
+        [(amoadd.d)  (atomic-type #b00000 aq rl rs2 rs1 #b011 rd)]
+        [(amoxor.d)  (atomic-type #b00100 aq rl rs2 rs1 #b011 rd)]
+        [(amoand.d)  (atomic-type #b01100 aq rl rs2 rs1 #b011 rd)]
+        [(amoor.d)   (atomic-type #b01000 aq rl rs2 rs1 #b011 rd)]
+        [(amomin.d)  (atomic-type #b10000 aq rl rs2 rs1 #b011 rd)]
+        [(amomax.d)  (atomic-type #b10100 aq rl rs2 rs1 #b011 rd)]
+        [(amominu.d) (atomic-type #b11000 aq rl rs2 rs1 #b011 rd)]
+        [(amomaxu.d) (atomic-type #b11100 aq rl rs2 rs1 #b011 rd)])]
 
     [else (unsupported insn)]))
 
