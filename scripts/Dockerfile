@@ -49,20 +49,24 @@ RUN git clone 'https://github.com/unicorn-engine/unicorn.git' && \
     env UNICORN_ARCHS="x86,arm,aarch64" ./make.sh install && \
     cd /code && rm -rfv unicorn
 
-# Install Boolector
+# Install Boolector twice with CaDiCal and Lingeling backends
 RUN git clone 'https://github.com/boolector/boolector.git' && \
     cd boolector && git checkout ${BOOLECTOR_VERSION} && \
     ./contrib/setup-cadical.sh && \
     ./contrib/setup-btor2tools.sh && \
-    ./configure.sh --prefix /opt/boolector/${BOOLECTOR_VERSION} && cd build && make -j8 && make install && \
-    cd /code && rm -rfv ./boolector
+    ./configure.sh --prefix /opt/boolector/${BOOLECTOR_VERSION}-cadical && cd build && make -j $(nproc) && make install && \
+    cd .. && git clean -xffd \
+    ./contrib/setup-lingeling.sh && \
+    ./contrib/setup-btor2tools.sh && \
+    ./configure.sh --prefix /opt/boolector/${BOOLECTOR_VERSION}-lingeling && cd build && make -j $(nproc) && make install && \
+    cd ../.. && rm -rfv ./boolector
 
 # Install Z3
 RUN git clone 'https://github.com/Z3Prover/z3.git' && \
     cd z3 && git checkout z3-${Z3_VERSION} && \
     python3 scripts/mk_make.py --prefix /opt/z3/${Z3_VERSION} && \
     cd build && \
-    make -j8 && make install && \
+    make -j $(nproc) && make install && \
     cd .. && rm -rfv z3
 
 # Install Rosette
