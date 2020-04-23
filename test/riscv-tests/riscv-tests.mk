@@ -20,7 +20,7 @@ RISCV_TEST_MARCH=-march=rv64ima -mabi=lp64
 $(O)/riscv-tests/%.elf: riscv-tests/%.S
 	$(Q)$(MKDIR_P) $(@D)
 	$(QUIET_CC)$(CC) "$^" -o "$@" \
-	    -nostartfiles -nostdlib -mcmodel=medany -static $(RISCV_TEST_MARCH) \
+	    -fno-pic -fno-pie -fno-plt -nostartfiles -nostdlib -mcmodel=medany -static $(RISCV_TEST_MARCH) \
 		-Wl,-Ttext=0x80000000 \
 		-I include \
 		-I riscv-tests \
