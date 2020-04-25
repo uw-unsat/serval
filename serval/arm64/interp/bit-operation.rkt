@@ -4,10 +4,9 @@
   "common.rkt")
 
 (provide
-  (rename-out
-    [@rev   rev]
-    [@rev16 rev16]
-    [@rev32 rev32])
+  rev
+  rev16
+  rev32
   rev64)
 
 
@@ -57,19 +56,17 @@
 
 (define-insn (sf opc Rn Rd)
   #:encode (lambda () (list sf (bv #b1 1) (bv #b0 1) (bv #b11010110 8) (bv #b00000 5) (bv #b0000 4) opc Rn Rd))
-  [() rev   interpret-rev*]
-  [() rev16 interpret-rev*]
-  [() rev32 interpret-rev*])
+  [() rev*  interpret-rev*])
 
-(define (@rev sf Rn Rd)
-  (rev sf (concat (bv #b1 1) sf) Rn Rd))
+(define (rev sf Rn Rd)
+  (rev* sf (concat (bv #b1 1) sf) Rn Rd))
 
-(define (@rev16 sf Rn Rd)
-  (rev sf (bv #b01 2) Rn Rd))
+(define (rev16 sf Rn Rd)
+  (rev* sf (bv #b01 2) Rn Rd))
 
-(define (@rev32 Rn Rd)
-  (rev32 (bv #b1 1) (bv #b10 2) Rn Rd))
+(define (rev32 Rn Rd)
+  (rev* (bv #b1 1) (bv #b10 2) Rn Rd))
 
 ; alias of rev
 (define (rev64 Rn Rd)
-  (@rev (bv #b1 1) Rn Rd))
+  (rev (bv #b1 1) Rn Rd))

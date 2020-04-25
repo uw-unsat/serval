@@ -98,6 +98,8 @@
   (define insn-bits (arm64:instruction-encode insn))
   ; each instruction is 32-bit
   (check-equal? (core:bv-size insn-bits) 32)
+  ; check encode-decode consistency
+  (check-equal? insn (arm64:decode insn-bits))
 
   (define bstr (list->bytes (map bitvector->natural (core:bitvector->list/le insn-bits))))
   (define uc (cpu->uc cpu addr bstr))
