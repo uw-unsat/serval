@@ -9,13 +9,20 @@
 (define-simple-check (check-unsat? sol) (unsat? sol))
 (define-simple-check (check-sat? sol) (sat? sol))
 
+(define (color-string prefix s [out (current-output-port)])
+  (if (terminal-port? out)
+      (string-append prefix s "\033[0m")
+      s))
+
+(define color-succ (curry color-string "\033[0;32m"))
+
 ; A version of test-case that clears all Rosette state after; executing and
 ; inserts an additional check that the test does not leave around unnecessary
 ; assertions.
 (define-syntax-rule (test-case+ name body ...)
   (test-case name (begin
-    (printf "Running test ~v\n" name)
-    (time (with-asserts-only
+    (printf "~a ~v\n" (color-succ "[ RUN      ]") name)
+    (define (proc) (with-asserts-only
       (parameterize ([current-bitwidth (current-bitwidth)]
                      [term-cache (hash-copy (term-cache))]
                      [current-solver (current-solver)]
@@ -23,7 +30,8 @@
                      [assert-db (hash-copy (assert-db))])
         (check-asserts-only (begin body ...))
         (check-equal? (asserts) null))))
-    (printf "Finished test ~v\n" name))))
+    (define-values (result cpu-time real-time gc-time) (time-apply proc null))
+    (printf "~a ~v (~v ms)\n" (color-succ "[       OK ]") name real-time))))
 
 (define-syntax-rule (check-asserts expr)
   (let-values ([(result asserted) (with-asserts expr)])
