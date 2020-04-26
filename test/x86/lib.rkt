@@ -84,6 +84,12 @@
 (define choose-rel32
   choose-imm32)
 
+(define (choose-r8-imm8)
+  (list (choose-r8) (choose-imm8)))
+
+(define (choose-r8*-imm8)
+  (list (choose-r8-rex) (choose-imm8)))
+
 (define (choose-r32-imm32)
   (list (choose-r32) (choose-imm32)))
 

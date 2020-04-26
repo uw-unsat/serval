@@ -10,6 +10,8 @@
   mov-r/m64-r64
   mov-r32-r/m32
   mov-r64-r/m64
+  mov-r8-imm8
+  mov-r8*-imm8
   mov-r32-imm32
   mov-r64-imm64
   mov-r/m8-imm8
@@ -130,6 +132,24 @@
              (list (rex.w/r (car ed) (first es)) (byte #x8B) (modr/m (second es) (cdr ed) (third es)) (fourth es)))
   (lambda (cpu dst src)
     (cpu-gpr-set! cpu dst (cpu-gpr-ref cpu src))))
+
+; B0+ rb ib
+(define-insn mov-r8-imm8 (dst imm8)
+  #:decode [((+r #xB0 reg) ib)
+            (list (gpr8-no-rex reg) ib)]
+           [((rex/r b) (+r #xB0 reg) ib)
+            (list (gpr8 b reg) ib)]
+  #:encode (list (rex/r dst) (+r #xB0 dst) imm8)
+  (lambda (cpu dst imm8)
+    (cpu-gpr-set! cpu dst imm8)))
+
+; REX.W + B0+ rb ib
+(define-insn mov-r8*-imm8 (dst imm8)
+  #:decode [((rex.w/r b) (+r #xB0 reg) ib)
+            (list (gpr8 b reg) ib)]
+  #:encode (list (rex.w/r dst) (+r #xB0 dst) imm8)
+  (lambda (cpu dst imm8)
+    (cpu-gpr-set! cpu dst imm8)))
 
 ; B8+ rd id
 (define-insn mov-r32-imm32 (dst imm32)
