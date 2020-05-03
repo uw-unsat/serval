@@ -34,7 +34,7 @@
 
   (define data (mem-atomic cpu address 'ADD value ldacctype stacctype))
   (unless (bveq t (integer->gpr 31))
-    (cpu-gpr-set! t (zero-extend data (bitvector regsize)))))
+    (cpu-gpr-set! cpu t (zero-extend data (bitvector regsize)))))
 
 
 (define-insn (size A R Rs Rn Rt)

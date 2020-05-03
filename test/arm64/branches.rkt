@@ -6,11 +6,11 @@
   (test-suite+ "Arithmetic (immediate)"
     ; Conditional branch
      (arm64-case* [choose-imm19 choose-cond]
-      b.cond)
+       b.cond)
     ; Unconditional branch (immediate)
      (arm64-case* [choose-imm26]
-      b
-      bl)
+       b
+       bl)
 ))
 
 (module+ test

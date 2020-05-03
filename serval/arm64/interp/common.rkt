@@ -126,7 +126,7 @@
       [(SMAX) (if (bvsgt oldvalue value) oldvalue value)]
       [(SMIN) (if (bvsgt oldvalue value) value oldvalue)]
       [(UMAX) (if (bvugt oldvalue value) oldvalue value)]
-      [(SMIN) (if (bvsgt oldvalue value) value oldvalue)]
+      [(UMIN) (if (bvugt oldvalue value) value oldvalue)]
       [(SWP)  value]))
 
   (core:memmgr-store! mm address offset newvalue (bv (quotient size 8) 64) #:dbg (cpu-pc-ref cpu))
