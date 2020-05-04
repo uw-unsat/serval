@@ -41,7 +41,14 @@
 
 (define-syntax-rule (guard v)
   (let ([type (typeof v)])
-    (assert (type v) (format "~a: expected type ~a" v type))))
+    (define expr
+      (cond
+        [(box? type)
+         (set! type (unbox type))
+         (and (box? v) (type (unbox v)))]
+        [else
+         (type v)]))
+    (assert expr (format "~a: expected type ~a" v type))))
 
 (define-syntax (typeof stx)
   (syntax-case stx ()
@@ -69,10 +76,10 @@
 (define typeof-A (bitvector 1))
 (define typeof-N (bitvector 1))
 (define typeof-R (bitvector 1))
-(define typeof-Ra (bitvector 5))
-(define typeof-Rd (bitvector 5))
-(define typeof-Rm (bitvector 5))
-(define typeof-Rn (bitvector 5))
-(define typeof-Rs (bitvector 5))
-(define typeof-Rt (bitvector 5))
+(define typeof-Ra (box (bitvector 5)))
+(define typeof-Rd (box (bitvector 5)))
+(define typeof-Rm (box (bitvector 5)))
+(define typeof-Rn (box (bitvector 5)))
+(define typeof-Rs (box (bitvector 5)))
+(define typeof-Rt (box (bitvector 5)))
 (define typeof-S (bitvector 1))

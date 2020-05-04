@@ -15,9 +15,9 @@
 
   (define datasize (arithmetic-shift 8 (bitvector->natural size)))
   (define regsize (if (equal? datasize 64) 64 32))
-  (define ldacctype (if (&& (bveq A (bv #b1 1)) (! (bveq Rt (bv #b11111 5)))) 'ORDEREDATOMICRW 'ATOMICRW))
+  (define ldacctype (if (&& (bveq A (bv #b1 1)) (! (equal? Rt (integer->gpr #b11111)))) 'ORDEREDATOMICRW 'ATOMICRW))
   (define stacctype (if (bveq R (bv #b1 1)) 'ORDEREDATOMICRW 'ATOMICRW))
-  (define tag_checked (! (bveq n (integer->gpr 31))))
+  (define tag_checked (! (equal? n (integer->gpr 31))))
 
   (values t n s datasize regsize ldacctype stacctype tag_checked))
 
@@ -26,14 +26,14 @@
   (define-values (t n s datasize regsize ldacctype stacctype tag_checked) (decode size A R Rs Rn Rt))
   (define value (trunc datasize (cpu-gpr-ref cpu s)))
   (define address
-    (if (bveq n (integer->gpr 31))
+    (if (equal? n (integer->gpr 31))
         (begin
           (check-sp-alignment cpu)
           (cpu-sp-ref cpu))
         (cpu-gpr-ref cpu n)))
 
   (define data (mem-atomic cpu address 'ADD value ldacctype stacctype))
-  (unless (bveq t (integer->gpr 31))
+  (unless (equal? t (integer->gpr 31))
     (cpu-gpr-set! cpu t (zero-extend data (bitvector regsize)))))
 
 
@@ -48,7 +48,7 @@
   (ldadd* (bv #b11 2) (bv #b0 1) (bv #b0 1) Rs Rn Rt))
 
 (define (stadd32 Rs Rn)
-  (ldadd32 Rs Rn (bv #b11111 5)))
+  (ldadd32 Rs Rn (integer->gpr #b11111)))
 
 (define (stadd64 Rs Rn)
-  (ldadd64 Rs Rn (bv #b11111 5)))
+  (ldadd64 Rs Rn (integer->gpr #b11111)))

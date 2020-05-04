@@ -27,7 +27,7 @@
   (nzcv (bit 31 x) (bit 30 x) (bit 29 x) (bit 28 x)))
 
 (define (integer->gpr n)
-  (bv n 5))
+  (box (bv n 5)))
 
 ; ignore v0-v31, fpcr, fpsr, daif
 (struct cpu (pc sp xn nzcv memmgr) #:mutable #:transparent)

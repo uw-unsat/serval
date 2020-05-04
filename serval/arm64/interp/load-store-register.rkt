@@ -32,7 +32,7 @@
   (define offset (extend-reg 64 cpu m extend_type shift))
 
   (define address
-    (if (bveq n (integer->gpr 31))
+    (if (equal? n (integer->gpr 31))
         (begin
           (check-sp-alignment cpu)
           (cpu-sp-ref cpu))
@@ -47,7 +47,7 @@
   (define offset (extend-reg 64 cpu m extend_type shift))
 
   (define address
-    (if (bveq n (integer->gpr 31))
+    (if (equal? n (integer->gpr 31))
         (begin
           (check-sp-alignment cpu)
           (cpu-sp-ref cpu))

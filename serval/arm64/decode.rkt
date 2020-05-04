@@ -18,6 +18,8 @@
   ; split a 32-bit bitvector into chunks
   (define (split x lst)
     (define e (car lst))
+    (when (box? e)
+      (set! e (unbox e)))
     (set! lst (cdr lst))
     (define i
       (cond
@@ -34,10 +36,14 @@
     ; Match from lowest bits, which is a better fit for bytes
     ; constructed using (concat ...) and simpler for offsets.
     (define chunks (reverse (split x (reverse spec))))
-    ; Use eqv? as it's unlifted.
     (define match? (andmap (lambda (act exp) (if (bv? exp) (bveq act exp) #t)) chunks spec))
+    (define (make-if-bitvector act exp)
+      (cond
+        [(and (box? exp) (bitvector? (unbox exp))) (box act)]
+        [(bitvector? exp) act]
+        [else #f]))
     (if match?
-        (apply ctor (filter-map (lambda (act exp) (if (bitvector? exp) act #f)) chunks spec))
+        (apply ctor (filter-map make-if-bitvector chunks spec))
         #f))
   (set! decoders (cons proc decoders)))
 

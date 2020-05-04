@@ -29,7 +29,7 @@
   (define operand1 (trunc datasize (cpu-gpr-ref cpu n)))
 
   (define result (bvand operand1 imm))
-  (if (bveq d (integer->gpr 31))
+  (if (equal? d (integer->gpr 31))
       (cpu-sp-set! cpu result)
       (cpu-gpr-set! cpu d result)))
 
@@ -39,7 +39,7 @@
   (define operand1 (trunc datasize (cpu-gpr-ref cpu n)))
 
   (define result (bvor operand1 imm))
-  (if (bveq d (integer->gpr 31))
+  (if (equal? d (integer->gpr 31))
       (cpu-sp-set! cpu result)
       (cpu-gpr-set! cpu d result)))
 
@@ -49,7 +49,7 @@
   (define operand1 (trunc datasize (cpu-gpr-ref cpu n)))
 
   (define result (bvxor operand1 imm))
-  (if (bveq d (integer->gpr 31))
+  (if (equal? d (integer->gpr 31))
       (cpu-sp-set! cpu result)
       (cpu-gpr-set! cpu d result)))
 

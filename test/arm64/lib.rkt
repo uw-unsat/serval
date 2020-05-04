@@ -50,10 +50,10 @@
 
 ; X0 - X30, plus SP/ZR (31)
 (define choose-reg
-  (core:make-arg (bitvector 5)))
+  (box (core:make-arg (bitvector 5))))
 
 (define choose-sp
-  (bv 31 5))
+  (arm64:integer->gpr 31))
 
 
 ; configuration
@@ -87,7 +87,7 @@
   (uc-reg-write uc 'sp (bitvector->natural (arm64:cpu-sp-ref cpu)))
   ; set Xn
   (for ([i (range 31)])
-    (uc-reg-write uc (integer->xn i) (bitvector->natural (arm64:cpu-gpr-ref cpu (bv i 5)))))
+    (uc-reg-write uc (integer->xn i) (bitvector->natural (arm64:cpu-gpr-ref cpu (arm64:integer->gpr i)))))
   ; set nzcv
   (uc-reg-write uc 'nzcv (bitvector->natural (arm64:nzcv->bitvector (arm64:cpu-nzcv-ref cpu))))
   uc)

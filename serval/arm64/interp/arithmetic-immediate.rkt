@@ -25,19 +25,19 @@
 
 (define (interpret-add-immediate cpu sf sh imm12 Rn Rd)
   (define-values (d n datasize imm) (decode sf sh imm12 Rn Rd))
-  (define operand1 (trunc datasize (if (bveq n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
+  (define operand1 (trunc datasize (if (equal? n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
 
   (define-values (result _)
     (add-with-carry operand1 imm (bv #b0 1)))
 
-  (if (bveq d (integer->gpr 31))
+  (if (equal? d (integer->gpr 31))
       (cpu-sp-set! cpu result)
       (cpu-gpr-set! cpu d result)))
 
 
 (define (interpret-adds-immediate cpu sf sh imm12 Rn Rd)
   (define-values (d n datasize imm) (decode sf sh imm12 Rn Rd))
-  (define operand1 (trunc datasize (if (bveq n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
+  (define operand1 (trunc datasize (if (equal? n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
 
   (define-values (result nzcv)
     (add-with-carry operand1 imm (bv #b0 1)))
@@ -49,20 +49,20 @@
 
 (define (interpret-sub-immediate cpu sf sh imm12 Rn Rd)
   (define-values (d n datasize imm) (decode sf sh imm12 Rn Rd))
-  (define operand1 (trunc datasize (if (bveq n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
+  (define operand1 (trunc datasize (if (equal? n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
   (define operand2 (bvnot imm))
 
   (define-values (result _)
     (add-with-carry operand1 operand2 (bv #b1 1)))
 
-  (if (bveq d (integer->gpr 31))
+  (if (equal? d (integer->gpr 31))
       (cpu-sp-set! cpu result)
       (cpu-gpr-set! cpu d result)))
 
 
 (define (interpret-subs-immediate cpu sf sh imm12 Rn Rd)
   (define-values (d n datasize imm) (decode sf sh imm12 Rn Rd))
-  (define operand1 (trunc datasize (if (bveq n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
+  (define operand1 (trunc datasize (if (equal? n (integer->gpr 31)) (cpu-sp-ref cpu) (cpu-gpr-ref cpu n))))
   (define operand2 (bvnot imm))
 
   (define-values (result nzcv)
