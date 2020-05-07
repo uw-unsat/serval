@@ -89,10 +89,10 @@
   (apply concat (build-list n (lambda (i) x))))
 
 (define (undefined)
-  (assert #f "UNDEFINED"))
+  (core:bug #:msg "UNDEFINED"))
 
 (define (unreachable)
-  (assert #f "UNREACHABLE"))
+  (core:bug #:msg "UNREACHABLE"))
 
 (define (zeros n)
   ; Use bv for now, but can switch to for/all if a symbolic n is needed.
@@ -100,11 +100,20 @@
   (bv 0 n))
 
 
+; aarch64/exceptions/aborts/
+
+(define (sp-alignment-fault cpu)
+  (core:bug #:msg "SP ALIGNMENT FAULT"))
+
+
 ; aarch64/functions/memory/
 
 (define (check-sp-alignment cpu)
-  ; Skip for now
-  (void))
+  (define sp (cpu-sp-ref cpu))
+  ; We don't have a model of SA yet, so just be strict.
+  (define stack_align_check #t)
+  (when (&& stack_align_check (! (core:bvaligned? sp (bv 16 64))))
+    (sp-alignment-fault cpu)))
 
 (define (mem-atomic cpu address op value ldacctype stacctype)
   (define offset (bv 0 64))
