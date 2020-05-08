@@ -63,7 +63,9 @@
     (cpu-gpr-set! cpu dst (cpu-gpr-ref cpu src))))
 
 (define-insn mov-m32-r32 (dst src)
-  #:decode [((byte #x89) (modr/m (== (bv #b01 2)) reg r/m) disp8)
+  #:decode [((byte #x89) (modr/m (== (bv #b00 2)) reg r/m))
+            (list (register-indirect (gpr64-no-rex r/m) #f 32) (gpr32-no-rex reg))]
+           [((byte #x89) (modr/m (== (bv #b01 2)) reg r/m) disp8)
             (list (register-indirect (gpr64-no-rex r/m) disp8 32) (gpr32-no-rex reg))]
            [((byte #x89) (modr/m (== (bv #b10 2)) reg r/m) disp32.0 disp32.1 disp32.2 disp32.3)
             (list (register-indirect (gpr64-no-rex r/m) (decode-imm disp32.0 disp32.1 disp32.2 disp32.3) 32) (gpr32-no-rex reg))]

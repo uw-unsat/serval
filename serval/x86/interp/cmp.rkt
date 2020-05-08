@@ -11,7 +11,9 @@
   cmp-r/m32-imm8
   cmp-r/m64-imm8
   cmp-r/m32-r32
-  cmp-r/m64-r64)
+  cmp-r/m64-r64
+  cmp-r32-r/m32
+  cmp-r64-r/m64)
 
 
 (define (interpret-cmp cpu src1 v2)
@@ -89,5 +91,32 @@
   #:decode [((rex.w/r r b) (byte #x39) (/r reg r/m))
             (list (gpr64 b r/m) (gpr64 r reg))]
   #:encode (list (rex.w/r src2 src1) (byte #x39) (/r src2 src1))
+  (lambda (cpu src1 src2)
+    (interpret-cmp cpu src1 (cpu-gpr-ref cpu src2))))
+
+; 3B /r
+(define-insn cmp-r32-r/m32 (src1 src2)
+  #:decode [((byte #x3B) (/r reg r/m))
+            (list (gpr32-no-rex reg) (gpr32-no-rex r/m))]
+           [((rex/r r b) (byte #x3B) (/r reg r/m))
+            (list (gpr32 r reg) (gpr32 b r/m))]
+  #:encode (list (rex/r src1 src2) (byte #x3B) (/r src1 src2))
+  (lambda (cpu src1 src2)
+    (interpret-cmp cpu src1 (trunc 32 (cpu-gpr-ref cpu src2)))))
+
+(define-insn cmp-r32-m32 (src1 src2)
+  #:decode [((byte #x3B) (modr/m (== (bv #b00 2)) reg r/m))
+            (list (gpr32-no-rex reg) (register-indirect (gpr64-no-rex r/m) #f 32))]
+  #:encode (let ([es1 (register-encode src1)]
+                 [es2 (register-encode src2)])
+             (list (rex/r (car es1) (first es2)) (byte #x3B) (modr/m (second es2) (cdr es1) (third es2)) (fourth es2)))
+  (lambda (cpu src1 src2)
+    (interpret-cmp cpu src1 (cpu-gpr-ref cpu src2))))
+
+; REX.W + 3B /r
+(define-insn cmp-r64-r/m64 (src1 src2)
+  #:decode [((rex.w/r r b) (byte #x3B) (/r reg r/m))
+            (list (gpr64 r reg) (gpr64 b r/m))]
+  #:encode (list (rex.w/r src1 src2) (byte #x3B) (/r src1 src2))
   (lambda (cpu src1 src2)
     (interpret-cmp cpu src1 (cpu-gpr-ref cpu src2))))

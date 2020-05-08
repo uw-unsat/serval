@@ -13,6 +13,8 @@
     cmp-r/m64-imm8
     cmp-r/m32-r32
     cmp-r/m64-r64
+    cmp-r32-r/m32
+    cmp-r64-r/m64
 ))
 
 (module+ test
