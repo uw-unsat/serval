@@ -11,6 +11,7 @@
   gpr16 gpr16-no-rex
   gpr8 gpr8-no-rex
   gprs64 symbol->gpr64
+  symbol->gpr32
   rax rdx rsp eax edx ebp cl
   register-indirect)
 
