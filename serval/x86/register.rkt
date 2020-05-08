@@ -12,7 +12,9 @@
   gpr8 gpr8-no-rex
   gprs64 symbol->gpr64
   symbol->gpr32
-  rax rdx rsp eax edx ebp cl
+  rax rdx rbp rsp
+  eax edx ebp esp
+  cl
   register-indirect)
 
 
@@ -184,35 +186,68 @@
 
 (define rax (symbol->gpr64 'rax))
 (define rdx (symbol->gpr64 'rdx))
+(define rbp (symbol->gpr64 'rbp))
 (define rsp (symbol->gpr64 'rsp))
 (define eax (symbol->gpr32 'eax))
 (define edx (symbol->gpr32 'edx))
 (define ebp (symbol->gpr32 'ebp))
+(define esp (symbol->gpr32 'esp))
 (define cl (symbol->gpr8 'cl))
 
 
 ; displacement
 
 (define (register-indirect-name r)
+  (define base (register-name (register-indirect-gpr r)))
+  (define disp (register-indirect-disp r))
   (string->symbol
-    (format "~a+[~a]"
-      (register-name (register-indirect-gpr r))
-      (register-indirect-disp r))))
+    (if disp
+      (format "[~a+~a]" base disp)
+      (format "[a]" base))))
 
 (define (register-indirect-encode r)
   (define p (register-encode (register-indirect-gpr r)))
   (define disp (register-indirect-disp r))
+  (define suffix null)
   (define mod
-    (case (core:bv-size disp)
-      [(8)  (bv #b01 2)]
-      [(32) (bv #b10 2)]))
-  (list (car p) mod (cdr p) (core:bitvector->list/le disp)))
+    (cond
+      [disp
+        (set! suffix (core:bitvector->list/le disp))
+        (case (core:bv-size disp)
+          [(8)  (bv #b01 2)]
+          [(32) (bv #b10 2)])]
+      [else
+        (bv #b00 2)]))
+  (list (car p) mod (cdr p) suffix))
 
 ; Be defensive about types to work with both 32- and 64-bit memory models.
 (define (sign-cast n x)
-  (if (< n (core:bv-size x))
-      (trunc n x)
-      (sign-extend x (bitvector n))))
+  (cond
+    ; disp can be #f
+    [(not x)
+      (bv 0 n)]
+    [(< n (core:bv-size x))
+      (trunc n x)]
+    [else
+      (sign-extend x (bitvector n))]))
+
+; No support for absolute addressing or SIB yet:
+;                   mod r/m
+;   [--][--]        00  100
+;   disp32          00  101
+;   [--][--]+disp8  01  100
+;   [--][--]+disp32 10  100
+(define (guard-register-indirect gpr disp size name)
+  (define (unsupported)
+    (core:bug (format "guard-register-indirect: unsupported addressing: ~a ~a ~a" gpr disp size)))
+  (cond
+    ; absolute addressing
+    [(and (not disp) (member gpr (list rbp ebp)))
+      (unsupported)]
+    ; SIB
+    [(member gpr (list rsp esp))
+      (unsupported)])
+  (values gpr disp size))
 
 (define (register-indirect-ref cpu r)
   (define mm (cpu-memmgr cpu))
@@ -234,6 +269,7 @@
 
 (struct register-indirect (gpr disp size)
   #:transparent
+  #:guard guard-register-indirect
   #:methods gen:register
   [(define (register-size r) (register-indirect-size r))
    (define register-name register-indirect-name)
