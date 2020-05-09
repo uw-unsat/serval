@@ -23,6 +23,7 @@
   "interp/shrd.rkt"
   "interp/sub.rkt"
   "interp/test.rkt"
+  "interp/xchg.rkt"
   "interp/xor.rkt"
   )
 
@@ -49,5 +50,6 @@
   "interp/shrd.rkt"
   "interp/sub.rkt"
   "interp/test.rkt"
+  "interp/xchg.rkt"
   "interp/xor.rkt"
   ))

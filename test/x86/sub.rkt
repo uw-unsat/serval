@@ -13,6 +13,8 @@
     sub-r/m64-imm8
     sub-r/m32-r32
     sub-r/m64-r64
+    sub-r32-r/m32
+    sub-r64-r/m64
 ))
 
 (module+ test

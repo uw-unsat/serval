@@ -11,7 +11,9 @@
   sub-r/m32-imm8
   sub-r/m64-imm8
   sub-r/m32-r32
-  sub-r/m64-r64)
+  sub-r/m64-r64
+  sub-r32-r/m32
+  sub-r64-r/m64)
 
 
 (define (interpret-sub cpu dst v2)
@@ -90,5 +92,32 @@
   #:decode [((rex.w/r r b) (byte #x29) (/r reg r/m))
             (list (gpr64 b r/m) (gpr64 r reg))]
   #:encode (list (rex.w/r src dst) (byte #x29) (/r src dst))
+  (lambda (cpu dst src)
+    (interpret-sub cpu dst (cpu-gpr-ref cpu src))))
+
+; 2B /r
+(define-insn sub-r32-r/m32 (dst src)
+  #:decode [((byte #x2B) (/r reg r/m))
+            (list (gpr32-no-rex reg) (gpr32-no-rex r/m))]
+           [((rex/r r b) (byte #x2B) (/r reg r/m))
+            (list (gpr32 r reg) (gpr32 b r/m))]
+  #:encode (list (rex/r dst src) (byte #x2B) (/r dst src))
+  (lambda (cpu dst src)
+    (interpret-sub cpu dst (cpu-gpr-ref cpu src))))
+
+(define-insn sub-r32-m32 (dst src)
+  #:decode [((byte #x2B) (modr/m (== (bv #b00 2)) reg r/m))
+            (list (gpr32-no-rex reg) (register-indirect (gpr64-no-rex r/m) #f 32))]
+  #:encode (let ([ed (register-encode dst)]
+                 [es (register-encode src)])
+             (list (rex/r (car ed) (first es)) (byte #x2B) (modr/m (second es) (cdr ed) (third es)) (fourth es)))
+  (lambda (cpu dst src)
+    (interpret-sub cpu dst (cpu-gpr-ref cpu src))))
+
+; REX.W + 2B /r
+(define-insn sub-r64-r/m64 (dst src)
+  #:decode [((rex.w/r r b) (byte #x2B) (/r reg r/m))
+            (list (gpr64 r reg) (gpr64 b r/m))]
+  #:encode (list (rex.w/r dst src) (byte #x2B) (/r dst src))
   (lambda (cpu dst src)
     (interpret-sub cpu dst (cpu-gpr-ref cpu src))))
