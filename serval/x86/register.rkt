@@ -239,7 +239,7 @@
 ;   [--][--]+disp32 10  100
 (define (guard-register-indirect gpr disp size name)
   (define (unsupported)
-    (core:bug (format "guard-register-indirect: unsupported addressing: ~a ~a ~a" gpr disp size)))
+    (core:bug #:msg (format "guard-register-indirect: unsupported addressing: ~a ~a ~a" gpr disp size)))
   (cond
     ; absolute addressing
     [(and (not disp) (member gpr (list rbp ebp)))

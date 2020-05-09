@@ -141,6 +141,8 @@
 (define (choose-r/m64-r64-imm8)
   (list (choose-r/m64) (choose-r64) (choose-imm8)))
 
+(define (choose-r/m64-no-rex)
+  (list (make-no-rex x86:gpr64-no-rex)))
 
 ; unicorn helpers
 

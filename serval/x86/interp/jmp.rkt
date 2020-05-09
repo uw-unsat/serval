@@ -5,7 +5,8 @@
 
 (provide
   jmp-rel8
-  jmp-rel32)
+  jmp-rel32
+  jmp-r/m64-no-rex)
 
 
 ; EB cb
@@ -24,3 +25,13 @@
   #:encode (list (byte #xE9) (encode-imm rel32))
   (lambda (cpu rel32)
     (cpu-pc-next! cpu (sign-extend rel32 (bitvector 64)))))
+
+
+; FF /4
+(define-insn jmp-r/m64-no-rex (src)
+  #:decode [((byte #xFF) (/4 r/m))
+            (list (gpr64-no-rex r/m))]
+  #:encode (list (byte #xFF) (/4 src))
+  (lambda (cpu src)
+    ; deduct the instruction length for interpret-insn
+    (cpu-pc-set! cpu (bvsub (cpu-gpr-ref cpu src) (bv 2 64)))))
