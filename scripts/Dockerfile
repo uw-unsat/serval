@@ -1,8 +1,8 @@
 FROM ubuntu:20.04
 
 ARG RACKET_VERSION=7.7
-ARG ROSETTE_VERSION=4669ab3ca8033cc5c6e57f5f2578d59d13a8bc61
-ARG Z3_VERSION=4.8.7
+ARG ROSETTE_VERSION=9baab4c02f0f530b58e7e853dac8b6e35848a865
+ARG Z3_VERSION=4.8.8
 ARG BOOLECTOR_VERSION=3.2.1
 ARG UNICORN_VERSION=1.0.2-rc3
 
@@ -14,6 +14,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     bison \
     build-essential \
     clang \
+    clang-format \
     cmake \
     curl \
     flex \
