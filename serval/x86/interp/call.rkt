@@ -20,7 +20,7 @@
   ; Push return address to stack
   (define sp (bvsub (trunc n (cpu-gpr-ref cpu rsp)) size))
   (cpu-gpr-set! cpu rsp (zero-extend sp (bitvector 64)))
-  (core:memmgr-store! mm sp (bv 0 n) (cpu-pc-ref cpu) size #:dbg (cpu-pc-ref cpu))
+  (core:memmgr-store! mm sp (bv 0 n) ret-addr size #:dbg (cpu-pc-ref cpu))
 
   ; Jump to offset
   (cpu-pc-next! cpu (sign-extend rel (bitvector 64))))

@@ -12,7 +12,7 @@
   gpr8 gpr8-no-rex
   gprs64 symbol->gpr64
   symbol->gpr32
-  rax rdx rbp rsp
+  rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15
   eax edx ebp esp
   cl
   register-indirect)
@@ -185,9 +185,22 @@
   (integer->gpr (index-of gprs8 sym) gpr8))
 
 (define rax (symbol->gpr64 'rax))
+(define rcx (symbol->gpr64 'rcx))
 (define rdx (symbol->gpr64 'rdx))
-(define rbp (symbol->gpr64 'rbp))
+(define rbx (symbol->gpr64 'rbx))
 (define rsp (symbol->gpr64 'rsp))
+(define rbp (symbol->gpr64 'rbp))
+(define rsi (symbol->gpr64 'rsi))
+(define rdi (symbol->gpr64 'rdi))
+(define r8 (symbol->gpr64 'r8))
+(define r9 (symbol->gpr64 'r9))
+(define r10 (symbol->gpr64 'r10))
+(define r11 (symbol->gpr64 'r11))
+(define r12 (symbol->gpr64 'r12))
+(define r13 (symbol->gpr64 'r13))
+(define r14 (symbol->gpr64 'r14))
+(define r15 (symbol->gpr64 'r15))
+
 (define eax (symbol->gpr32 'eax))
 (define edx (symbol->gpr32 'edx))
 (define ebp (symbol->gpr32 'ebp))
