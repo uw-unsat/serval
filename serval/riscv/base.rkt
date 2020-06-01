@@ -117,7 +117,10 @@
     pmpaddr0 pmpaddr1 pmpaddr2 pmpaddr3 pmpaddr4 pmpaddr5 pmpaddr6 pmpaddr7 pmpaddr8 pmpaddr9
     pmpaddr10 pmpaddr11 pmpaddr12 pmpaddr13 pmpaddr14 pmpaddr15 mcycle minstret))
 
-(struct cpu (pc gprs csrs memmgr shims xlen) #:mutable #:transparent)
+(struct cpu (pc gprs csrs memmgr shims xlen) #:mutable #:transparent
+  #:methods core:gen:gen-cpu
+  [(define (gen-cpu-memmgr cpu) (cpu-memmgr cpu))
+   (define (gen-cpu-pc cpu) (cpu-pc cpu))])
 
 ; DEPRECATED:
 ;  To be backwards compatible with code that assumes the RISC-V memory

@@ -52,7 +52,10 @@
      (fprintf port "\n  ~a" regs)
      (for ([i (in-range (vector-length fdtable))])
        (fprintf port "\n  fd~a . ~a" i (vector-ref fdtable i)))
-     (fprintf port ")"))])
+     (fprintf port ")"))]
+  #:methods core:gen:gen-cpu
+  [(define (gen-cpu-memmgr cpu) (cpu-memmgr cpu))
+   (define (gen-cpu-pc cpu) (cpu-pc cpu))])
 
 (struct regs (r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 ax) #:transparent #:mutable)
 

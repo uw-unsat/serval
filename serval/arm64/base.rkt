@@ -30,7 +30,10 @@
   (box (bv n 5)))
 
 ; ignore v0-v31, fpcr, fpsr, daif
-(struct cpu (pc sp xn nzcv memmgr) #:mutable #:transparent)
+(struct cpu (pc sp xn nzcv memmgr) #:mutable #:transparent
+  #:methods core:gen:gen-cpu
+  [(define (gen-cpu-memmgr cpu) (cpu-memmgr cpu))
+   (define (gen-cpu-pc cpu) (cpu-pc cpu))])
 
 (define cpu-pc-ref cpu-pc)
 (define cpu-pc-set! set-cpu-pc!)

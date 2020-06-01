@@ -2,6 +2,7 @@
 
 (require
   "bvarith.rkt"
+  "cpu.rkt"
   "debug.rkt"
   "memmgr.rkt"
   "memory/mblock.rkt"
@@ -15,6 +16,7 @@
 (provide
   (all-defined-out)
   (all-from-out "bvarith.rkt")
+  (all-from-out "cpu.rkt")
   (all-from-out "debug.rkt")
   (all-from-out "memmgr.rkt")
   (all-from-out "memory/mblock.rkt")

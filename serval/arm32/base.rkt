@@ -23,7 +23,10 @@
 (define (integer->gpr n)
   (box (bv n 4)))
 
-(struct cpu (pc rs cpsr memmgr) #:mutable #:transparent)
+(struct cpu (pc rs cpsr memmgr) #:mutable #:transparent
+  #:methods core:gen:gen-cpu
+  [(define (gen-cpu-memmgr cpu) (cpu-memmgr cpu))
+   (define (gen-cpu-pc cpu) (cpu-pc cpu))])
 
 (define (cpu-pc-set! cpu v)
   (set-cpu-pc! cpu v))

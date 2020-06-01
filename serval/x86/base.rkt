@@ -21,7 +21,10 @@
 (define (flag->integer r)
   (index-of flags r))
 
-(struct cpu (pc gprs flags memmgr) #:mutable #:transparent)
+(struct cpu (pc gprs flags memmgr) #:mutable #:transparent
+  #:methods core:gen:gen-cpu
+  [(define (gen-cpu-memmgr cpu) (cpu-memmgr cpu))
+   (define (gen-cpu-pc cpu) (cpu-pc cpu))])
 
 (define (trunc n x)
   (extract (sub1 n) 0 x))
