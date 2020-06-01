@@ -24,19 +24,19 @@
 (struct cpu (pc gprs flags memmgr) #:mutable #:transparent
   #:methods core:gen:gen-cpu
   [(define (gen-cpu-memmgr cpu) (cpu-memmgr cpu))
-   (define (gen-cpu-pc cpu) (cpu-pc cpu))])
+   (define (gen-cpu-pc cpu)
+     (define pc (cpu-pc cpu))
+      (define mm (cpu-memmgr cpu))
+      (when mm
+        (define n (core:memmgr-bitwidth mm))
+        ; split before truncation
+        (set! pc (for/all ([pc pc #:exhaustive]) (trunc n pc))))
+      pc)])
 
 (define (trunc n x)
   (extract (sub1 n) 0 x))
 
-(define (cpu-pc-ref cpu)
-  (define pc (cpu-pc cpu))
-  (define mm (cpu-memmgr cpu))
-  (when mm
-    (define n (core:memmgr-bitwidth mm))
-    ; split before truncation
-    (set! pc (for/all ([pc pc #:exhaustive]) (trunc n pc))))
-  pc)
+(define (cpu-pc-ref cpu) (core:gen-cpu-pc cpu))
 
 (define (cpu-pc-set! cpu pc)
   (set-cpu-pc! cpu (zero-extend pc (bitvector 64))))
