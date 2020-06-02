@@ -16,7 +16,7 @@
 
   ; Load return address
   (define ret-addr
-    (core:memmgr-load mm (cpu-gpr-ref cpu rsp) (bv 0 n) size #:dbg (cpu-pc-ref cpu)))
+    (core:memmgr-load mm (trunc n (cpu-gpr-ref cpu rsp)) (bv 0 n) size #:dbg (cpu-pc-ref cpu)))
 
   ; Pop addr from stack
   (define sp (bvadd (trunc n (cpu-gpr-ref cpu rsp)) size))
