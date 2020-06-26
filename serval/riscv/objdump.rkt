@@ -3,7 +3,7 @@
 (require
   "base.rkt"
   "interp.rkt"
-  "encoder.rkt"
+  "decode.rkt"
   (prefix-in core: "../lib/core.rkt")
   racket/list
   racket/match
@@ -111,89 +111,8 @@
         (define instructions '#,(read-instructions in)))))
 
 (define (parse-objdump-instr i #:addr i-addr #:size size #:raw [raw #f])
-  (define insn
-   (match i
-
-    [(list (and op 'c.unimp))
-      (rv_cr_insn op #f #f)]
-
-    [(list (and op (or 'wfi 'sfence.vma 'unimp 'mret)) _ ...)
-      (rv_r_insn op #f #f #f)]
-
-    [(list (and op (or 'fence.i 'fence)) _ ...)
-      (rv_i_insn op #f #f #f)]
-
-    ; Dst + 20-bit imm
-    [(list (and op (or 'auipc 'lui)) rd off)
-      (rv_u_insn op rd (bv off 20))]
-
-    ; dst + src + 12-bit imm
-    [(list (and op (or 'slti 'sltiu 'addiw 'slliw 'srliw 'sraiw 'addi 'subi 'muli 'ori 'andi 'xori 'srli 'srai 'slli)) dst src imm)
-      (rv_i_insn op dst src (bv imm 12))]
-
-    ; dst + src + src
-    [(list (and op (or 'slt 'sltu 'addw 'add 'subw 'sub 'or 'and 'xor 'srlw 'srl 'sraw 'sra 'sllw 'sll 'mulw 'mul 'mulh 'mulhu 'mulhsu 'divw 'div 'remw 'rem 'divuw 'divu 'remuw 'remu)) dst src1 src2)
-      (rv_r_insn op dst src1 src2)]
-
-    [(list 'jal dst abs-addr)
-
-      (define off (extract 20 1 (bvsub (bv abs-addr (XLEN)) i-addr)))
-      (core:bug-on
-        (! (bveq (bv abs-addr (XLEN))
-                 (bvadd i-addr (bvshl (sign-extend off (bitvector (XLEN))) (bv 1 (XLEN))))))
-        #:msg (format "Relinking failed:\n i-addr ~e\n off ~e" i-addr off))
-
-      (rv_u_insn 'jal dst off)]
-
-    [(list 'jalr dst (list 'offset imm src))
-      (rv_i_insn 'jalr dst src (bv imm 12))]
-
-    [(list (and op (or 'ld 'ldu 'lw 'lwu 'lh 'lhu 'lb 'lbu))
-           dst
-           (list 'offset off reg))
-      (rv_i_insn op dst reg (bv off 12))]
-
-    [(list (and op (or 'sd 'sw 'sh 'sb))
-           src
-           (list 'offset off reg))
-      (rv_s_insn op reg src (bv off 12))]
-
-    [(list (and op (or 'amoswap.w 'amoadd.w 'amoand.w 'amoor.w 'amoxor.w 'amomax.w 'amomaxu.w 'amomin.w 'amominu.w
-                       'amoswap.d 'amoadd.d 'amoand.d 'amoor.d 'amoxor.d 'amomax.d 'amomaxu.d 'amomin.d 'amominu.d))
-           dst
-           rs2
-           (list rs1))
-      ; NB: assume aq,rl == 0
-      (rv_amo_insn op dst rs1 rs2 (bv 0 1) (bv 0 1))]
-
-    [(list (and op (or 'bge 'blt 'bgeu 'bltu 'bne 'beq)) reg1 reg2 abs-addr)
-      (define off (extract 12 1 (bvsub (bv abs-addr (XLEN)) i-addr)))
-      (core:bug-on
-        (! (bveq (bv abs-addr (XLEN))
-                 (bvadd i-addr (bvshl (sign-extend off (bitvector (XLEN))) (bv 1 (XLEN))))))
-        #:msg (format "Relinking failed:\n i-addr ~e\n off ~e" i-addr off))
-      (rv_s_insn op reg1 reg2 off)]
-
-    [(list (and op (or 'csrrw 'csrrs 'csrrc)) dst csr src)
-      (rv_i_insn op dst src csr)]
-
-    [(list (and op (or 'csrrwi 'csrrsi 'csrrci)) dst csr imm)
-      (rv_i_insn op dst (bv imm 5) csr)]
-
-    [else (core:bug #:msg (format "Bad parse ~e" i))]))
-
-  (core:bug-on (! (equal? size (insn-size insn)))
-               #:msg (format "Bad instruction size for ~a, expected ~v got ~v"
-                      insn size (insn-size insn)))
-
-  (when raw
-    (define encoded (encode-instr insn))
-    (when encoded
-      (define rawbv (bv (string->number raw 16) (* 8 size)))
-      (core:bug-on (! (equal? rawbv encoded))
-                   #:msg (format "Encoding did not produce expected result: ~a ~a ~a" insn rawbv encoded))))
-
-  insn)
+  (define rawbv (bv (string->number raw 16) (* 8 size)))
+  (decode rawbv))
 
 (define (compile-objdump-program instructions)
   (core:bug-on (! (core:concrete?)))

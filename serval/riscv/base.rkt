@@ -7,6 +7,13 @@
 
 (provide (all-defined-out))
 
+(define (trunc n x)
+  (extract (sub1 n) 0 x))
+
+(define-generics instruction
+  (instruction-encode instruction)
+  (instruction-run instruction cpu))
+
 (define XLEN
   (make-parameter 64
     (lambda (x)
@@ -18,24 +25,6 @@
 (define riscv-default-size (make-parameter #f))
 
 (define current-pc-debug (bv 0 (XLEN)))
-
-(struct rv_r_insn (op rd rs1 rs2) #:transparent)
-(struct rv_i_insn (op rd rs1 imm12) #:transparent)
-(struct rv_s_insn (op rs1 rs2 imm12) #:transparent)
-(struct rv_u_insn (op rd imm20) #:transparent)
-(struct rv_amo_insn (op rd rs1 rs2 aq rl) #:transparent)
-(struct rv_cr_insn (op rd/rs1 rs2) #:transparent)
-
-(define (insn-size insn)
-  (cond
-    [(rv_r_insn? insn) 4]
-    [(rv_i_insn? insn) 4]
-    [(rv_s_insn? insn) 4]
-    [(rv_u_insn? insn) 4]
-    [(rv_amo_insn? insn) 4]
-    [(rv_cr_insn? insn) 2]
-    [else (core:bug #:msg (format "insn-size: unknown instruction type: ~v" insn)
-                    #:dbg current-pc-debug)]))
 
 (define (set-current-pc-debug! v)
   (set! current-pc-debug v))
@@ -314,6 +303,44 @@
       (if (and (integer? gpr) (&& (>= gpr 0) (< gpr 32)))
           gpr
           (core:bug #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr)))]))
+
+; Convert bv5 to gpr
+(define (decode-gpr gpr)
+  (cond
+    [(bveq gpr (bv 0 5)) 'zero]
+    [(bveq gpr (bv 1 5)) 'ra]
+    [(bveq gpr (bv 2 5)) 'sp]
+    [(bveq gpr (bv 3 5)) 'gp]
+    [(bveq gpr (bv 4 5)) 'tp]
+    [(bveq gpr (bv 5 5)) 't0]
+    [(bveq gpr (bv 6 5)) 't1]
+    [(bveq gpr (bv 7 5)) 't2]
+    [(bveq gpr (bv 8 5)) 's0]
+    [(bveq gpr (bv 9 5)) 's1]
+    [(bveq gpr (bv 10 5)) 'a0]
+    [(bveq gpr (bv 11 5)) 'a1]
+    [(bveq gpr (bv 12 5)) 'a2]
+    [(bveq gpr (bv 13 5)) 'a3]
+    [(bveq gpr (bv 14 5)) 'a4]
+    [(bveq gpr (bv 15 5)) 'a5]
+    [(bveq gpr (bv 16 5)) 'a6]
+    [(bveq gpr (bv 17 5)) 'a7]
+    [(bveq gpr (bv 18 5)) 's2]
+    [(bveq gpr (bv 19 5)) 's3]
+    [(bveq gpr (bv 20 5)) 's4]
+    [(bveq gpr (bv 21 5)) 's5]
+    [(bveq gpr (bv 22 5)) 's6]
+    [(bveq gpr (bv 23 5)) 's7]
+    [(bveq gpr (bv 24 5)) 's8]
+    [(bveq gpr (bv 25 5)) 's9]
+    [(bveq gpr (bv 26 5)) 's10]
+    [(bveq gpr (bv 27 5)) 's11]
+    [(bveq gpr (bv 28 5)) 't3]
+    [(bveq gpr (bv 29 5)) 't4]
+    [(bveq gpr (bv 30 5)) 't5]
+    [(bveq gpr (bv 31 5)) 't6]
+    [else
+      (core:bug #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr))]))
 
 (define (@gpr-set! gprs gpr val)
   (core:bug-on (! (bv? val)) #:msg (format "gpr-set!: not a bitvector: ~e" val) #:dbg current-pc-debug)

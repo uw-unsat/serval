@@ -3,12 +3,13 @@
 (require
   serval/lib/unittest
   serval/riscv/interp
-  serval/riscv/base)
+  serval/riscv/base
+  serval/riscv/interp)
 
 (define (check-jalr-clears-least-bit)
   (define cpu (init-cpu))
   (gpr-set! cpu 'a0 (bv #xffff (XLEN)))
-  (define i (rv_i_insn 'jalr 'zero 'a0 (bv 0 12)))
+  (define i (jalr (bv 0 12) (gpr->idx 'a0) (bv 0 5)))
   (interpret-insn cpu i)
   (check-equal? (cpu-pc cpu) (bv #xfffe (XLEN)))
   (check-equal? (asserts) null))

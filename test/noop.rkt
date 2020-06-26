@@ -2,6 +2,7 @@
 
 (require
   serval/lib/unittest
+  serval/riscv/interp
   (prefix-in riscv: serval/riscv/objdump)
   (prefix-in noop: "generated/racket/test/noop.asm.rkt")
 )
