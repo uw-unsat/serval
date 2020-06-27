@@ -304,6 +304,9 @@
           gpr
           (core:bug #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr)))]))
 
+; encode-gpr is alias for gpr->idx
+(define encode-gpr gpr->idx)
+
 ; Convert bv5 to gpr
 (define (decode-gpr gpr)
   (cond
