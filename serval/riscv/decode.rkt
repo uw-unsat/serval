@@ -5,10 +5,15 @@
   "base.rkt")
 
 (provide
-  add-decoder decode)
-
+  add-decoder decode (struct-out nonzero))
 
 (define decoders null)
+
+; Recognizes a non-zero bitvector of a particular size.
+(struct nonzero (size)
+  #:transparent
+  #:property prop:procedure
+  (lambda (self v) (and ((bitvector (nonzero-size self)) v) (! (bvzero? v)))))
 
 ; To construct an instruction, a decoder checks that constant fields match
 ; and extracts values for symbolic fields:
@@ -23,6 +28,7 @@
     (set! lst (cdr lst))
     (define i
       (cond
+        [(nonzero? e)   (nonzero-size e)]
         [(bitvector? e) (bitvector-size e)]
         [(bv? e)        (core:bv-size e)]
         [else           (error "unknown decoder")]))
@@ -50,11 +56,12 @@
       [(false? (andmap (lambda (x) x) chunks)) #f]
       [else
         (set! chunks (reverse chunks))
-        (define match? (andmap (lambda (act exp) (if (bv? exp) (bveq act exp) #t)) chunks spec))
+        (define match? (andmap (lambda (act exp) (if (bv? exp) (bveq act exp) (exp act))) chunks spec))
         (define (make-if-bitvector act exp)
           (cond
             [(and (box? exp) (bitvector? (unbox exp))) (box act)]
             [(bitvector? exp) act]
+            [(nonzero? exp) act]
             [else #f]))
         (if match?
             (apply ctor (filter-map make-if-bitvector chunks spec))

@@ -93,6 +93,11 @@ bar:    nop
         CR(c.subw)
         CR(c.xor)
 
+        la a2, foo_c
+        c.add a0, a1
+        c.jalr a2
+foo_c:
+
 .option norvc
 
 /* Other system instructions */

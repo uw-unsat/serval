@@ -23,6 +23,18 @@
   [(#b100111 #b00 #b01) c.subw (interpret-crw-type bvsub)]
   [(#b100111 #b01 #b01) c.addw (interpret-crw-type bvadd)])
 
+; CR type with non-zero rs2
+(define-insn (rs1/rd nz-rs2)
+  #:encode (lambda (funct4 op)
+                   (list (bv funct4 4) rs1/rd nz-rs2 (bv op 2)))
+  [(#b1001 #b10) c.add skip/debug])
+
+; CR with zero rs2
+(define-insn (rs1/rd)
+  #:encode (lambda (funct4 op)
+                   (list (bv funct4 4) rs1/rd (bv 0 5) (bv op 2)))
+  [(#b1001 #b10) c.jalr skip/debug])
+
 ; All zeroes is a special compressed illegal instruction.
 (define-insn ()
   #:encode (lambda () (list (bv 0 16)))

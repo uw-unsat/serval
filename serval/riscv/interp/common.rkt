@@ -28,6 +28,10 @@
 (define (skip cpu insn . args)
   (cpu-next! cpu insn))
 
+(define (skip/debug cpu insn . args)
+  (displayln insn)
+  (cpu-next! cpu insn))
+
 ; Make a shift op from SMT shift operation by masking out upper bits.
 (define ((make-shift-op op) v1 v2)
   (op v1 (bvand (bv (sub1 (core:bv-size v1)) (core:bv-size v1)) v2)))
