@@ -87,5 +87,7 @@
 (define typeof-rs2^ (bitvector 3))
 (define typeof-rs1^/rd^ (bitvector 3))
 
-(define typeof-nz-rd/rs1 (nonzero 5))
+(define typeof-nz-rs1/rd (nonzero 5))
 (define typeof-nz-rs2 (nonzero 5))
+(define typeof-nz-rd (nonzero 5))
+(define typeof-nz-rs1 (nonzero 5))
