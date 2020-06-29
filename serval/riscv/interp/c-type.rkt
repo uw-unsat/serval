@@ -50,6 +50,12 @@
                    (list (bv funct4 4) (bv 0 5) (bv 0 5) (bv op 2)))
   [(#b1001 #b10) c.ebreak skip/debug])
 
+; Branches
+(define-insn (imm8&4:3 rs1^ imm7:6&2:1&5)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) imm8&4:3 rs1^ imm7:6&2:1&5 (bv op 2)))
+  [(#b110 #b01) c.beqz skip/debug]
+  [(#b111 #b01) c.bnez skip/debug])
 
 ; All zeroes is a special compressed illegal instruction.
 (define-insn ()

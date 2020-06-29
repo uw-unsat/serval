@@ -24,10 +24,9 @@
 (define-insn (imm12&10:5 rs2 rs1 imm4:1&11)
   #:encode (lambda (funct3 opcode)
                    (list imm12&10:5 rs2 rs1 (bv funct3 3) imm4:1&11 (bv opcode 7)))
-  [(#b000 #b1100011) beq (interpret-b-type bveq)]
-  [(#b001 #b1100011) bne (interpret-b-type (lambda (a b) (! (bveq a b))))]
-  [(#b100 #b1100011) blt (interpret-b-type bvslt)]
-  [(#b101 #b1100011) bge (interpret-b-type bvsge)]
+  [(#b000 #b1100011) beq  (interpret-b-type bveq)]
+  [(#b001 #b1100011) bne  (interpret-b-type (lambda (a b) (! (bveq a b))))]
+  [(#b100 #b1100011) blt  (interpret-b-type bvslt)]
+  [(#b101 #b1100011) bge  (interpret-b-type bvsge)]
   [(#b110 #b1100011) bltu (interpret-b-type bvult)]
-  [(#b111 #b1100011) bgeu (interpret-b-type bvuge)]
-)
+  [(#b111 #b1100011) bgeu (interpret-b-type bvuge)])

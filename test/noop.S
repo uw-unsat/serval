@@ -86,6 +86,9 @@ bar:    nop
 
 #define CR(op) op a0, a1
 #define CI(op) op a0, 7
+#define CB(op) \
+        op a0, 1f; \
+        1: \
 
         CR(c.addw)
         CR(c.and)
@@ -108,6 +111,9 @@ bar_c:
 foo_c:
 
         c.add a0, a1
+
+        CB(c.beqz)
+        CB(c.bnez)
 
 .option norvc
 
