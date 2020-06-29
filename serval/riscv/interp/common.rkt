@@ -35,3 +35,47 @@
 ; Make a comparison op from SMT comparison and lifting to bv.
 (define ((make-cmp-op op) v1 v2)
   (if (op v1 v2) (bv 1 (core:bv-size v1)) (bv 0 (core:bv-size v1))))
+
+; Register-register operation
+(define (reg-reg-op op cpu insn rs2 rs1 rd)
+  (define a (gpr-ref cpu rs1))
+  (define b (gpr-ref cpu rs2))
+  (gpr-set! cpu rd (op a b))
+  (cpu-next! cpu insn))
+
+; 32-bit ops on rv64
+(define (reg-reg-opw op cpu insn rs2 rs1 rd)
+  (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg (format "~v: (cpu-xlen cpu) != 64" insn)
+                                         #:dbg current-pc-debug)
+  (define a (extract 31 0 (gpr-ref cpu rs1)))
+  (define b (extract 31 0 (gpr-ref cpu rs2)))
+  (gpr-set! cpu rd (sign-extend (op a b) (bitvector 64)))
+  (cpu-next! cpu insn))
+
+(define (encode-compressed-gpr gpr)
+  (case gpr
+    [(s0 fp x8) (bv #b000 3)]
+    [(s1 x9)    (bv #b001 3)]
+    [(a0 x10)   (bv #b010 3)]
+    [(a1 x11)   (bv #b011 3)]
+    [(a2 x12)   (bv #b100 3)]
+    [(a3 x13)   (bv #b101 3)]
+    [(a4 x14)   (bv #b110 3)]
+    [(a5 x15)   (bv #b111 3)]
+    [else (core:bug #:dbg current-pc-debug
+                    #:msg (format "cannot encode ~v as compressed gpr" gpr))]))
+
+(define (decode-compressed-gpr gpr)
+  (for/all ([gpr gpr #:exhaustive])
+    (cond
+      [(bveq gpr (bv #b000 3)) 's0]
+      [(bveq gpr (bv #b001 3)) 's1]
+      [(bveq gpr (bv #b010 3)) 'a0]
+      [(bveq gpr (bv #b011 3)) 'a1]
+      [(bveq gpr (bv #b100 3)) 'a2]
+      [(bveq gpr (bv #b101 3)) 'a3]
+      [(bveq gpr (bv #b110 3)) 'a4]
+      [(bveq gpr (bv #b111 3)) 'a5]
+      [else
+        (core:bug #:dbg current-pc-debug
+                  #:msg (format "No such compressed GPR ~e\n" gpr))])))

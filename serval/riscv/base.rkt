@@ -265,7 +265,7 @@
 
 ; Convert GPR name to integer index.
 ; Useful for encoding RISC-V instructions.
-(define (gpr->idx gpr)
+(define (encode-gpr gpr)
   (case gpr
     [(zero x0) (bv 0 5)]
     [(ra x1) (bv 1 5)]
@@ -304,8 +304,8 @@
           gpr
           (core:bug #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr)))]))
 
-; encode-gpr is alias for gpr->idx
-(define encode-gpr gpr->idx)
+; gpr->idx is an alias for encode-gpr
+(define gpr->idx encode-gpr)
 
 ; Convert bv5 to gpr
 (define (decode-gpr gpr)

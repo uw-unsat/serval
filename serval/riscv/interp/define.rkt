@@ -57,7 +57,9 @@
 (define typeof-aq (bitvector 1))
 (define typeof-csr (bitvector 12))
 (define typeof-fm (bitvector 4))
+(define typeof-funct2 (bitvector 2))
 (define typeof-funct3 (bitvector 3))
+(define typeof-funct4 (bitvector 4))
 (define typeof-funct6 (bitvector 6))
 (define typeof-funct7 (bitvector 7))
 (define typeof-imm11:0 (bitvector 12))
@@ -77,3 +79,9 @@
 (define typeof-shamt6 (bitvector 6))
 (define typeof-succ (bitvector 4))
 (define typeof-uimm (bitvector 5))
+
+; Compressed instruction register fields.
+(define typeof-rd^ (bitvector 3))
+(define typeof-rs1^ (bitvector 3))
+(define typeof-rs2^ (bitvector 3))
+(define typeof-rs1^/rd^ (bitvector 3))

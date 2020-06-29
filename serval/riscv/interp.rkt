@@ -10,7 +10,8 @@
          "interp/s-type.rkt"
          "interp/b-type.rkt"
          "interp/u-type.rkt"
-         "interp/j-type.rkt")
+         "interp/j-type.rkt"
+         "interp/c-type.rkt")
 
 (provide (all-defined-out)
          (all-from-out "base.rkt")
@@ -20,7 +21,8 @@
          (all-from-out "interp/s-type.rkt")
          (all-from-out "interp/b-type.rkt")
          (all-from-out "interp/u-type.rkt")
-         (all-from-out "interp/j-type.rkt"))
+         (all-from-out "interp/j-type.rkt")
+         (all-from-out "interp/c-type.rkt"))
 
 (struct program (base instructions) #:transparent)
 

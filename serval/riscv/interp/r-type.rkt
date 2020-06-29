@@ -6,18 +6,11 @@
 
 ; Regular r-type insn.
 (define ((interpret-r-type op) cpu insn rs2 rs1 rd)
-  (define a (gpr-ref cpu (decode-gpr rs1)))
-  (define b (gpr-ref cpu (decode-gpr rs2)))
-  (gpr-set! cpu (decode-gpr rd) (op a b))
-  (cpu-next! cpu insn))
+  (reg-reg-op op cpu insn (decode-gpr rs2) (decode-gpr rs1) (decode-gpr rd)))
 
 ; 32-bit ops on rv64.
 (define ((interpret-rw-type op) cpu insn rs2 rs1 rd)
-  (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
-  (define a (extract 31 0 (gpr-ref cpu (decode-gpr rs1))))
-  (define b (extract 31 0 (gpr-ref cpu (decode-gpr rs2))))
-  (gpr-set! cpu (decode-gpr rd) (sign-extend (op a b) (bitvector 64)))
-  (cpu-next! cpu insn))
+  (reg-reg-opw op cpu insn (decode-gpr rs2) (decode-gpr rs1) (decode-gpr rd)))
 
 (define ((interpret-amo-insn op size) cpu insn aq rl rs2 rs1 rd)
   (define mm (cpu-memmgr cpu))

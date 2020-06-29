@@ -31,7 +31,7 @@
       [(&& (equal? i n) (empty? lst))
         ; The bitvector is the exact size as the next expected element
         (list x)]
-      [(< i n)
+      [(&& (< i n) (! (empty? lst)))
         ; There are more bytes in the bv than this part of the spec,
         ; recurse to continue decoding.
         (cons (trunc i x) (split (extract (sub1 n) i x) lst))]
