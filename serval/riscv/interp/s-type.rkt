@@ -4,7 +4,7 @@
 
 (provide (all-defined-out))
 
-(define ((interpret-store-insn size) cpu imm11:5 rs2 rs1 imm4:0)
+(define ((interpret-store-insn size) cpu insn imm11:5 rs2 rs1 imm4:0)
   (define mm (cpu-memmgr cpu))
   (define xlen (cpu-xlen cpu))
 
@@ -13,7 +13,7 @@
   (define value (trunc (* 8 size) (gpr-ref cpu (decode-gpr rs2))))
 
   (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen) #:dbg current-pc-debug)
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
 (define-insn (imm11:5 rs2 rs1 imm4:0)
   #:encode (lambda (funct3 opcode)

@@ -4,18 +4,18 @@
 
 (provide (all-defined-out))
 
-(define (interpret-lui cpu imm31:12 rd)
+(define (interpret-lui cpu insn imm31:12 rd)
   (gpr-set! cpu (decode-gpr rd)
                 (sign-extend (concat imm31:12 (bv 0 12))
                              (bitvector (cpu-xlen cpu))))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
-(define (interpret-auipc cpu imm31:12 rd)
+(define (interpret-auipc cpu insn imm31:12 rd)
   (gpr-set! cpu (decode-gpr rd)
                 (bvadd
                   (sign-extend (concat imm31:12 (bv 0 12)) (bitvector (cpu-xlen cpu)))
                   (cpu-pc cpu)))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
 (define-insn (imm31:12 rd)
   #:encode (lambda (opcode)

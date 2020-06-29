@@ -14,15 +14,20 @@
 
 (struct ptr (addr off size) #:transparent)
 
-(define (cpu-next! cpu size)
-  (set-cpu-pc! cpu (bvadd (bv size (cpu-xlen cpu)) (cpu-pc cpu))))
-
 ; remove once all are implemented
 (define (notimplemented cpu . args)
   (error "not implemented"))
 
-(define (skip4 cpu . args)
-  (cpu-next! cpu 4))
+(define (instruction-size insn)
+  (for/all ([insn insn #:exhaustive])
+    (/ (core:bv-size (instruction-encode insn)) 8)))
+
+(define (cpu-next! cpu insn)
+  (set-cpu-pc! cpu (bvadd (bv (instruction-size insn) (cpu-xlen cpu))
+                          (cpu-pc cpu))))
+
+(define (skip cpu insn . args)
+  (cpu-next! cpu insn))
 
 ; Make a shift op from SMT shift operation by masking out upper bits.
 (define ((make-shift-op op) v1 v2)

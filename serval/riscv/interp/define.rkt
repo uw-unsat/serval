@@ -30,7 +30,7 @@
              (apply concat (map (lambda (x) (if (box? x) (unbox x) x)) lst)))
            (define (instruction-run insn cpu)
              (match-let ([(op arg ...) insn])
-               (interp cpu arg ...)))]) ...
+               (interp cpu insn arg ...)))]) ...
          (add-decoder op
            ((lambda (arg ...) (encode field ...)) (typeof arg) ...))
          ... )]))

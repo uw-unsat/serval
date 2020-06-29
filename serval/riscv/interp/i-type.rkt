@@ -4,35 +4,35 @@
 
 (provide (all-defined-out))
 
-(define ((interpret-i-type op) cpu imm11:0 rs1 rd)
+(define ((interpret-i-type op) cpu insn imm11:0 rs1 rd)
   (define a (gpr-ref cpu (decode-gpr rs1)))
   (define b (sign-extend imm11:0 (bitvector (cpu-xlen cpu))))
   (gpr-set! cpu (decode-gpr rd) (op a b))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
-(define ((interpret-iw-type op) cpu imm11:0 rs1 rd)
+(define ((interpret-iw-type op) cpu insn imm11:0 rs1 rd)
   (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
   (define a (extract 31 0 (gpr-ref cpu (decode-gpr rs1))))
   (define b (sign-extend imm11:0 (bitvector 32)))
   (gpr-set! cpu (decode-gpr rd) (sign-extend (op a b) (bitvector 64)))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
-(define ((interpret-ishift-type op) cpu shamt rs1 rd)
+(define ((interpret-ishift-type op) cpu insn shamt rs1 rd)
   ; shamt is 6 bits: top bit must be 0 if rv32
   (core:bug-on (&& (= (cpu-xlen cpu) 32) (bvuge shamt (bv 32 6))) #:msg "32-bit shift immediate must be < 32" #:dbg current-pc-debug)
   (define a (gpr-ref cpu (decode-gpr rs1)))
   (define b (zero-extend shamt (bitvector (cpu-xlen cpu))))
   (gpr-set! cpu (decode-gpr rd) (op a b))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
-(define ((interpret-iwshift-type op) cpu shamt rs1 rd)
+(define ((interpret-iwshift-type op) cpu insn shamt rs1 rd)
   (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
   (define a (extract 31 0 (gpr-ref cpu (decode-gpr rs1))))
   (define b (zero-extend shamt (bitvector 32)))
   (gpr-set! cpu (decode-gpr rd) (sign-extend (op a b) (bitvector 64)))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
-(define (interpret-jalr cpu imm11:0 rs1 rd)
+(define (interpret-jalr cpu insn imm11:0 rs1 rd)
 
   (define next (bvadd (cpu-pc cpu) (bv 4 (cpu-xlen cpu))))
   (gpr-set! cpu (decode-gpr rd) next)
@@ -44,7 +44,7 @@
         (bvadd src (sign-extend imm11:0 (bitvector (cpu-xlen cpu)))))))
   (set-cpu-pc! cpu target))
 
-(define ((interpret-load-insn size signed?) cpu imm11:0 rs1 rd)
+(define ((interpret-load-insn size signed?) cpu insn imm11:0 rs1 rd)
   (define mm (cpu-memmgr cpu))
   (define xlen (cpu-xlen cpu))
 
@@ -58,7 +58,7 @@
   (set! value ((if signed? sign-extend zero-extend) value (bitvector xlen)))
 
   (gpr-set! cpu (decode-gpr rd) value)
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
 ; Regular I-type
 (define-insn (imm11:0 rs1 rd)
@@ -75,7 +75,7 @@
   [(#b111 #b0010011) andi (interpret-i-type bvand)]
 
   [(#b000 #b0011011) addiw (interpret-iw-type bvadd)]
-  [(#b001 #b0001111) fence.i skip4]
+  [(#b001 #b0001111) fence.i skip]
 
   [(#b000 #b0000011) lb (interpret-load-insn 1 #t)]
   [(#b001 #b0000011) lh (interpret-load-insn 2 #t)]
@@ -124,4 +124,4 @@
 (define-insn (fm pred succ rs1 rd)
   #:encode (lambda (funct3 opcode)
                    (list fm pred succ rs1 (bv funct3 3) rd (bv opcode 7)))
-  [(#b000 #b0001111) fence skip4])
+  [(#b000 #b0001111) fence skip])

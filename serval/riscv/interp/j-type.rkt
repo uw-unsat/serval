@@ -4,7 +4,7 @@
 
 (provide (all-defined-out))
 
-(define (interpret-jal cpu imm20&10:1&11&19:12 rd)
+(define (interpret-jal cpu insn imm20&10:1&11&19:12 rd)
   (define off
     (concat (extract 19 19 imm20&10:1&11&19:12)
             (extract 7 0 imm20&10:1&11&19:12)

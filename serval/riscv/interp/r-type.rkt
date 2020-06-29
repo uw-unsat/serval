@@ -5,21 +5,21 @@
 (provide (all-defined-out))
 
 ; Regular r-type insn.
-(define ((interpret-r-type op) cpu rs2 rs1 rd)
+(define ((interpret-r-type op) cpu insn rs2 rs1 rd)
   (define a (gpr-ref cpu (decode-gpr rs1)))
   (define b (gpr-ref cpu (decode-gpr rs2)))
   (gpr-set! cpu (decode-gpr rd) (op a b))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
 ; 32-bit ops on rv64.
-(define ((interpret-rw-type op) cpu rs2 rs1 rd)
+(define ((interpret-rw-type op) cpu insn rs2 rs1 rd)
   (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
   (define a (extract 31 0 (gpr-ref cpu (decode-gpr rs1))))
   (define b (extract 31 0 (gpr-ref cpu (decode-gpr rs2))))
   (gpr-set! cpu (decode-gpr rd) (sign-extend (op a b) (bitvector 64)))
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
-(define ((interpret-amo-insn op size) cpu aq rl rs2 rs1 rd)
+(define ((interpret-amo-insn op size) cpu insn aq rl rs2 rs1 rd)
   (define mm (cpu-memmgr cpu))
   (define xlen (cpu-xlen cpu))
   (core:bug-on (&& (= size 8) (= xlen 32)) #:msg "no amo*.d on rv32" #:dbg current-pc-debug)
@@ -33,7 +33,7 @@
   (core:memmgr-store! mm addr (bv 0 xlen) (trunc (* 8 size) newvalue) (bv size xlen) #:dbg current-pc-debug)
 
   (core:memmgr-atomic-end mm)
-  (cpu-next! cpu 4))
+  (cpu-next! cpu insn))
 
 ; R-type
 (define-insn (rs2 rs1 rd)
@@ -88,16 +88,16 @@
   [(#b0001000 #b00010 #b00000 #b000 #b00000 #b1110011) sret notimplemented]
   [(#b0011000 #b00010 #b00000 #b000 #b00000 #b1110011) mret notimplemented]
 
-  [(#b0001000 #b00101 #b00000 #b000 #b00000 #b1110011) wfi skip4]
+  [(#b0001000 #b00101 #b00000 #b000 #b00000 #b1110011) wfi skip]
 )
 
 ; Fences: R-type with only rs2 and rs1
 (define-insn (rs2 rs1)
   #:encode (lambda (funct7 funct3 rd opcode)
                    (list (bv funct7 7) rs2 rs1 (bv funct3 3) (bv rd 5) (bv opcode 7)))
-  [(#b0001001 #b000 #b00000 #b1110011) sfence.vma skip4]
-  [(#b0010001 #b000 #b00000 #b1110011) hfence.vvma skip4]
-  [(#b0110001 #b000 #b00000 #b1110011) hfence.gvma skip4])
+  [(#b0001001 #b000 #b00000 #b1110011) sfence.vma skip]
+  [(#b0010001 #b000 #b00000 #b1110011) hfence.vvma skip]
+  [(#b0110001 #b000 #b00000 #b1110011) hfence.gvma skip])
 
 ; Atomic instructions
 (define-insn (aq rl rs2 rs1 rd)
