@@ -27,24 +27,38 @@
         [(bv? e)        (core:bv-size e)]
         [else           (error "unknown decoder")]))
     (define n (core:bv-size x))
-    (if (equal? i n)
-        (begin
-          (assert (empty? lst))
-          (list x))
-        (cons (trunc i x) (split (extract (sub1 n) i x) lst))))
+    (cond
+      [(&& (equal? i n) (empty? lst))
+        ; The bitvector is the exact size as the next expected element
+        (list x)]
+      [(< i n)
+        ; There are more bytes in the bv than this part of the spec,
+        ; recurse to continue decoding.
+        (cons (trunc i x) (split (extract (sub1 n) i x) lst))]
+      [else
+        ; There are more bytes in the spec or there are remaining elements
+        ; in the list. This means the bv is the wrong size according to spec
+        ; so can never match.
+        (list #f)]))
+
   (define (proc x)
     ; Match from lowest bits, which is a better fit for bytes
     ; constructed using (concat ...) and simpler for offsets.
-    (define chunks (reverse (split x (reverse spec))))
-    (define match? (andmap (lambda (act exp) (if (bv? exp) (bveq act exp) #t)) chunks spec))
-    (define (make-if-bitvector act exp)
-      (cond
-        [(and (box? exp) (bitvector? (unbox exp))) (box act)]
-        [(bitvector? exp) act]
-        [else #f]))
-    (if match?
-        (apply ctor (filter-map make-if-bitvector chunks spec))
-        #f))
+    (define chunks (split x (reverse spec)))
+    (cond
+      ; Drop if split returns #f, when bv is wrong size
+      [(false? (andmap (lambda (x) x) chunks)) #f]
+      [else
+        (set! chunks (reverse chunks))
+        (define match? (andmap (lambda (act exp) (if (bv? exp) (bveq act exp) #t)) chunks spec))
+        (define (make-if-bitvector act exp)
+          (cond
+            [(and (box? exp) (bitvector? (unbox exp))) (box act)]
+            [(bitvector? exp) act]
+            [else #f]))
+        (if match?
+            (apply ctor (filter-map make-if-bitvector chunks spec))
+            #f)]))
   (set! decoders (cons proc decoders)))
 
 (define (decode x)

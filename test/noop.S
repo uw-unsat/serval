@@ -1,4 +1,6 @@
 
+.option norvc
+
 test:
         nop
         wfi

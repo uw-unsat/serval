@@ -14,9 +14,8 @@
 
 (struct ptr (addr off size) #:transparent)
 
-; remove once all are implemented
-(define (notimplemented cpu . args)
-  (error "not implemented"))
+(define (notimplemented cpu insn . args)
+  (error (format "instruction ~v not implemented" insn)))
 
 (define (instruction-size insn)
   (for/all ([insn insn #:exhaustive])

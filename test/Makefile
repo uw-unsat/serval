@@ -36,7 +36,7 @@ CFLAGS          += -mabi=lp64
 CFLAGS          += -ffunction-sections -fdata-sections
 CFLAGS          += -fno-PIE
 CFLAGS          += -I include
-CFLAGS          += -march=rv64ima
+CFLAGS          += -march=rv64g
 
 USER_CFLAGS     += $(BASE_CFLAGS)
 USER_CFLAGS     += -I include/uapi
