@@ -5,17 +5,10 @@
 (provide (all-defined-out))
 
 (define ((interpret-i-type op) cpu insn imm11:0 rs1 rd)
-  (define a (gpr-ref cpu (decode-gpr rs1)))
-  (define b (sign-extend imm11:0 (bitvector (cpu-xlen cpu))))
-  (gpr-set! cpu (decode-gpr rd) (op a b))
-  (cpu-next! cpu insn))
+  (reg-imm-op op cpu insn imm11:0 (decode-gpr rs1) (decode-gpr rd)))
 
 (define ((interpret-iw-type op) cpu insn imm11:0 rs1 rd)
-  (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
-  (define a (extract 31 0 (gpr-ref cpu (decode-gpr rs1))))
-  (define b (sign-extend imm11:0 (bitvector 32)))
-  (gpr-set! cpu (decode-gpr rd) (sign-extend (op a b) (bitvector 64)))
-  (cpu-next! cpu insn))
+  (reg-imm-opw op cpu insn imm11:0 (decode-gpr rs1) (decode-gpr rd)))
 
 (define ((interpret-ishift-type op) cpu insn shamt rs1 rd)
   ; shamt is 6 bits: top bit must be 0 if rv32

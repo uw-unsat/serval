@@ -47,12 +47,27 @@
   (gpr-set! cpu rd (op a b))
   (cpu-next! cpu insn))
 
+(define (reg-imm-op op cpu insn imm rs1 rd)
+  (define xlen (cpu-xlen cpu))
+  (define a (gpr-ref cpu rs1))
+  (define b (sign-extend imm (bitvector xlen)))
+  (gpr-set! cpu rd (op a b))
+  (cpu-next! cpu insn))
+
 ; 32-bit ops on rv64
 (define (reg-reg-opw op cpu insn rs2 rs1 rd)
   (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg (format "~v: (cpu-xlen cpu) != 64" insn)
                                          #:dbg current-pc-debug)
-  (define a (extract 31 0 (gpr-ref cpu rs1)))
-  (define b (extract 31 0 (gpr-ref cpu rs2)))
+  (define a (trunc 32 (gpr-ref cpu rs1)))
+  (define b (trunc 32 (gpr-ref cpu rs2)))
+  (gpr-set! cpu rd (sign-extend (op a b) (bitvector 64)))
+  (cpu-next! cpu insn))
+
+(define (reg-imm-opw op cpu insn imm rs1 rd)
+  (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg (format "~v: (cpu-xlen cpu) != 64" insn)
+                                         #:dbg current-pc-debug)
+  (define a (trunc 32 (gpr-ref cpu rs1)))
+  (define b (sign-extend imm (bitvector 32)))
   (gpr-set! cpu rd (sign-extend (op a b) (bitvector 64)))
   (cpu-next! cpu insn))
 

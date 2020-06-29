@@ -85,6 +85,7 @@ bar:    nop
 .option rvc
 
 #define CR(op) op a0, a1
+#define CI(op) op a0, 7
 
         CR(c.addw)
         CR(c.and)
@@ -92,6 +93,8 @@ bar:    nop
         CR(c.sub)
         CR(c.subw)
         CR(c.xor)
+
+        CI(c.andi)
 
         la a2, bar_c
         c.jr a2
