@@ -6,12 +6,15 @@
 
 ;;; CR-type "Register" instructions
 
+(define ((interpret-cr-2reg-type op) cpu insn rs1/rd rs2)
+  (reg-reg-op op cpu insn (decode-gpr rs1/rd) (decode-gpr rs1/rd) (decode-gpr rs2)))
+
 ; non-zero rs1/rd, non-zero rs2
 (define-insn (nz-rs1/rd nz-rs2)
   #:encode (lambda (funct4 op)
                    (list (bv funct4 4) nz-rs1/rd nz-rs2 (bv op 2)))
-  [(#b1000 #b10) c.mv  skip/debug]
-  [(#b1001 #b10) c.add skip/debug])
+  [(#b1000 #b10) c.mv  (interpret-cr-2reg-type (lambda (a b) b))]
+  [(#b1001 #b10) c.add (interpret-cr-2reg-type bvadd)])
 
 ; non-zero rs1/rd, zero rs2
 (define-insn (nz-rs1/rd)
