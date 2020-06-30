@@ -122,6 +122,8 @@ bar:    nop
         c.addi a0, 5
         c.nop
         c.slli a0, 5
+        c.srli a0, 5
+        c.srai a0, 5
 
 .option norvc
 

@@ -4,6 +4,20 @@
 
 (provide (all-defined-out))
 
+;;; Common
+
+(define ((interpret-shift-immediate op dec-reg) cpu insn imm5 rd imm4:0)
+  (define xlen (cpu-xlen cpu))
+  (define imm (zero-extend (concat imm5 imm4:0) (bitvector xlen)))
+
+  (core:bug-on (&& (= xlen 32) (! (bvzero? imm5)))
+               #:msg (format "~v: imm5 must be 0 for RV32" insn))
+  (core:bug-on (bvzero? imm)
+               #:msg (format "~v: shift amount must be non-zero" insn))
+  (define a (gpr-ref cpu (dec-reg rd)))
+  (gpr-set! cpu (dec-reg rd) (op a imm))
+  (cpu-next! cpu insn))
+
 ;;; CR-type "Register" instructions
 
 (define ((interpret-cr-2reg-type op) cpu insn rs1/rd rs2)
@@ -38,7 +52,7 @@
   [(#b000 #b01) c.addi skip/debug]
   [(#b010 #b01) c.li skip/debug]
 
-  [(#b000 #b10) c.slli skip/debug])
+  [(#b000 #b10) c.slli (interpret-shift-immediate bvshl decode-gpr)])
 
 ; zero rd
 (define-insn (imm5 imm4:0)
@@ -103,10 +117,24 @@
 (define ((interpret-cb-imm-type op) cpu insn imm5 rs1^/rd^ imm4:0)
   (reg-imm-op op cpu insn (concat imm5 imm4:0) (decode-compressed-gpr rs1^/rd^) (decode-compressed-gpr rs1^/rd^)))
 
+(define ((interpret-cb-shift-type op) cpu insn imm5 rs1^/rd^ imm4:0)
+  (define xlen (cpu-xlen cpu))
+  (define imm (zero-extend (concat imm5 imm4:0) (bitvector xlen)))
+
+  (core:bug-on (&& (= xlen 32) (! (bvzero? imm5)))
+               #:msg (format "~v: imm5 must be 0 for RV32" insn))
+  (core:bug-on (bvzero? imm)
+               #:msg (format "~v: shift amount must be non-zero" insn))
+  (define a (gpr-ref cpu (decode-compressed-gpr rs1^/rd^)))
+  (gpr-set! cpu (decode-compressed-gpr rs1^/rd^) (op a imm))
+  (cpu-next! cpu insn))
+
 ; "c.andi" is a CB-type as well
 (define-insn (imm5 rs1^/rd^ imm4:0)
   #:encode (lambda (funct3 funct2 op)
                    (list (bv funct3 3) imm5 (bv funct2 2) rs1^/rd^ imm4:0 (bv op 2)))
+  [(#b100 #b00 #b01) c.srli (interpret-shift-immediate bvlshr decode-compressed-gpr)]
+  [(#b100 #b01 #b01) c.srai (interpret-shift-immediate bvashr decode-compressed-gpr)]
   [(#b100 #b10 #b01) c.andi (interpret-cb-imm-type bvand)])
 
 ;;; CJ-type "Jump" instructions
