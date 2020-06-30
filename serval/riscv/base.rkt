@@ -12,6 +12,10 @@
   (instruction-encode instruction)
   (instruction-run instruction cpu))
 
+(define (instruction-size insn)
+  (for/all ([insn insn #:exhaustive])
+    (/ (core:bv-size (instruction-encode insn)) 8)))
+
 (define XLEN
   (make-parameter 64
     (lambda (x)

@@ -19,10 +19,6 @@
 (define (notimplemented cpu insn . args)
   (error (format "instruction ~v not implemented" insn)))
 
-(define (instruction-size insn)
-  (for/all ([insn insn #:exhaustive])
-    (/ (core:bv-size (instruction-encode insn)) 8)))
-
 (define (cpu-next! cpu insn)
   (set-cpu-pc! cpu (bvadd (bv (instruction-size insn) (cpu-xlen cpu))
                           (cpu-pc cpu))))
