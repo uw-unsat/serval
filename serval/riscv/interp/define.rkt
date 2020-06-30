@@ -66,6 +66,7 @@
 (define typeof-imm11:5 (bitvector 7))
 (define typeof-imm12&10:5 (bitvector 7))
 (define typeof-imm20&10:1&11&19:12 (bitvector 20))
+(define typeof-imm11&4&9:8&10&6&7&3:1&5 (bitvector 11))
 (define typeof-imm31:12 (bitvector 20))
 (define typeof-imm4:0 (bitvector 5))
 (define typeof-imm4:1&11 (bitvector 5))

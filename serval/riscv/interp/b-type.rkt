@@ -5,6 +5,7 @@
 (provide (all-defined-out))
 
 (define ((interpret-b-type op) cpu insn imm12&10:5 rs2 rs1 imm4:1&11)
+  (define xlen (cpu-xlen cpu))
   (define off
     (concat (extract 6 6 imm12&10:5)
             (extract 0 0 imm4:1&11)
@@ -18,7 +19,7 @@
   (define branch (op a b))
 
   (if branch
-    (set-cpu-pc! cpu (bvadd (cpu-pc cpu) (sign-extend off (bitvector (cpu-xlen cpu)))))
+    (set-cpu-pc! cpu (bvadd (cpu-pc cpu) (sign-extend off (bitvector xlen))))
     (cpu-next! cpu insn)))
 
 (define-insn (imm12&10:5 rs2 rs1 imm4:1&11)

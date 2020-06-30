@@ -88,7 +88,14 @@ bar:    nop
 #define CI(op) op a0, 7
 #define CB(op) \
         op a0, 1f; \
-        1: \
+        1:
+#define CJ(op) \
+        op 1f; \
+        1:
+#define CJR(op) \
+        la a1, 1f; \
+        op a1; \
+        1:
 
         CR(c.addw)
         CR(c.and)
@@ -96,24 +103,20 @@ bar:    nop
         CR(c.sub)
         CR(c.subw)
         CR(c.xor)
+        CR(c.mv)
+        CR(c.add)
 
         CI(c.andi)
 
-        la a2, bar_c
-        c.jr a2
-bar_c:
+        CJR(c.jr)
+        CJR(c.jalr)
 
-        CR(c.mv)
         c.ebreak
-
-        la a2, foo_c
-        c.jalr a2
-foo_c:
-
-        c.add a0, a1
 
         CB(c.beqz)
         CB(c.bnez)
+
+        CJ(c.j)
 
 .option norvc
 
