@@ -2,13 +2,11 @@
 
 (require
   (prefix-in core: "../lib/core.rkt")
+  "../lib/bvarith.rkt"
   "../lib/memmgr.rkt"
   rosette/base/core/polymorphic)
 
 (provide (all-defined-out))
-
-(define (trunc n x)
-  (extract (sub1 n) 0 x))
 
 (define-generics instruction
   (instruction-encode instruction)

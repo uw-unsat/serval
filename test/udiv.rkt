@@ -3,7 +3,7 @@
 (require (except-in rackunit fail)
          rackunit/text-ui
          rosette/lib/roseunit
-         serval/llvm
+         (prefix-in llvm: serval/llvm)
          serval/lib/unittest
          serval/lib/core)
 
@@ -37,7 +37,7 @@
   (check-equal? (evaluate y sol) (bv 0 32))
   ; llvm udiv (assumes y != 0)
   (define-values (llvm-cond asserted)
-    (with-asserts (equal? (@udiv x y) (udiv x y))))
+    (with-asserts (equal? (@udiv x y) (llvm:udiv x y))))
   (check-equal? (length asserted) 1)
   (check-unsat? (verify (assert (=> (first asserted) llvm-cond))))
   ; verify
@@ -61,7 +61,7 @@
   (test-suite+
    "Tests for udiv.c"
 
-   (parameterize ([current-machine (make-machine)])
+   (parameterize ([llvm:current-machine (llvm:make-machine)])
      (test-case+ "udiv-concrete" (check-udiv-concrete))
      (test-case+ "udiv-symbolic" (check-udiv-symbolic))
      (test-case+ "udiv-spec" (check-udiv-spec))

@@ -1,10 +1,10 @@
 #lang rosette
 
 (require
+  "../lib/bvarith.rkt"
   (prefix-in core: "../lib/core.rkt"))
 
-(provide (all-defined-out))
-
+(provide (all-defined-out) (all-from-out "../lib/bvarith.rkt"))
 
 (define-generics register
   (register-size register)
@@ -32,9 +32,6 @@
         ; split before truncation
         (set! pc (for/all ([pc pc #:exhaustive]) (trunc n pc))))
       pc)])
-
-(define (trunc n x)
-  (extract (sub1 n) 0 x))
 
 (define (cpu-pc-ref cpu) (core:gen-cpu-pc cpu))
 

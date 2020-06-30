@@ -3,6 +3,7 @@
 (require (prefix-in core: "../lib/core.rkt")
          (only-in racket/base hash-has-key? hash-ref)
          "../lib/memmgr.rkt"
+         "../lib/bvarith.rkt"
          "base.rkt"
          "symopt.rkt"
          "interp/r-type.rkt"

@@ -4,6 +4,9 @@
 
 (provide (all-defined-out))
 
+(define (trunc n x)
+  (extract (sub1 n) 0 x))
+
 (define i8 (bitvector 8))
 (define i16 (bitvector 16))
 (define i32 (bitvector 32))

@@ -2,6 +2,7 @@
 
 (require
   (prefix-in core: "../lib/core.rkt")
+  "../lib/bvarith.rkt"
   "base.rkt")
 
 (provide

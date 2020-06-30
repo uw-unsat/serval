@@ -3,6 +3,7 @@
 (require
   "define.rkt"
   "../base.rkt"
+  "../../lib/bvarith.rkt"
   (prefix-in core: "../../lib/core.rkt"))
 
 (provide
@@ -10,6 +11,7 @@
   (all-from-out
     "define.rkt"
     "../base.rkt"
+    "../../lib/bvarith.rkt"
     "../../lib/core.rkt"))
 
 

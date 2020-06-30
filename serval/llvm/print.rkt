@@ -18,7 +18,7 @@
     ""
     "(provide (all-defined-out))"
     ""
-    "(require serval/lib/core"
+    "(require (prefix-in core: serval/lib/core)"
     "         serval/llvm"
     "         serval/ubsan)"
     "") "\n") out)
