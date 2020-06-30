@@ -4,29 +4,6 @@
 
 (provide (all-defined-out))
 
-; CA-type "Arithmetic" instructions
-
-(define ((interpret-cr-type op) cpu insn rs1^/rd^ rs2^)
-  (reg-reg-op op cpu insn (decode-compressed-gpr rs2^) (decode-compressed-gpr rs1^/rd^) (decode-compressed-gpr rs1^/rd^)))
-
-(define ((interpret-ci-type op) cpu insn imm5 rs1^/rd^ imm4:0)
-  (reg-imm-op op cpu insn (concat imm5 imm4:0) (decode-compressed-gpr rs1^/rd^) (decode-compressed-gpr rs1^/rd^)))
-
-(define ((interpret-crw-type op) cpu insn rs1^/rd^ rs2^)
-  (reg-reg-opw op cpu insn (decode-compressed-gpr rs2^) (decode-compressed-gpr rs1^/rd^) (decode-compressed-gpr rs1^/rd^)))
-
-(define-insn (rs1^/rd^ rs2^)
-  #:encode (lambda (funct6 funct2 op)
-                   (list (bv funct6 6) rs1^/rd^ (bv funct2 2) rs2^ (bv op 2)))
-  [(#b100011 #b00 #b01) c.sub  (interpret-cr-type bvsub)]
-  [(#b100011 #b01 #b01) c.xor  (interpret-cr-type bvxor)]
-  [(#b100011 #b10 #b01) c.or   (interpret-cr-type bvor)]
-  [(#b100011 #b11 #b01) c.and  (interpret-cr-type bvand)]
-
-  [(#b100111 #b00 #b01) c.subw (interpret-crw-type bvsub)]
-  [(#b100111 #b01 #b01) c.addw (interpret-crw-type bvadd)])
-
-
 ;;; CR-type "Register" instructions
 
 ; non-zero rs1/rd, non-zero rs2
@@ -48,6 +25,50 @@
   #:encode (lambda (funct4 op)
                    (list (bv funct4 4) (bv 0 5) (bv 0 5) (bv op 2)))
   [(#b1001 #b10) c.ebreak skip/debug])
+
+;;; CI-type "Immediate" instructions
+
+; non-zero rd
+(define-insn (imm5 nz-rd imm4:0)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) imm5 nz-rd imm4:0 (bv op 2)))
+  [(#b000 #b01) c.addi skip/debug]
+  [(#b010 #b01) c.li skip/debug]
+
+  [(#b000 #b10) c.slli skip/debug])
+
+; zero rd
+(define-insn (imm5 imm4:0)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) imm5 (bv 0 5) imm4:0 (bv op 2)))
+  [(#b000 #b01) c.nop skip/debug])
+
+;;; CSS-type "Stack-relative Store" instructions
+
+;;; CIW-type "Wide Immediate" Instructions
+
+;;; CL-type "Load" instructions
+
+;;; CS-type "Store" instructions
+
+;;; CA-type "Arithmetic" instructions
+
+(define ((interpret-ca-type op) cpu insn rs1^/rd^ rs2^)
+  (reg-reg-op op cpu insn (decode-compressed-gpr rs2^) (decode-compressed-gpr rs1^/rd^) (decode-compressed-gpr rs1^/rd^)))
+
+(define ((interpret-caw-type op) cpu insn rs1^/rd^ rs2^)
+  (reg-reg-opw op cpu insn (decode-compressed-gpr rs2^) (decode-compressed-gpr rs1^/rd^) (decode-compressed-gpr rs1^/rd^)))
+
+(define-insn (rs1^/rd^ rs2^)
+  #:encode (lambda (funct6 funct2 op)
+                   (list (bv funct6 6) rs1^/rd^ (bv funct2 2) rs2^ (bv op 2)))
+  [(#b100011 #b00 #b01) c.sub  (interpret-ca-type bvsub)]
+  [(#b100011 #b01 #b01) c.xor  (interpret-ca-type bvxor)]
+  [(#b100011 #b10 #b01) c.or   (interpret-ca-type bvor)]
+  [(#b100011 #b11 #b01) c.and  (interpret-ca-type bvand)]
+
+  [(#b100111 #b00 #b01) c.subw (interpret-caw-type bvsub)]
+  [(#b100111 #b01 #b01) c.addw (interpret-caw-type bvadd)])
 
 ;;; CB-type "Branch" instructions
 
@@ -76,11 +97,14 @@
   [(#b110 #b01) c.beqz (interpret-c-branch bvzero?)]
   [(#b111 #b01) c.bnez (interpret-c-branch (compose ! bvzero?))])
 
+(define ((interpret-cb-imm-type op) cpu insn imm5 rs1^/rd^ imm4:0)
+  (reg-imm-op op cpu insn (concat imm5 imm4:0) (decode-compressed-gpr rs1^/rd^) (decode-compressed-gpr rs1^/rd^)))
+
 ; "c.andi" is a CB-type as well
 (define-insn (imm5 rs1^/rd^ imm4:0)
   #:encode (lambda (funct3 funct2 op)
                    (list (bv funct3 3) imm5 (bv funct2 2) rs1^/rd^ imm4:0 (bv op 2)))
-  [(#b100 #b10 #b01) c.andi (interpret-ci-type bvand)])
+  [(#b100 #b10 #b01) c.andi (interpret-cb-imm-type bvand)])
 
 ;;; CJ-type "Jump" instructions
 
