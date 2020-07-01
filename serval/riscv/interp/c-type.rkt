@@ -21,7 +21,7 @@
 ;;; CR-type "Register" instructions
 
 (define ((interpret-cr-2reg-type op) cpu insn rs1/rd rs2)
-  (reg-reg-op op cpu insn (decode-gpr rs1/rd) (decode-gpr rs1/rd) (decode-gpr rs2)))
+  (reg-reg-op op cpu insn (decode-gpr rs2) (decode-gpr rs1/rd) (decode-gpr rs1/rd)))
 
 ; non-zero rs1/rd, non-zero rs2
 (define-insn (nz-rs1/rd nz-rs2)
