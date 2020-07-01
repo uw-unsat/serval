@@ -45,12 +45,15 @@
 
 ;;; CI-type "Immediate" instructions
 
+(define ((interpret-ci-type op) cpu insn imm5 rd imm4:0)
+  (reg-imm-op op cpu insn (concat imm5 imm4:0) (decode-gpr rd) (decode-gpr rd)))
+
 ; non-zero rd
 (define-insn (imm5 nz-rd imm4:0)
   #:encode (lambda (funct3 op)
                    (list (bv funct3 3) imm5 nz-rd imm4:0 (bv op 2)))
-  [(#b000 #b01) c.addi skip/debug]
-  [(#b010 #b01) c.li skip/debug]
+  [(#b000 #b01) c.addi (interpret-ci-type bvadd)]
+  [(#b010 #b01) c.li (interpret-ci-type (lambda (a b) b))]
 
   [(#b000 #b10) c.slli (interpret-shift-immediate bvshl decode-gpr)])
 
