@@ -83,6 +83,7 @@
 (define typeof-shamt6 (bitvector 6))
 (define typeof-succ (bitvector 4))
 (define typeof-uimm (bitvector 5))
+(define typeof-uimm5 (bitvector 1))
 (define typeof-rs1/rd (bitvector 5))
 
 ; Compressed instruction register fields.

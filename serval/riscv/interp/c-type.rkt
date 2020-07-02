@@ -48,10 +48,47 @@
 (define ((interpret-ci-type op) cpu insn imm5 rd imm4:0)
   (reg-imm-op op cpu insn (concat imm5 imm4:0) (decode-gpr rd) (decode-gpr rd)))
 
+(define ((interpret-stack-relative-load size) cpu insn imm5 nz-rd imm4:0)
+  (define xlen (cpu-xlen cpu))
+  (define mm (cpu-memmgr cpu))
+
+  (core:bug-on (&& (= xlen 32) (= size 8))
+               #:msg "c.ldsp: not available on rv32")
+
+  (define off
+    (zero-extend
+      (cond
+        [(= size 4)
+          ; decode offset[5] and offset[4:2|7:6]
+          (concat (extract 1 0 imm4:0)
+                  (extract 0 0 imm5)
+                  (extract 4 2 imm4:0)
+                  (bv 0 2))]
+        [(= size 8)
+          ; decode offset[5] and offset[4:3|8:6]
+          (concat (extract 2 0 imm4:0)
+                  (extract 0 0 imm5)
+                  (extract 4 3 imm4:0)
+                  (bv 0 3))])
+      (bitvector xlen)))
+
+  (define addr (bvadd (gpr-ref cpu 'sp) off))
+  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)
+                                  #:dbg current-pc-debug))
+
+  ; Always sign-extend.
+  (set! value (sign-extend value (bitvector xlen)))
+
+  (gpr-set! cpu (decode-gpr nz-rd) value)
+  (cpu-next! cpu insn))
+
 ; non-zero rd
 (define-insn (imm5 nz-rd imm4:0)
   #:encode (lambda (funct3 op)
                    (list (bv funct3 3) imm5 nz-rd imm4:0 (bv op 2)))
+  [(#b010 #b10) c.lwsp (interpret-stack-relative-load 4)]
+  [(#b011 #b10) c.ldsp (interpret-stack-relative-load 8)]
+
   [(#b000 #b01) c.addi (interpret-ci-type bvadd)]
   [(#b010 #b01) c.li (interpret-ci-type (lambda (a b) b))]
 

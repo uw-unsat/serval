@@ -165,3 +165,10 @@ bar:    nop
         S(sd)
         S(sh)
         S(sw)
+
+.option rvc
+
+        c.lwsp a0, 4(sp)
+        c.ldsp a0, 8(sp)
+
+.option norvc
