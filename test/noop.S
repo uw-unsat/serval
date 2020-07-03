@@ -106,6 +106,7 @@ bar:    nop
         CR(c.mv)
         CR(c.add)
 
+        CI(c.addiw)
         CI(c.andi)
 
         CJR(c.jr)

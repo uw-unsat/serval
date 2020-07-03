@@ -48,6 +48,9 @@
 (define ((interpret-ci-type op) cpu insn imm5 rd imm4:0)
   (reg-imm-op op cpu insn (concat imm5 imm4:0) (decode-gpr rd) (decode-gpr rd)))
 
+(define ((interpret-ci-w-type op) cpu insn imm5 rd imm4:0)
+  (reg-imm-opw op cpu insn (concat imm5 imm4:0) (decode-gpr rd) (decode-gpr rd)))
+
 (define ((interpret-stack-relative-load size) cpu insn imm5 nz-rd imm4:0)
   (define xlen (cpu-xlen cpu))
   (define mm (cpu-memmgr cpu))
@@ -91,6 +94,8 @@
 
   [(#b000 #b01) c.addi (interpret-ci-type bvadd)]
   [(#b010 #b01) c.li (interpret-ci-type (lambda (a b) b))]
+
+  [(#b001 #b01) c.addiw (interpret-ci-w-type bvadd)]
 
   [(#b000 #b10) c.slli (interpret-shift-immediate bvshl decode-gpr)])
 
