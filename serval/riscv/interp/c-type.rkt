@@ -95,9 +95,14 @@
   [(#b000 #b01) c.addi (interpret-ci-type bvadd)]
   [(#b010 #b01) c.li (interpret-ci-type (lambda (a b) b))]
 
-  [(#b001 #b01) c.addiw (interpret-ci-w-type bvadd)]
-
   [(#b000 #b10) c.slli (interpret-shift-immediate bvshl decode-gpr)])
+
+; c.addiw is rv64-only
+(define-insn/64 (imm5 nz-rd imm4:0)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) imm5 nz-rd imm4:0 (bv op 2)))
+
+  [(#b001 #b01) c.addiw (interpret-ci-w-type bvadd)])
 
 (define (interpret-c.lui cpu insn nzimm17 c.lui-rd nzimm16:12)
   (define imm (concat nzimm17 nzimm16:12 (bv 0 12)))

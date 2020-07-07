@@ -6,17 +6,33 @@
   "../base.rkt"
   "../decode.rkt")
 
-(provide define-insn)
+(provide define-insn define-insn/32 define-insn/64)
 
 ; The main macro for defining instructions.
 
 (define-syntax (define-insn stx)
   (syntax-case stx ()
     [(_ (arg ...) #:encode encode [(field ...) op interp] ...)
+      #'(define-insn-xlen (arg ...) #:xlen (list 32 64) #:encode encode [(field ...) op interp] ...)]))
+
+(define-syntax (define-insn/32 stx)
+  (syntax-case stx ()
+    [(_ (arg ...) #:encode encode [(field ...) op interp] ...)
+      #'(define-insn-xlen (arg ...) #:xlen (list 32) #:encode encode [(field ...) op interp] ...)]))
+
+(define-syntax (define-insn/64 stx)
+  (syntax-case stx ()
+    [(_ (arg ...) #:encode encode [(field ...) op interp] ...)
+      #'(define-insn-xlen (arg ...) #:xlen (list 64) #:encode encode [(field ...) op interp] ...)]))
+
+(define-syntax (define-insn-xlen stx)
+  (syntax-case stx ()
+    [(_ (arg ...) #:xlen mode #:encode encode [(field ...) op interp] ...)
      #'(begin
          (struct op (arg ...)
           #:transparent
           #:guard (lambda (arg ... name)
+                    (assert (memv (XLEN) mode))
                     (values
                       ; split for type checking
                       (for/all ([arg arg #:exhaustive])
@@ -31,7 +47,7 @@
            (define (instruction-run insn cpu)
              (match-let ([(op arg ...) insn])
                (interp cpu insn arg ...)))]) ...
-         (add-decoder op
+         (add-decoder mode op
            ((lambda (arg ...) (encode field ...)) (typeof arg) ...))
          ... )]))
 

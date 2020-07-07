@@ -29,7 +29,7 @@
 ; and extracts values for symbolic fields:
 ; - ctor: an instruction struct;
 ; - spec: a list of bitvector types (symbolic fields) or values (constant fields).
-(define (add-decoder ctor spec)
+(define (add-decoder mode ctor spec)
   ; split a 32-bit bitvector into chunks
   (define (split x lst)
     (define e (car lst))
@@ -62,6 +62,8 @@
     ; constructed using (concat ...) and simpler for offsets.
     (define chunks (split x (reverse spec)))
     (cond
+      ; Not the right XLEN for this instruction.
+      [(not (member (XLEN) mode)) #f]
       ; Drop if split returns #f, when bv is wrong size
       [(false? (andmap (lambda (x) x) chunks)) #f]
       [else
