@@ -96,3 +96,8 @@
 (define typeof-nz-rs2 (nonzero 5))
 (define typeof-nz-rd (nonzero 5))
 (define typeof-nz-rs1 (nonzero 5))
+
+; c.lui rd can be any reg except x0, x2
+(define typeof-c.lui-rd (exclude (list 0 2) 5))
+(define typeof-nzimm17 (bitvector 1))
+(define typeof-nzimm16:12 (bitvector 5))

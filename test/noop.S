@@ -120,6 +120,7 @@ bar:    nop
         CJ(c.j)
 
         c.li a0, 4
+        c.lui a0, 4
         c.addi a0, 5
         c.nop
         c.slli a0, 5

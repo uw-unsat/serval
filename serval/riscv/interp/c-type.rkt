@@ -99,6 +99,20 @@
 
   [(#b000 #b10) c.slli (interpret-shift-immediate bvshl decode-gpr)])
 
+(define (interpret-c.lui cpu insn nzimm17 c.lui-rd nzimm16:12)
+  (define imm (concat nzimm17 nzimm16:12 (bv 0 12)))
+  (core:bug-on (bvzero? imm) #:msg "c.lui: imm cannot be zero"
+                             #:dbg current-pc-debug)
+  (define op (lambda (a b) b))
+  (define rd (decode-gpr c.lui-rd))
+  (reg-imm-op op cpu insn imm rd rd))
+
+; c.lui, rd != x0 /\ rd != x2
+(define-insn (nzimm17 c.lui-rd nzimm16:12)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) nzimm17 c.lui-rd nzimm16:12 (bv op 2)))
+  [(#b011 #b01) c.lui interpret-c.lui])
+
 ; zero rd
 (define-insn (imm5 imm4:0)
   #:encode (lambda (funct3 op)
