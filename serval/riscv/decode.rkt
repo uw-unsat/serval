@@ -10,11 +10,17 @@
 
 (define decoders null)
 
+; (exclude elems size) is guard that recognizes bitvectors of a size
+; excluding some list of (concrete) values.
 (struct exclude (elems size)
   #:transparent
   #:property prop:procedure
-  (lambda (self v) (and ((bitvector (exclude-size self)) v)
-                        (andmap (lambda (x) (not (equal? (bv x (exclude-size self)) v))) (exclude-elems self)))))
+  (lambda (self v)
+    (let ([size (exclude-size self)]
+          [elems (exclude-elems self)])
+      (and ((bitvector size) v)
+           (andmap (lambda (x) (not (equal? (bv x size) v)))
+                   elems)))))
 
 ; Recognizes a non-zero bitvector of a particular size.
 (define (nonzero size) (exclude (list 0) size))
