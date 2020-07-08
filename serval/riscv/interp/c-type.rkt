@@ -30,11 +30,18 @@
   [(#b1000 #b10) c.mv  (interpret-cr-2reg-type (lambda (a b) b))]
   [(#b1001 #b10) c.add (interpret-cr-2reg-type bvadd)])
 
+(define (interpret-c.jr cpu insn nz-rs1/rd)
+  (define rs1 (decode-gpr nz-rs1/rd))
+  (define target
+    (for/all ([src (gpr-ref cpu rs1) #:exhaustive])
+      (bvand (bvnot (bv 1 (cpu-xlen cpu))) src)))
+  (set-cpu-pc! cpu target))
+
 ; non-zero rs1/rd, zero rs2
 (define-insn (nz-rs1/rd)
   #:encode (lambda (funct4 op)
                    (list (bv funct4 4) nz-rs1/rd (bv 0 5) (bv op 2)))
-  [(#b1000 #b10) c.jr skip/debug]
+  [(#b1000 #b10) c.jr interpret-c.jr]
   [(#b1001 #b10) c.jalr skip/debug])
 
 ; zero rs1/rd, zero rs2
