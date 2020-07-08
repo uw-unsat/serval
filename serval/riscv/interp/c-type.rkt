@@ -130,6 +130,47 @@
 
 ;;; CL-type "Load" instructions
 
+(define ((interpret-cl-type size) cpu insn imm_hi rs1^ imm_lo rd^)
+  (define xlen (cpu-xlen cpu))
+  (define mm (cpu-memmgr cpu))
+  (define rs (decode-compressed-gpr rs1^))
+  (define rd (decode-compressed-gpr rd^))
+  (define off
+    (zero-extend
+      (cond
+        [(= size 4)
+          ; decode offset[5:3] and offset[2|6]
+          (concat (extract 0 0 imm_lo)
+                  (extract 2 0 imm_hi)
+                  (extract 1 1 imm_lo)
+                  (bv 0 2))]
+        [(= size 8)
+          ; decode offset[5:3] and offset[7:6]
+          (concat (extract 1 0 imm_lo)
+                  (extract 2 0 imm_hi)
+                  (bv 0 3))])
+      (bitvector xlen)))
+
+  (define addr (bvadd (gpr-ref cpu rs) off))
+  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)
+                                  #:dbg current-pc-debug))
+
+  ; Always sign-extend.
+  (set! value (sign-extend value (bitvector xlen)))
+
+  (gpr-set! cpu rd value)
+  (cpu-next! cpu insn))
+
+(define-insn (uimm5:3 rs1^ uimm2&6 rd^)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) uimm5:3 rs1^ uimm2&6 rd^ (bv op 2)))
+  [(#b010 #b00) c.lw (interpret-cl-type 4)])
+
+(define-insn/64 (uimm5:3 rs1^ uimm7:6 rd^)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) uimm5:3 rs1^ uimm7:6 rd^ (bv op 2)))
+  [(#b011 #b00) c.ld (interpret-cl-type 8)])
+
 ;;; CS-type "Store" instructions
 
 ;;; CA-type "Arithmetic" instructions

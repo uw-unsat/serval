@@ -117,3 +117,7 @@
 (define typeof-c.lui-rd (exclude (list 0 2) 5))
 (define typeof-nzimm17 (bitvector 1))
 (define typeof-nzimm16:12 (bitvector 5))
+
+(define typeof-uimm5:3 (bitvector 3))
+(define typeof-uimm7:6 (bitvector 2))
+(define typeof-uimm2&6 (bitvector 2))
