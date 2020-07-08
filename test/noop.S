@@ -112,6 +112,8 @@ bar:    nop
         CJR(c.jr)
         CJR(c.jalr)
 
+        c.addi16sp sp, 256
+
         c.ebreak
 
         CB(c.beqz)

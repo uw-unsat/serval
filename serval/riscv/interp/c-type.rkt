@@ -118,6 +118,31 @@
                    (list (bv funct3 3) nzimm17 c.lui-rd nzimm16:12 (bv op 2)))
   [(#b011 #b01) c.lui interpret-c.lui])
 
+(define (interpret-c.addi16sp cpu insn nzimm9 nzimm4&6&8:7&5)
+  (define xlen (cpu-xlen cpu))
+  (define imm
+    (sign-extend
+      (concat (extract 0 0 nzimm9)
+              (extract 2 1 nzimm4&6&8:7&5)
+              (extract 3 3 nzimm4&6&8:7&5)
+              (extract 0 0 nzimm4&6&8:7&5)
+              (extract 4 4 nzimm4&6&8:7&5)
+              (bv 0 4))
+      (bitvector xlen)))
+
+  (core:bug-on (bvzero? imm) #:msg "c.addi16sp: imm cannot be zero"
+                             #:dbg current-pc-debug)
+
+  (gpr-set! cpu 'sp (bvadd (gpr-ref cpu 'sp) imm))
+
+  (cpu-next! cpu insn))
+
+; c.addi16sp, rd = x2
+(define-insn (nzimm9 nzimm4&6&8:7&5)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) nzimm9 (bv 2 5) nzimm4&6&8:7&5 (bv op 2)))
+  [(#b011 #b01) c.addi16sp interpret-c.addi16sp])
+
 ; zero rd
 (define-insn (imm5 imm4:0)
   #:encode (lambda (funct3 op)
