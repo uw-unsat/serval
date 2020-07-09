@@ -163,6 +163,42 @@
 
 ;;; CSS-type "Stack-relative Store" instructions
 
+(define ((interpret-stack-relative-store size) cpu insn imm rs2)
+  (set! rs2 (decode-gpr rs2))
+  (define xlen (cpu-xlen cpu))
+  (define mm (cpu-memmgr cpu))
+
+  (define off
+    (zero-extend
+      (cond
+        [(= size 4)
+          ; decode uimm[5:2|7:6]
+          (concat (extract 1 0 imm)
+                  (extract 5 2 imm)
+                  (bv 0 2))]
+        [(= size 8)
+          ; decode uimm[5:3|8:6]
+          (concat (extract 2 0 imm)
+                  (extract 5 3 imm)
+                  (bv 0 3))])
+      (bitvector xlen)))
+
+  (define addr (bvadd (gpr-ref cpu 'sp) off))
+  (define value (trunc (* 8 size) (gpr-ref cpu rs2)))
+
+  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen) #:dbg current-pc-debug)
+  (cpu-next! cpu insn))
+
+(define-insn (uimm5:2&7:6 rs2)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) uimm5:2&7:6 rs2 (bv op 2)))
+  [(#b110 #b10) c.swsp (interpret-stack-relative-store 4)])
+
+(define-insn/64 (uimm5:3&8:6 rs2)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) uimm5:3&8:6 rs2 (bv op 2)))
+  [(#b111 #b10) c.sdsp (interpret-stack-relative-store 8)])
+
 ;;; CIW-type "Wide Immediate" Instructions
 
 ;;; CL-type "Load" instructions

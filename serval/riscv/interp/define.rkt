@@ -124,3 +124,6 @@
 
 (define typeof-nzimm4&6&8:7&5 (bitvector 5))
 (define typeof-nzimm9 (bitvector 1))
+
+(define typeof-uimm5:2&7:6 (bitvector 6))
+(define typeof-uimm5:3&8:6 (bitvector 6))
