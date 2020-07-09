@@ -246,6 +246,44 @@
 
 ;;; CS-type "Store" instructions
 
+(define ((interpret-cs-type size) cpu insn imm_hi rs1^ imm_lo rs2^)
+  (define xlen (cpu-xlen cpu))
+  (define mm (cpu-memmgr cpu))
+  (define rs1 (decode-compressed-gpr rs1^))
+  (define rs2 (decode-compressed-gpr rs2^))
+  (define off
+    (zero-extend
+      (cond
+        [(= size 4)
+          ; decode offset[5:3] and offset[2|6]
+          (concat (extract 0 0 imm_lo)
+                  (extract 2 0 imm_hi)
+                  (extract 1 1 imm_lo)
+                  (bv 0 2))]
+        [(= size 8)
+          ; decode offset[5:3] and offset[7:6]
+          (concat (extract 1 0 imm_lo)
+                  (extract 2 0 imm_hi)
+                  (bv 0 3))])
+      (bitvector xlen)))
+
+  (define addr (bvadd (gpr-ref cpu rs1) off))
+  (define value (trunc (* 8 size) (gpr-ref cpu rs2)))
+
+  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen) #:dbg current-pc-debug)
+
+  (cpu-next! cpu insn))
+
+(define-insn (uimm5:3 rs1^ uimm2&6 rs2^)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) uimm5:3 rs1^ uimm2&6 rs2^ (bv op 2)))
+  [(#b110 #b00) c.sw (interpret-cs-type 4)])
+
+(define-insn/64 (uimm5:3 rs1^ uimm7:6 rs2^)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) uimm5:3 rs1^ uimm7:6 rs2^ (bv op 2)))
+  [(#b111 #b00) c.sd (interpret-cs-type 8)])
+
 ;;; CA-type "Arithmetic" instructions
 
 (define ((interpret-ca-type op) cpu insn rs1^/rd^ rs2^)

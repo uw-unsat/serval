@@ -179,5 +179,7 @@ bar:    nop
 
         c.swsp a0, 4(sp)
         c.sdsp a0, 8(sp)
+        c.sw a0, 4(a0)
+        c.sd a0, 8(a0)
 
 .option norvc
