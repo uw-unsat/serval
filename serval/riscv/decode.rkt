@@ -84,7 +84,7 @@
   (define result (filter-map (lambda (proc) (proc x)) decoders))
   (when (null? result)
     (eprintf "no decoder for ~a\n" x)
-    (eprintf "~a\n" (disassemble (core:bitvector->list/le x) #:arch "riscv64"))
+    (eprintf "~a\n" (disassemble (core:bitvector->list/le x) #:arch "riscv:rv64"))
     (exit 1))
   (when (! (= (length result) 1))
     (eprintf "ambiguity in decoding for ~a\n" x)
@@ -98,15 +98,19 @@
   insn)
 
 (define (disassemble #:arch [arch #f] lst)
-  (define cmd (find-executable-path "llvm-mc"))
-  (define args (list "--disassemble" "--show-inst"))
-  (when arch
-    (set! args (append (list "--arch" arch) args)))
+
   ; concretize input
   (set! lst (evaluate lst (complete-solution (sat) (symbolics lst))))
-  (define in (open-input-string (string-join (map (lambda (x) (format "0x~x " (bitvector->natural x))) lst))))
+  ; convert to bin
+  (define bin (bytes-join (map (lambda (x) (bytes (bitvector->natural x))) lst) #""))
+  (define tmpname (make-temporary-file))
+
+  ; write to output
+  (call-with-output-file* tmpname #:exists 'truncate
+    (lambda (out) (display bin out)))
+  (define cmd (find-executable-path "riscv64-unknown-elf-objdump"))
+  (define args (list "-M" "no-aliases" "-b" "binary" "-m" arch "-D" tmpname))
   (define out (open-output-string))
-  (parameterize ([current-input-port in]
-                 [current-output-port out])
+  (parameterize ([current-output-port out])
     (apply system* cmd args))
   (get-output-string out))
