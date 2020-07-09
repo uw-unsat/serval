@@ -201,6 +201,27 @@
 
 ;;; CIW-type "Wide Immediate" Instructions
 
+(define (interpret-c.addi4spn cpu insn nzuimm5:4&9:6&2&3 rd^)
+  (define xlen (cpu-xlen cpu))
+  (define rd (decode-compressed-gpr rd^))
+
+  (define imm
+    (zero-extend
+      (concat (extract 5 2 nzuimm5:4&9:6&2&3)
+              (extract 7 6 nzuimm5:4&9:6&2&3)
+              (extract 0 0 nzuimm5:4&9:6&2&3)
+              (extract 1 1 nzuimm5:4&9:6&2&3)
+              (bv 0 2))
+      (bitvector xlen)))
+
+  (gpr-set! cpu rd (bvadd (gpr-ref cpu 'sp) imm))
+  (cpu-next! cpu insn))
+
+(define-insn (nzuimm5:4&9:6&2&3 rd^)
+  #:encode (lambda (funct3 op)
+                   (list (bv funct3 3) nzuimm5:4&9:6&2&3 rd^ (bv op 2)))
+  [(#b000 #b00) c.addi4spn interpret-c.addi4spn])
+
 ;;; CL-type "Load" instructions
 
 (define ((interpret-cl-type size) cpu insn imm_hi rs1^ imm_lo rd^)

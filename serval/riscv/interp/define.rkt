@@ -127,3 +127,5 @@
 
 (define typeof-uimm5:2&7:6 (bitvector 6))
 (define typeof-uimm5:3&8:6 (bitvector 6))
+
+(define typeof-nzuimm5:4&9:6&2&3 (nonzero 8))

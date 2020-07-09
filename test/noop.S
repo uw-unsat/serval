@@ -106,6 +106,8 @@ bar:    nop
         CR(c.mv)
         CR(c.add)
 
+        c.addi4spn a0, sp, 56
+
         CI(c.addiw)
         CI(c.andi)
 
