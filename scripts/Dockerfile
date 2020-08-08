@@ -1,7 +1,7 @@
 FROM ubuntu:20.04
 
-ARG RACKET_VERSION=7.7
-ARG ROSETTE_VERSION=e6ed9a41005e648f95ed4241d6a15916a1d25c2d
+ARG RACKET_VERSION=7.8
+ARG ROSETTE_VERSION=25b0673ade9302f81e9f859b31c4274c891a3112
 ARG Z3_VERSION=4.8.8
 ARG BOOLECTOR_VERSION=3.2.1
 ARG UNICORN_VERSION=1.0.2-rc3
@@ -38,10 +38,10 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 WORKDIR /code
 
 # Install Racket
-RUN wget "https://mirror.racket-lang.org/installers/${RACKET_VERSION}/racket-${RACKET_VERSION}-x86_64-linux.sh" && \
-    chmod +x ./racket-${RACKET_VERSION}-x86_64-linux.sh && \
-    echo 'yes\n1' | ./racket-${RACKET_VERSION}-x86_64-linux.sh && \
-	rm -f racket-${RACKET_VERSION}-x86_64-linux.sh
+RUN wget "https://mirror.racket-lang.org/installers/${RACKET_VERSION}/racket-${RACKET_VERSION}-x86_64-linux-cs.sh" && \
+    chmod +x ./racket-${RACKET_VERSION}-x86_64-linux-cs.sh && \
+    echo 'yes\n1' | ./racket-${RACKET_VERSION}-x86_64-linux-cs.sh && \
+	rm -f racket-${RACKET_VERSION}-x86_64-linux-cs.sh
 
 # Install Unicorn
 RUN git clone 'https://github.com/unicorn-engine/unicorn.git' && \
