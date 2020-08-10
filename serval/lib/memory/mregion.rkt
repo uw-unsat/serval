@@ -13,7 +13,7 @@
     [block (mblock-copy (mregion-block mr))]))
 
 (define (create-mregions symbols globals)
-  (for/list ([entry symbols] #:when (member (list-ref entry 2) (list 'B 'R)))
+  (for/list ([entry symbols] #:when (member (list-ref entry 2) (list 'b 'B 'R)))
     (match entry
       [(list start end _ name)
         (define block
