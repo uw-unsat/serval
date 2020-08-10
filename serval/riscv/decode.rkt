@@ -6,7 +6,7 @@
   "base.rkt")
 
 (provide
-  add-decoder decode (struct-out exclude) nonzero)
+  add-decoder decode (struct-out exclude) nonzero disassemble)
 
 (define decoders null)
 
@@ -97,7 +97,7 @@
           "encoded bytes must match original bytes")
   insn)
 
-(define (disassemble #:arch [arch #f] lst)
+(define (disassemble #:arch [arch "riscv:rv64"] lst)
 
   ; concretize input
   (set! lst (evaluate lst (complete-solution (sat) (symbolics lst))))
