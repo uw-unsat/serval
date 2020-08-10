@@ -66,9 +66,8 @@
        (for/list ([subrange (die-children e)])
          (unless (equal? (die-tag subrange) 'DW_TAG_subrange_type)
            (error 'dwarf "not subrange: ~a" subrange))
-         (if (attribute-has-key? subrange 'DW_AT_upper_bound)
-             (add1 (attribute-upper-bound subrange))
-             0)))
+         (define count (attribute-count subrange))
+         (if count count 0)))
      (define elements (read-type root h (attribute-type e)))
      (foldr (lambda (len elem) `(marray ,len ,elem)) elements dims)]
     [(DW_TAG_structure_type)
@@ -122,8 +121,13 @@
 (define (attribute-data-member-location e)
   (attribute-number-ref e 'DW_AT_data_member_location))
 
-(define (attribute-upper-bound e)
-  (attribute-number-ref e 'DW_AT_upper_bound))
+(define (attribute-count e)
+  (cond
+    [(attribute-has-key? e 'DW_AT_upper_bound)
+      (add1 (attribute-number-ref e 'DW_AT_upper_bound))]
+    [(attribute-has-key? e 'DW_AT_count)
+      (attribute-number-ref e 'DW_AT_count)]
+    [else #f]))
 
 (define (attribute-name e)
   ; try mangled name first
