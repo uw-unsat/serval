@@ -261,8 +261,13 @@
 ; ignore pointer casts
 (define (bitcast x) x)
 
-(define (inttoptr x)
-  (core:bug-on #t #:msg "inttoptr: not supported"))
+(define (inttoptr addr)
+  (define mr (core:guess-mregion-from-addr (current-mregions) addr (bv 0 (type-of addr))))
+
+  ; Check in-bounds. Use size of 1 for sanity. (Real size will be actually checked upon access.)
+  (core:bug-on (! (core:mregion-inbounds? mr addr (bv 1 (type-of addr)))))
+
+  (pointer (core:mregion-name mr) (bvsub addr (bv (core:mregion-start mr) (type-of addr)))))
 
 (define (ptrtoint ptr type)
   (define mr (core:find-mregion-by-name (current-mregions) (pointer-base ptr)))
@@ -329,15 +334,31 @@
   (pointer (pointer-base ptr) (apply bvadd (cons (pointer-offset ptr) offsets))))
 
 (define (load ptr type #:align alignment)
+  ; Always load as an integer, use inttoptr to convert to ptr if necessary.
+  (define ptr? (equal? type pointer))
+  (define bvsize
+    (cond
+      [ptr? (/ (core:target-pointer-bitwidth) 8)]
+      [else (/ (bitvector-size type) 8)]))
+
   (define mblock (pointer-block ptr))
   (define offset (pointer-offset ptr))
-  (define size (core:bvpointer (/ (bitvector-size type) 8)))
+  (define size (core:bvpointer bvsize))
   (define path (core:mblock-path mblock offset size #:dbg (current-pc)))
-  (core:spectre-bug-on (not (core:mblock-inbounds? mblock offset size)) #:dbg (current-pc)
+  (core:spectre-bug-on (! (core:mblock-inbounds? mblock offset size)) #:dbg (current-pc)
    #:msg (format "spectre: load @ ~a\n" ptr))
-  (core:mblock-iload mblock path))
+  (define value (core:mblock-iload mblock path))
+
+  ; If the type of load is pointer, convert back using inttoptr.
+  (when ptr?
+    (set! value (inttoptr value)))
+  value)
 
 (define (store value ptr type #:align alignment)
+  ; Always store as integer, use ptrtoint to convert to int if necessary.
+  (when (pointer? value)
+    (set! value (ptrtoint value #f))
+    (set! type (type-of value)))
   (define mblock (pointer-block ptr))
   (define offset (pointer-offset ptr))
   (define size (core:bvpointer (/ (bitvector-size type) 8)))
