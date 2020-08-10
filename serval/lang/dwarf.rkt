@@ -22,13 +22,15 @@
 (define (read-globals dies)
   ; build offset->die table
   (define h (make-hash))
+  (define root (first dies))
+  (set! dies (cdr dies))
   (for ([cu dies])
     (update-offset-die! h cu))
   (flatten
     (for*/list ([cu dies])
-      (read-globals-ns cu h))))
+      (read-globals-ns root cu h))))
 
-(define (read-globals-ns ns h)
+(define (read-globals-ns root ns h)
   (for/list ([e (die-children ns)]
              #:when (member (die-tag e) '(DW_TAG_namespace DW_TAG_variable)))
     (define tag (die-tag e))
@@ -40,7 +42,7 @@
       [(and (equal? tag 'DW_TAG_variable)
             (attribute-has-key? e 'DW_AT_name))
        (define name (attribute-name e))
-       (define type (read-type h (attribute-type e)))
+       (define type (read-type root h (attribute-type e)))
        (with-syntax ([t type]
                      [n name])
          #'(cons 'n (lambda () t)))]
@@ -53,7 +55,7 @@
   (for ([c (die-children e)])
     (update-offset-die! h c)))
 
-(define (read-type h e)
+(define (read-type root h e)
   ; look up e if given offset
   (when (not (die? e))
     (set! e (hash-ref h e)))
@@ -67,28 +69,30 @@
          (if (attribute-has-key? subrange 'DW_AT_upper_bound)
              (add1 (attribute-upper-bound subrange))
              0)))
-     (define elements (read-type h (attribute-type e)))
+     (define elements (read-type root h (attribute-type e)))
      (foldr (lambda (len elem) `(marray ,len ,elem)) elements dims)]
     [(DW_TAG_structure_type)
      (define size (attribute-byte-size e))
      (define fields
        (append (list 'list)
         (for/list [(c (die-children e))]
-          (read-type h c))))
+          (read-type root h c))))
      `(mstruct ,size ,fields)]
     [(DW_TAG_member)
      (define name (attribute-name e))
      (define offset (attribute-data-member-location e))
-     (define element (read-type h (attribute-type e)))
+     (define element (read-type root h (attribute-type e)))
      `(mfield ',name ,offset ,element)]
     [(DW_TAG_base_type DW_TAG_pointer_type)
      (define size (attribute-byte-size e))
+     (when (false? size)
+      (set! size (dict-ref (die-attributes root) '|Pointer Size|)))
      `(mcell ,size)]
     [(DW_TAG_typedef DW_TAG_const_type)
-     (read-type h (attribute-type e))]
+     (read-type root h (attribute-type e))]
     ; FIXME: volatile cell
     [(DW_TAG_volatile_type)
-     (read-type h (attribute-type e))]
+     (read-type root h (attribute-type e))]
     [else
      (error 'dwarf "unknown type: ~a" e)]))
 
@@ -101,13 +105,16 @@
 
 (define (attribute-number-ref e key)
   (define s (attribute-ref e key))
-  ; hex number
-  (when (string-prefix? s "0x")
-    (set! s (string-append "#" (substring s 1))))
-  (define result (string->number s))
-  (unless result
-    (error 'dwarf "malformed number for ~a: ~a" key e))
-  result)
+  (cond
+    [(false? s) #f]
+    [else
+      ; hex number
+      (when (string-prefix? s "0x")
+        (set! s (string-append "#" (substring s 1))))
+      (define result (string->number s))
+      (unless result
+        (error 'dwarf "malformed number for ~a: ~a" key e))
+      result]))
 
 (define (attribute-byte-size e)
   (attribute-number-ref e 'DW_AT_byte_size))
@@ -146,11 +153,24 @@
      (lambda (e) 'die)
      (lambda (e) (list (die-tag e) (die-level e) (die-offset e) (die-attributes e)))))])
 
+(define (parse-compilation-attrs lines)
+  (match lines
+    ; Stop once first real DIE is hit.
+    [(cons (pregexp #px"Abbrev Number") rest)
+      null]
+    [(cons (pregexp #px"^\\s*Pointer Size:\\s*(\\d+)" (list _ size)) rest)
+      (cons (cons '|Pointer Size| (string->number size)) (parse-compilation-attrs rest))]
+    [(cons _ rest)
+      (parse-compilation-attrs rest)]))
+
 (define (port->dies in)
   ; create a fake root to collect compile units
   (define root (die #f #f #f #f #f null))
-  (parse-dies (port->lines in) root -1)
-  (die-children root))
+  (define lines (port->lines in))
+  (define attrs (parse-compilation-attrs lines))
+  (set-die-attributes! root attrs)
+  (parse-dies lines root -1)
+  (append (list root) (die-children root)))
 
 (define (parse-dies lines current-die current-level)
   (define-values (e rest) (parse-die lines))
