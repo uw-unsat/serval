@@ -79,23 +79,50 @@
   [(#b011 #b0000011) ld (interpret-load-insn 8 #t)]
   [(#b110 #b0000011) lwu (interpret-load-insn 4 #f)])
 
+(define ((do-csr-op op) cpu insn csr rs1 rd)
+  (define xlen (cpu-xlen cpu))
+  (set! csr (decode-csr csr))
+  (set! rd (decode-gpr rd))
+  (set! rs1 (decode-gpr rs1))
+
+  (define old (zero-extend (csr-ref cpu csr) (bitvector xlen)))
+  (define new (gpr-ref cpu rs1))
+
+  (gpr-set! cpu rd old)
+
+  (csr-set! cpu csr (op old new))
+  (cpu-next! cpu insn))
+
 ; CSR instructions
 (define-insn (csr rs1 rd)
   #:encode (lambda (funct3 opcode)
                    (list csr rs1 (bv funct3 3) rd (bv opcode 7)))
   ; RV32/RV64 Zicsr Standard Extension
-  [(#b001 #b1110011) csrrw notimplemented]
-  [(#b010 #b1110011) csrrs notimplemented]
-  [(#b011 #b1110011) csrrc notimplemented])
+  [(#b001 #b1110011) csrrw (do-csr-op (lambda (old new) new))]
+  [(#b010 #b1110011) csrrs (do-csr-op (lambda (old new) (bvor old new)))]
+  [(#b011 #b1110011) csrrc (do-csr-op (lambda (old new) (bvand old (bvnot new))))])
+
+(define ((do-csr-op-imm op) cpu insn csr uimm rd)
+  (define xlen (cpu-xlen cpu))
+  (set! csr (decode-csr csr))
+  (set! rd (decode-gpr rd))
+
+  (define old (zero-extend (csr-ref cpu csr) (bitvector xlen)))
+  (define new (zero-extend uimm (bitvector xlen)))
+
+  (gpr-set! cpu rd old)
+
+  (csr-set! cpu csr (op old new))
+  (cpu-next! cpu insn))
 
 ; CSRI instructions
 (define-insn (csr uimm rd)
   #:encode (lambda (funct3 opcode)
                    (list csr uimm (bv funct3 3) rd (bv opcode 7)))
   ; RV32/RV64 Zicsr Standard Extension
-  [(#b101 #b1110011) csrrwi notimplemented]
-  [(#b110 #b1110011) csrrsi notimplemented]
-  [(#b111 #b1110011) csrrci notimplemented])
+  [(#b101 #b1110011) csrrwi (do-csr-op-imm (lambda (old new) new))]
+  [(#b110 #b1110011) csrrsi (do-csr-op-imm (lambda (old new) (bvor old new)))]
+  [(#b111 #b1110011) csrrci (do-csr-op-imm (lambda (old new) (bvand old (bvnot new))))])
 
 ; 64-bit Shift instructions
 (define-insn (shamt6 rs1 rd)

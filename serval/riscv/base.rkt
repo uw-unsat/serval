@@ -155,6 +155,91 @@
 (define sie-mask
   (bv #b1100110011 (XLEN)))
 
+(define-syntax-rule (define-regs bits encode decode ((value name) ...))
+  (begin
+    (define (decode csr)
+      (for/all ([csr csr #:exhaustive])
+        (cond
+          [(bveq csr (bv value bits)) (quote name)] ...)))
+    (define (encode csr)
+      (case csr
+        [(name) (bv value bits)] ...))))
+
+(define-regs 12 encode-csr decode-csr
+   ([#x100 sstatus]
+    [#x102 sedeleg]
+    [#x103 sideleg]
+    [#x104 sie]
+    [#x105 stvec]
+    [#x106 scounteren]
+
+    [#x140 sscratch]
+    [#x141 sepc]
+    [#x142 scause]
+    [#x143 stval]
+    [#x144 sip]
+
+    [#x180 satp]
+
+    [#xF11 mvendorid]
+    [#xF12 marchid]
+    [#xF13 mimpid]
+    [#xF14 mhartid]
+
+    [#x300 mstatus]
+    [#x301 misa]
+    [#x302 medeleg]
+    [#x303 mideleg]
+    [#x304 mie]
+    [#x305 mtvec]
+    [#x306 mcounteren]
+
+    [#x340 mscratch]
+    [#x341 mepc]
+    [#x342 mcause]
+    [#x343 mtval]
+    [#x344 mip]
+    [#x34A mtinst]
+    [#x34B mtval2]
+
+    [#x3A0 pmpcfg0]
+    [#x3A1 pmpcfg1]
+    [#x3A2 pmpcfg2]
+    [#x3A3 pmpcfg3]
+    [#x3A4 pmpcfg4]
+    [#x3A5 pmpcfg5]
+    [#x3A6 pmpcfg6]
+    [#x3A7 pmpcfg7]
+    [#x3A8 pmpcfg8]
+    [#x3A9 pmpcfg9]
+    [#x3AA pmpcfg10]
+    [#x3AB pmpcfg11]
+    [#x3AC pmpcfg12]
+    [#x3AD pmpcfg13]
+    [#x3AE pmpcfg14]
+    [#x3AF pmpcfg15]
+
+    [#x3B0 pmpaddr0]
+    [#x3B1 pmpaddr1]
+    [#x3B2 pmpaddr2]
+    [#x3B3 pmpaddr3]
+    [#x3B4 pmpaddr4]
+    [#x3B5 pmpaddr5]
+    [#x3B6 pmpaddr6]
+    [#x3B7 pmpaddr7]
+    [#x3B8 pmpaddr8]
+    [#x3B9 pmpaddr9]
+    [#x3BA pmpaddr10]
+    [#x3BB pmpaddr11]
+    [#x3BC pmpaddr12]
+    [#x3BD pmpaddr13]
+    [#x3BE pmpaddr14]
+    [#x3BF pmpaddr15]
+
+    [#xB00 mcycle]
+    [#xB02 minstret]
+  ))
+
 (define (csr-set! cpu csr val)
   (core:bug-on (term? csr) #:msg (format "csr-set!: symbolic csr ~e" csr) #:dbg current-pc-debug)
   (case csr
