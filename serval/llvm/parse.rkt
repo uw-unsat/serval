@@ -283,6 +283,10 @@
        (raise-user-error 'llvm "no name for local variable: ~a" (value->string v)))
      (string->symbol (string-append "%" s))]
 
+    ; debugging
+    [(metadata metadata-as-value)
+     (nullptr)]
+
     [else
      (raise-user-error 'llvm "unknown value: ~a" (value->string v))]))
 
