@@ -67,9 +67,15 @@
   (define name (value-name bb))
   (define hd (format "; ~a\n  (define-label (~a) #:merge #f\n" name name))
   (define insns
-    (for/list ([insn (basic-block-instructions bb)])
+    (for/list ([insn (basic-block-instructions bb)] #:unless (instruction-is-dbg? insn))
       (string-append "    " (instruction->string insn))))
   (string-append hd (string-join insns "\n") ")"))
+
+(define (instruction-is-dbg? insn)
+  (and
+    (string=? (opcode->string (instruction-opcode insn)) "call")
+    (eq? (list-ref (instruction-operands insn) 0) '@llvm.dbg.declare)
+  ))
 
 (define (instruction->string insn)
   (define body
