@@ -1,7 +1,7 @@
 #lang rosette
 
 (require serval/lib/core
-         serval/llvm
+         (prefix-in llvm: serval/llvm)
          serval/lib/unittest)
 
 (require "generated/racket/test/bext.ll.rkt")
@@ -18,7 +18,7 @@
   r)
 
 (define (check-bext)
-  (parameterize ([current-machine (make-machine null null)])
+  (parameterize ([llvm:current-machine (llvm:make-machine null null)])
     (define-symbolic* rs1 rs2 (bitvector 32))
     (displayln "executing...")
     (define-values (val asserted) (with-asserts (@bext rs1 rs2)))

@@ -2,24 +2,34 @@
 
 (require
   (prefix-in core: "../lib/core.rkt")
+  "../lib/bvarith.rkt"
   "base.rkt")
 
 (provide
-  add-decoder decode (struct-out nonzero))
+  add-decoder decode (struct-out exclude) nonzero disassemble)
 
 (define decoders null)
 
-; Recognizes a non-zero bitvector of a particular size.
-(struct nonzero (size)
+; (exclude elems size) is guard that recognizes bitvectors of a size
+; excluding some list of (concrete) values.
+(struct exclude (elems size)
   #:transparent
   #:property prop:procedure
-  (lambda (self v) (and ((bitvector (nonzero-size self)) v) (! (bvzero? v)))))
+  (lambda (self v)
+    (let ([size (exclude-size self)]
+          [elems (exclude-elems self)])
+      (and ((bitvector size) v)
+           (andmap (lambda (x) (not (equal? (bv x size) v)))
+                   elems)))))
+
+; Recognizes a non-zero bitvector of a particular size.
+(define (nonzero size) (exclude (list 0) size))
 
 ; To construct an instruction, a decoder checks that constant fields match
 ; and extracts values for symbolic fields:
 ; - ctor: an instruction struct;
 ; - spec: a list of bitvector types (symbolic fields) or values (constant fields).
-(define (add-decoder ctor spec)
+(define (add-decoder mode ctor spec)
   ; split a 32-bit bitvector into chunks
   (define (split x lst)
     (define e (car lst))
@@ -28,7 +38,7 @@
     (set! lst (cdr lst))
     (define i
       (cond
-        [(nonzero? e)   (nonzero-size e)]
+        [(exclude? e)   (exclude-size e)]
         [(bitvector? e) (bitvector-size e)]
         [(bv? e)        (core:bv-size e)]
         [else           (error "unknown decoder")]))
@@ -52,6 +62,8 @@
     ; constructed using (concat ...) and simpler for offsets.
     (define chunks (split x (reverse spec)))
     (cond
+      ; Not the right XLEN for this instruction.
+      [(not (member (XLEN) mode)) #f]
       ; Drop if split returns #f, when bv is wrong size
       [(false? (andmap (lambda (x) x) chunks)) #f]
       [else
@@ -61,7 +73,7 @@
           (cond
             [(and (box? exp) (bitvector? (unbox exp))) (box act)]
             [(bitvector? exp) act]
-            [(nonzero? exp) act]
+            [(exclude? exp) act]
             [else #f]))
         (if match?
             (apply ctor (filter-map make-if-bitvector chunks spec))
@@ -72,7 +84,7 @@
   (define result (filter-map (lambda (proc) (proc x)) decoders))
   (when (null? result)
     (eprintf "no decoder for ~a\n" x)
-    (eprintf "~a\n" (disassemble (core:bitvector->list/le x) #:arch "riscv64"))
+    (eprintf "~a\n" (disassemble (core:bitvector->list/le x) #:arch "riscv:rv64"))
     (exit 1))
   (when (! (= (length result) 1))
     (eprintf "ambiguity in decoding for ~a\n" x)
@@ -85,16 +97,20 @@
           "encoded bytes must match original bytes")
   insn)
 
-(define (disassemble #:arch [arch #f] lst)
-  (define cmd (find-executable-path "llvm-mc"))
-  (define args (list "--disassemble" "--show-inst"))
-  (when arch
-    (set! args (append (list "--arch" arch) args)))
+(define (disassemble #:arch [arch "riscv:rv64"] lst)
+
   ; concretize input
   (set! lst (evaluate lst (complete-solution (sat) (symbolics lst))))
-  (define in (open-input-string (string-join (map (lambda (x) (format "0x~x " (bitvector->natural x))) lst))))
+  ; convert to bin
+  (define bin (bytes-join (map (lambda (x) (bytes (bitvector->natural x))) lst) #""))
+  (define tmpname (make-temporary-file))
+
+  ; write to output
+  (call-with-output-file* tmpname #:exists 'truncate
+    (lambda (out) (display bin out)))
+  (define cmd (find-executable-path "riscv64-unknown-elf-objdump"))
+  (define args (list "-M" "no-aliases" "-b" "binary" "-m" arch "-D" tmpname))
   (define out (open-output-string))
-  (parameterize ([current-input-port in]
-                 [current-output-port out])
+  (parameterize ([current-output-port out])
     (apply system* cmd args))
   (get-output-string out))

@@ -3,7 +3,7 @@
 (require
   (except-in rackunit fail)
   (only-in racket/base parameterize)
-  serval/llvm
+  (prefix-in llvm: serval/llvm)
   serval/lib/core
   serval/lib/unittest
   "generated/racket/test/fd.globals.rkt"
@@ -21,15 +21,15 @@
 (define-symbolic file-refcount (~> (bitvector 64) (bitvector 64)))
 
 (define (impl-inv)
-  (bvult (mblock-iload (symbol->block 'current) null) (bv NR_PROCS 64)))
+  (bvult (mblock-iload (llvm:symbol->block 'current) null) (bv NR_PROCS 64)))
 
 (define (state-eqv)
   (define-symbolic pid (bitvector 64))
   (define-symbolic fd (bitvector 64))
   (define-symbolic fileid (bitvector 64))
-  (define block-current (symbol->block 'current))
-  (define block-procs (symbol->block 'procs))
-  (define block-files (symbol->block 'files))
+  (define block-current (llvm:symbol->block 'current))
+  (define block-procs (llvm:symbol->block 'procs))
+  (define block-files (llvm:symbol->block 'files))
   (&& (equal? current (mblock-iload block-current null))
       (forall (list pid fd) (=> (&& (bvult pid (bv NR_PROCS 64)) (bvult fd (bv NR_FDS 64)))
                                 (equal? (proc-fds pid fd) (mblock-iload block-procs (list pid 'fds fd)))))
@@ -66,7 +66,7 @@
   (test-suite+
    "Tests for fd.c"
 
-   (test-case+ "fd-ref" (parameterize ([current-machine (make-machine symbols globals)])
+   (test-case+ "fd-ref" (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
      (check-fd-ref)))))
 
 (module+ test

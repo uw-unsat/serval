@@ -4,6 +4,9 @@
 
 (provide (all-defined-out))
 
+(define (trunc n x)
+  (extract (sub1 n) 0 x))
+
 (define i8 (bitvector 8))
 (define i16 (bitvector 16))
 (define i32 (bitvector 32))
@@ -45,16 +48,14 @@
 (define (bvaligned? value alignment)
   (bvzero? (bvurem value alignment)))
 
-(define (bvsmax t)
-  (bv (sub1 (arithmetic-shift 1 (sub1 (bitvector-size t)))) t))
-
 (define (bvsmax? x)
+  (define (bvsmax t)
+    (bv (sub1 (arithmetic-shift 1 (sub1 (bitvector-size t)))) t))
   (bveq x (bvsmax (type-of x))))
 
-(define (bvsmin t)
-  (bv (- (arithmetic-shift 1 (sub1 (bitvector-size t)))) t))
-
 (define (bvsmin? x)
+  (define (bvsmin t)
+    (bv (- (arithmetic-shift 1 (sub1 (bitvector-size t)))) t))
   (bveq x (bvsmin (type-of x))))
 
 ; list of (bitvector 8) -> (bitvector N), big endian

@@ -106,10 +106,15 @@ bar:    nop
         CR(c.mv)
         CR(c.add)
 
+        c.addi4spn a0, sp, 56
+
+        CI(c.addiw)
         CI(c.andi)
 
         CJR(c.jr)
         CJR(c.jalr)
+
+        c.addi16sp sp, 256
 
         c.ebreak
 
@@ -117,6 +122,14 @@ bar:    nop
         CB(c.bnez)
 
         CJ(c.j)
+
+        c.li a0, 4
+        c.lui a0, 4
+        c.addi a0, 5
+        c.nop
+        c.slli a0, 5
+        c.srli a0, 5
+        c.srai a0, 5
 
 .option norvc
 
@@ -158,3 +171,17 @@ bar:    nop
         S(sd)
         S(sh)
         S(sw)
+
+.option rvc
+
+        c.lwsp a0, 4(sp)
+        c.ldsp a0, 8(sp)
+        c.lw a0, 4(a0)
+        c.ld a0, 8(a0)
+
+        c.swsp a0, 4(sp)
+        c.sdsp a0, 8(sp)
+        c.sw a0, 4(a0)
+        c.sd a0, 8(a0)
+
+.option norvc

@@ -6,17 +6,33 @@
   "../base.rkt"
   "../decode.rkt")
 
-(provide define-insn)
+(provide define-insn define-insn/32 define-insn/64)
 
 ; The main macro for defining instructions.
 
 (define-syntax (define-insn stx)
   (syntax-case stx ()
     [(_ (arg ...) #:encode encode [(field ...) op interp] ...)
+      #'(define-insn-xlen (arg ...) #:xlen (list 32 64) #:encode encode [(field ...) op interp] ...)]))
+
+(define-syntax (define-insn/32 stx)
+  (syntax-case stx ()
+    [(_ (arg ...) #:encode encode [(field ...) op interp] ...)
+      #'(define-insn-xlen (arg ...) #:xlen (list 32) #:encode encode [(field ...) op interp] ...)]))
+
+(define-syntax (define-insn/64 stx)
+  (syntax-case stx ()
+    [(_ (arg ...) #:encode encode [(field ...) op interp] ...)
+      #'(define-insn-xlen (arg ...) #:xlen (list 64) #:encode encode [(field ...) op interp] ...)]))
+
+(define-syntax (define-insn-xlen stx)
+  (syntax-case stx ()
+    [(_ (arg ...) #:xlen mode #:encode encode [(field ...) op interp] ...)
      #'(begin
          (struct op (arg ...)
           #:transparent
           #:guard (lambda (arg ... name)
+                    (assert (memv (XLEN) mode))
                     (values
                       ; split for type checking
                       (for/all ([arg arg #:exhaustive])
@@ -31,7 +47,7 @@
            (define (instruction-run insn cpu)
              (match-let ([(op arg ...) insn])
                (interp cpu insn arg ...)))]) ...
-         (add-decoder op
+         (add-decoder mode op
            ((lambda (arg ...) (encode field ...)) (typeof arg) ...))
          ... )]))
 
@@ -83,6 +99,7 @@
 (define typeof-shamt6 (bitvector 6))
 (define typeof-succ (bitvector 4))
 (define typeof-uimm (bitvector 5))
+(define typeof-uimm5 (bitvector 1))
 (define typeof-rs1/rd (bitvector 5))
 
 ; Compressed instruction register fields.
@@ -95,3 +112,20 @@
 (define typeof-nz-rs2 (nonzero 5))
 (define typeof-nz-rd (nonzero 5))
 (define typeof-nz-rs1 (nonzero 5))
+
+; c.lui rd can be any reg except x0, x2
+(define typeof-c.lui-rd (exclude (list 0 2) 5))
+(define typeof-nzimm17 (bitvector 1))
+(define typeof-nzimm16:12 (bitvector 5))
+
+(define typeof-uimm5:3 (bitvector 3))
+(define typeof-uimm7:6 (bitvector 2))
+(define typeof-uimm2&6 (bitvector 2))
+
+(define typeof-nzimm4&6&8:7&5 (bitvector 5))
+(define typeof-nzimm9 (bitvector 1))
+
+(define typeof-uimm5:2&7:6 (bitvector 6))
+(define typeof-uimm5:3&8:6 (bitvector 6))
+
+(define typeof-nzuimm5:4&9:6&2&3 (nonzero 8))

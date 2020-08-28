@@ -3,7 +3,7 @@
 (require (except-in rackunit fail)
          rackunit/text-ui
          rosette/lib/roseunit
-         serval/llvm
+         (prefix-in llvm: serval/llvm)
          serval/lib/unittest
          serval/lib/core)
 
@@ -16,14 +16,14 @@
 
 (define (inv)
   (define-symbolic i (bitvector 64))
-  (define b0 (symbol->block 'as))
-  (define b1 (symbol->block 'arr))
+  (define b0 (llvm:symbol->block 'as))
+  (define b1 (llvm:symbol->block 'arr))
   (forall (list i) (=> (bvult i (bv N 64))
                        (equal? (mblock-iload b0 (list i 'y))
                                (mblock-iload b1 (list (bvurem (bvadd1 i) (bv 4 64))))))))
 
 (define (check-array-spec)
-  (parameterize ([current-machine (make-machine symbols globals)])
+  (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (define-symbolic x (bitvector 32))
     (define pre (inv))
     (define asserted

@@ -5,7 +5,7 @@
          rosette/lib/roseunit
          serval/lib/core
          serval/lib/unittest
-         serval/llvm)
+         (prefix-in llvm: serval/llvm))
 
 (require "generated/racket/test/global.globals.rkt"
          "generated/racket/test/global.map.rkt")
@@ -15,7 +15,7 @@
 (define N 4096)
 
 (define (check-global-val x)
-  (parameterize ([current-machine (make-machine symbols globals)])
+  (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (define exp (bv x 64))
     (check-not-equal? (@get_value) exp)
     (@set_value exp)
@@ -31,18 +31,18 @@
   (define-symbolic v64 (bitvector 64))
   (define-symbolic v32 (bitvector 32))
   ; @val i64
-  (parameterize ([current-machine (make-machine symbols globals)])
+  (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (@set_value v64)
     (check-equal? (asserts) null)
     (check-equal? (@get_value) v64))
   ; @vals [10 x i32]
   ; constant index
-  (parameterize ([current-machine (make-machine symbols globals)])
+  (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (@set_value_i (bv 1 64) v32)
     (check-equal? (asserts) null)
     (check-equal? (@get_value_i (bv 1 64)) v32))
   ; symbolic index
-  (parameterize ([current-machine (make-machine symbols globals)])
+  (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (define pre (bvult v64 (bv N 64)))
     (define-values (cond asserted)
       (with-asserts
@@ -62,12 +62,12 @@
 
 (define (vals-eqv?)
   (define-symbolic i i64)
-  (define block (symbol->block 'vals))
+  (define block (llvm:symbol->block 'vals))
   (forall (list i) (=> (bvult i (bv N 64))
                        (equal? (spec-vals i) (mblock-iload block (list i))))))
 
 (define (check-global-spec)
-  (parameterize ([current-machine (make-machine symbols globals)])
+  (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (define-symbolic i i64)
     (define-symbolic v i32)
     (define pre (vals-eqv?))

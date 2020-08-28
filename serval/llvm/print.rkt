@@ -18,7 +18,7 @@
     ""
     "(provide (all-defined-out))"
     ""
-    "(require serval/lib/core"
+    "(require (prefix-in core: serval/lib/core)"
     "         serval/llvm"
     "         serval/ubsan)"
     "") "\n") out)
@@ -134,16 +134,16 @@
     [(undef? v)
      (format "(undef ~a)" (type->string (undef-type v)))]
     [(core:marray? v)
-     (format "(marray ~a ~a)" (core:marray-length v) (operand->string (core:marray-elements v) insn))]
+     (format "(core:marray ~a ~a)" (core:marray-length v) (operand->string (core:marray-elements v) insn))]
     [(core:mstruct? v)
-     (format "(mstruct ~a (list~a))"
+     (format "(core:mstruct ~a (list~a))"
              (core:mstruct-size v)
              (string-join
                (for/list ([f (core:mstruct-fields v)])
-                 (format " (mfield ~a ~a ~a)" (core:mfield-name f) (core:mfield-offset f) (operand->string (core:mfield-element f) insn)))
+                 (format " (core:mfield ~a ~a ~a)" (core:mfield-name f) (core:mfield-offset f) (operand->string (core:mfield-element f) insn)))
                ""))]
     [(core:mcell? v)
-     (format "(mcell ~a)" (core:mcell-size v))]
+     (format "(core:mcell ~a)" (core:mcell-size v))]
     [(asm? v)
      (let ([template (asm-template v)])
        (cond
