@@ -98,6 +98,21 @@
       (string-join (map ~a opcode) "/")
       (~a opcode)))
 
+(define (type->string type)
+  (cond
+    [(list? type)
+     (format "(list ~a~a)"
+       (type->string (car type))
+       (string-join
+         (for/list ([subtype (cdr type)])
+           (string-append " " (type->string subtype))
+         )
+       )
+     )
+    ]
+    [else
+     (format "~a" type)]))
+
 (define (operand->string v insn)
   (define opcode (instruction-opcode insn))
   (cond
@@ -117,7 +132,7 @@
     [(nullptr? v)
      "nullptr"]
     [(undef? v)
-     (format "(undef ~a)" (undef-type v))]
+     (format "(undef ~a)" (type->string (undef-type v)))]
     [(core:marray? v)
      (format "(marray ~a ~a)" (core:marray-length v) (operand->string (core:marray-elements v) insn))]
     [(core:mstruct? v)

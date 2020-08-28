@@ -291,11 +291,16 @@
      (raise-user-error 'llvm "unknown value: ~a" (value->string v))]))
 
 (define (typeof-ref v)
-  (define type (LLVMTypeOf v))
+  (typeof-type (LLVMTypeOf v)))
+
+(define (typeof-type type)
   (define kind (LLVMGetTypeKind type))
   (case kind
     [(void) #f]
     [(integer) (bitvector (LLVMGetIntTypeWidth type))]
+    [(struct)
+     (for/list ([i (in-range (LLVMCountStructElementTypes type))])
+       (typeof-type (LLVMStructGetTypeAtIndex type i)))]
     [else kind]))
 
 (define value->string LLVMPrintValueToString)
