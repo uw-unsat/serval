@@ -159,6 +159,7 @@
 
 (define (parse-compilation-attrs lines)
   (match lines
+    [null null]
     ; Stop once first real DIE is hit.
     [(cons (pregexp #px"Abbrev Number") rest)
       null]
