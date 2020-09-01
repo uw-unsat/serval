@@ -129,7 +129,7 @@ $(O)/%.ebpf.rkt: $(O)/%.ebpf.bin $(EBPF_ROSETTE)
 
 $(O)/%.ll: %.c
 	$(Q)$(MKDIR_P) $(@D)
-	$(QUIET_CC)$(LLVM_CC) -o $@ -mno-sse -S -emit-llvm -fno-discard-value-names $(UBSAN_CFLAGS) -Wno-unused-command-line-argument -I include $(filter-out -g,$(BASE_CFLAGS)) $(CONFIG_CFLAGS) -DCONFIG_VERIFICATION_LLVM -c $<
+	$(QUIET_CC)$(LLVM_CC) -g -o $@ -mno-sse -S -emit-llvm -fno-discard-value-names $(UBSAN_CFLAGS) -Wno-unused-command-line-argument -I include $(filter-out -g,$(BASE_CFLAGS)) $(CONFIG_CFLAGS) -DCONFIG_VERIFICATION_LLVM -c $<
 
 $(O)/%.elf: $(O)/%.o
 	$(QUIET_LD)$(LD) -o $@ -e $(CONFIG_DRAM_START) -Ttext $(CONFIG_DRAM_START) $(filter-out --gc-sections,$(LDFLAGS)) $<

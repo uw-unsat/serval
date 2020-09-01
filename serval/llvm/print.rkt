@@ -74,7 +74,7 @@
 (define (instruction-is-dbg? insn)
   (and
     (string=? (opcode->string (instruction-opcode insn)) "call")
-    (eq? (list-ref (instruction-operands insn) 0) '@llvm.dbg.declare)
+    (string-prefix? (symbol->string (list-ref (instruction-operands insn) 0)) "@llvm.dbg.")
   ))
 
 (define (instruction->string insn)
