@@ -67,9 +67,15 @@
   (define name (value-name bb))
   (define hd (format "; ~a\n  (define-label (~a) #:merge #f\n" name name))
   (define insns
-    (for/list ([insn (basic-block-instructions bb)])
+    (for/list ([insn (basic-block-instructions bb)] #:unless (instruction-is-dbg? insn))
       (string-append "    " (instruction->string insn))))
   (string-append hd (string-join insns "\n") ")"))
+
+(define (instruction-is-dbg? insn)
+  (and
+    (string=? (opcode->string (instruction-opcode insn)) "call")
+    (string-prefix? (symbol->string (list-ref (instruction-operands insn) 0)) "@llvm.dbg.")
+  ))
 
 (define (instruction->string insn)
   (define body
@@ -92,6 +98,21 @@
       (string-join (map ~a opcode) "/")
       (~a opcode)))
 
+(define (type->string type)
+  (cond
+    [(list? type)
+     (format "(list ~a~a)"
+       (type->string (car type))
+       (string-join
+         (for/list ([subtype (cdr type)])
+           (string-append " " (type->string subtype))
+         )
+       )
+     )
+    ]
+    [else
+     (format "~a" type)]))
+
 (define (operand->string v insn)
   (define opcode (instruction-opcode insn))
   (cond
@@ -111,7 +132,7 @@
     [(nullptr? v)
      "nullptr"]
     [(undef? v)
-     (format "(undef ~a)" (undef-type v))]
+     (format "(undef ~a)" (type->string (undef-type v)))]
     [(core:marray? v)
      (format "(core:marray ~a ~a)" (core:marray-length v) (operand->string (core:marray-elements v) insn))]
     [(core:mstruct? v)
