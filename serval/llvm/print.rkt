@@ -74,8 +74,7 @@
 (define (instruction-is-dbg? insn)
   (and
     (string=? (opcode->string (instruction-opcode insn)) "call")
-    (string-prefix? (symbol->string (list-ref (instruction-operands insn) 0)) "@llvm.dbg.")
-  ))
+    (string-prefix? (symbol->string (list-ref (instruction-operands insn) 0)) "@llvm.dbg.")))
 
 (define (instruction->string insn)
   (define body
@@ -105,11 +104,7 @@
        (type->string (car type))
        (string-join
          (for/list ([subtype (cdr type)])
-           (string-append " " (type->string subtype))
-         )
-       )
-     )
-    ]
+           (string-append " " (type->string subtype)))))]
     [else
      (format "~a" type)]))
 

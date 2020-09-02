@@ -40,7 +40,7 @@
 
     ; Function Attrs: nounwind readnone speculatable willreturn
     declare void @llvm.dbg.value(metadata, metadata, metadata) #1
-    
+
     !0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1, producer: \"clang version 10.0.0-4ubuntu1~18.04.2 \", isOptimized: true, runtimeVersion: 0, emissionKind: FullDebug, enums: !2, splitDebugInlining: false, nameTableKind: None)
     !1 = !DIFile(filename: \"d.c\", directory: \"/home/hnj/projects/ver/serval/test\")
     !2 = !{}
