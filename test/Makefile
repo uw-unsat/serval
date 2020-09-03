@@ -11,7 +11,7 @@ endif
 
 RACO_JOBS               := $(NPROC)
 RACO_TIMEOUT            := 1200
-RACO_TEST               := raco test --check-stderr --table --timeout $(RACO_TIMEOUT) --jobs $(RACO_JOBS)
+RACO_TEST               := raco test --table --timeout $(RACO_TIMEOUT) --jobs $(RACO_JOBS)
 
 
 # no built-in rules and variables
