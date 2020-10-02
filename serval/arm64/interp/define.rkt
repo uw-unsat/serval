@@ -59,6 +59,7 @@
 (define typeof-cond (bitvector 4))
 (define typeof-hw (bitvector 2))
 (define typeof-imm6 (bitvector 6))
+(define typeof-imm7 (bitvector 7))
 (define typeof-immr (bitvector 6))
 (define typeof-imms (bitvector 6))
 (define typeof-imm12 (bitvector 12))
@@ -82,4 +83,5 @@
 (define typeof-Rn (box (bitvector 5)))
 (define typeof-Rs (box (bitvector 5)))
 (define typeof-Rt (box (bitvector 5)))
+(define typeof-Rt2 (box (bitvector 5)))
 (define typeof-S (bitvector 1))
