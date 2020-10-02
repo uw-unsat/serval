@@ -121,8 +121,8 @@
      (void)])
   (branch-to cpu address branch_type))
 
-(define (load-write-pc address)
-  (bx-write-pc address 'INDIR))
+(define (load-write-pc cpu address)
+  (bx-write-pc cpu address 'INDIR))
 
 (define (pc-store-value cpu)
   (bvadd (cpu-pc cpu) (bv 8 32)))
