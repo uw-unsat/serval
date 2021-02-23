@@ -120,15 +120,14 @@
   (typed-bv-memmgr-regions (cpu-memmgr cpu)))
 
 (define (cpu-add-shim! cpu addr shim)
-  (core:bug-on (! (equal? (pc) #t)) #:msg "cpu-add-shim!: path condition not #t" #:dbg current-pc-debug)
-  (core:bug-on (! (equal? (asserts) null)) #:msg "cpu-add-shim!: asserts not empty" #:dbg current-pc-debug)
+  (core:bug-on (! (vc-true? (vc))) #:msg "cpu-add-shim!: VC not true" #:dbg current-pc-debug)
   (hash-set! (cpu-shims cpu) addr shim))
 
 (define (init-cpu [symbols null] [globals null] [make-memmgr make-typed-bv-memmgr] #:xlen [xlen #f])
   (when (equal? xlen #f)
     (set! xlen (XLEN)))
 
-  (define-symbolic* x (bitvector xlen) [31])
+  (define-symbolic* x (bitvector xlen) #:length 31)
   (define gpr-vals (apply gprs x))
 
   (define csrs (init-csrs xlen))

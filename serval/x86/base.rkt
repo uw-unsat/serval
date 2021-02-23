@@ -80,7 +80,7 @@
 
 (define (init-cpu memmgr)
   (define-symbolic* pc (bitvector 64))
-  (define-symbolic* gprs (bitvector 64) [16])
+  (define-symbolic* gprs (bitvector 64) #:length 16)
   (define-symbolic* cf pf af zf sf of (bitvector 1))
   (define flags (vector-append
     (vector cf (bv #b1 1) pf (bv #b0 1) af (bv #b0 1) zf sf (bv #b0 1) (bv #b0 1) (bv #b0 1) of (bv #b0 1) (bv #b0 1) (bv #b0 1) (bv #b0 1))

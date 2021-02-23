@@ -71,7 +71,7 @@
 
 (define (init-cpu memmgr)
   (define-symbolic* pc sp (bitvector 64))
-  (define-symbolic* xn (bitvector 64) [31])
+  (define-symbolic* xn (bitvector 64) #:length 31)
   (define-symbolic* n z c v (bitvector 1))
   (cpu pc sp (list->vector xn) (nzcv n z c v) memmgr))
 

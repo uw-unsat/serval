@@ -345,8 +345,6 @@
   (define offset (pointer-offset ptr))
   (define size (core:bvpointer bvsize))
   (define path (core:mblock-path mblock offset size #:dbg (current-pc)))
-  (core:spectre-bug-on (! (core:mblock-inbounds? mblock offset size)) #:dbg (current-pc)
-   #:msg (format "spectre: load @ ~a\n" ptr))
   (define value (core:mblock-iload mblock path))
 
   ; If the type of load is pointer, convert back using inttoptr.

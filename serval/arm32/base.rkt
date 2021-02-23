@@ -66,7 +66,7 @@
 
 (define (init-cpu memmgr)
   (define-symbolic* pc (bitvector 32))
-  (define-symbolic* rs (bitvector 32) [15])
+  (define-symbolic* rs (bitvector 32) #:length 15)
   (define-symbolic* n z c v (bitvector 1))
   (define cpsr (pstate n z c v))
   (cpu pc (list->vector rs) cpsr memmgr))

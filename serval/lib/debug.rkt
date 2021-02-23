@@ -5,8 +5,7 @@
 (define target-spectre (make-parameter #f))
 
 (define (concrete?)
-  (&& (null? (asserts))
-      (equal? #t (pc))))
+  (vc-true? (vc)))
 
 (define assert-db (make-parameter (make-hash)))
 
@@ -42,26 +41,3 @@
 
 (define (simplify-asserts asserted)
   (filter-not (lambda (expr) (unsat? (verify (assert expr)))) asserted))
-
-; spectre
-
-; For spectre checks we need to hide path conditions from Rosette to
-; mimic speculative execution.  Use parameter as it's not lifted by
-; Rosette; this will omit path conditions when using spectre-bug-on.
-
-(define spectre-asserts (make-parameter null))
-
-(define (spectre-bug-on expr #:msg [msg #f] #:dbg [dbg #f])
-  (when (target-spectre)
-    (spectre-asserts (cons (lambda () (bug-on expr #:msg msg #:dbg dbg)) (spectre-asserts)))))
-
-(define-syntax-rule (with-spectre-asserts expr)
-  (with-asserts
-    (begin0
-      (begin expr)
-      (for-each (lambda (f) (f)) (spectre-asserts))
-      (spectre-asserts null))))
-
-(define-syntax-rule (with-spectre-asserts-only form)
-  (let-values ([(out asserts) (with-spectre-asserts form)])
-    asserts))
