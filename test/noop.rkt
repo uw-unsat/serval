@@ -9,9 +9,8 @@
 
 (define (check-noop-riscv)
   (define cpu (riscv:init-cpu))
-  (check-equal? (asserts) null)
   (riscv:interpret-objdump-program cpu noop:instructions)
-  (check-equal? (asserts) null))
+  (check-true (vc-true? (vc))))
 
 (define noop-tests
   (test-suite+

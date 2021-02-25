@@ -11,8 +11,7 @@
   (gpr-set! cpu 'a0 (bv #xffff (XLEN)))
   (define i (jalr (bv 0 12) (gpr->idx 'a0) (bv 0 5)))
   (interpret-insn cpu i)
-  (check-equal? (cpu-pc cpu) (bv #xfffe (XLEN)))
-  (check-equal? (asserts) null))
+  (check-equal? (cpu-pc cpu) (bv #xfffe (XLEN))))
 
 (define riscv-tests
   (test-suite+

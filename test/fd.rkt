@@ -47,20 +47,10 @@
 
 (define (check-fd-ref)
   (define-symbolic fd (bitvector 64))
-  (define pre-eqv (state-eqv))
-  (define pre-inv (impl-inv))
-  (define pre (&& pre-eqv pre-inv))
+  (assume (&& (state-eqv) (impl-inv)))
   (lo-spec-close fd)
-  (define-values (post asserted)
-    (with-asserts
-        (begin
-          (@close fd)
-          (&& (state-eqv) (impl-inv)))))
-  ; no UB triggered
-  (check-equal? (asserts) null)
-  (for-each (lambda (x) (check-unsat? (verify (assert (=> pre-inv x))))) asserted)
-  ; refinement
-  (check-unsat? (verify (assert (implies pre post)))))
+  (@close fd)
+  (assert (&& (state-eqv) (impl-inv))))
 
 (define fd-tests
   (test-suite+

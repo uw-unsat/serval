@@ -147,7 +147,7 @@
   (define emu-pred (if uc-faulted? exn:fail? (lambda (x) #f)))
 
   ; run the interpreter
-  (with-handlers ([emu-pred (lambda (exn) (clear-asserts!))])
+  (with-handlers ([emu-pred (lambda (exn) (clear-vc!))])
     (arm64:interpret-insn cpu insn))
 
   ; check if the final states match

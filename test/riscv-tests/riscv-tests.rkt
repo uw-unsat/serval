@@ -28,13 +28,9 @@
       (define s (format "FAILURE --> Test ~e failed in ~e\n" (bitvector->integer (gpr-ref cpu 'x21)) testfile))
       (assert #f s))
 
-    (define asserted
-      (with-asserts-only
-        (with-handlers
-          ([exn:fail? handle-failure])
-          (interpret-objdump-program cpu instrs))))
-
-    (check-unsat? (verify (assert (apply && asserted))))
+    (with-handlers
+      ([exn:fail? handle-failure])
+      (interpret-objdump-program cpu instrs))
 
     (printf "SUCCESS --> ~e\n" testfile)))
 

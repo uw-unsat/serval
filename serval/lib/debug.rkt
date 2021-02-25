@@ -20,7 +20,7 @@
 
 (define (bug-assert x #:key [key #f] #:dbg [dbg #f] #:msg [msg "Unknown bug-assert"])
   (define msg-proc (if (procedure? msg) msg (thunk* msg)))
-  (define expr (=> (pc) x))
+  (define expr (=> (vc-assumes (vc)) x))
   (define data `((key      . ,key)
                  (location . ,dbg)
                  (message  . ,msg-proc)))

@@ -28,9 +28,8 @@
       (define pre (&& (inv old-s)
                       (! (flowsto doma u))))
 
-      (define post (check-asserts (unwinding u old-s s)))
+      (define post (check-vc (unwinding u old-s s)))
 
-      (check-equal? (asserts) null)
       (check-unsat? (verify (assert (=> pre post)))))))
 
 (define
@@ -51,7 +50,6 @@
   (define pre (unwinding old-s old-t))
   (define post (unwinding s t))
 
-  (check-equal? (asserts) null)
   (check-unsat? (verify (assert (=> pre post)))))
 
 (define
@@ -86,7 +84,6 @@
                       (unwinding doma old-s old-t)
       ))
 
-      (define post (check-asserts (unwinding u s t)))
+      (define post (check-vc (unwinding u s t)))
 
-      (check-equal? (asserts) null)
       (check-unsat? (verify (assert (=> pre post)))))))

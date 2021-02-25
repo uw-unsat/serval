@@ -21,7 +21,7 @@
 
   (riscv:gpr-set! cpu 'ra mret)
   (riscv:set-cpu-pc! cpu init-table)
-  (check-asserts-only (riscv:interpret-objdump-program cpu jumptable:instructions))
+  (check-vc (riscv:interpret-objdump-program cpu jumptable:instructions))
 
   (define-symbolic* x y (bitvector 64))
 
@@ -31,7 +31,7 @@
   (riscv:gpr-set! cpu 'ra mret)
   (riscv:set-cpu-pc! cpu call-func)
 
-  (check-asserts-only (riscv:interpret-objdump-program cpu jumptable:instructions))
+  (check-vc (riscv:interpret-objdump-program cpu jumptable:instructions))
 
   (define result (riscv:gpr-ref cpu 'a0))
 

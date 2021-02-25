@@ -21,15 +21,12 @@
   (parameterize ([llvm:current-machine (llvm:make-machine null null)])
     (define-symbolic* rs1 rs2 (bitvector 32))
     (displayln "executing...")
-    (define-values (val asserted) (with-asserts (@bext rs1 rs2)))
+    (define val (@bext rs1 rs2))
     (displayln "solving...")
 
     ; The generated terms are too complicated to prove things about directly,
     ; so just prove it's equal for one particular value of rs2 as a sanity check.
-    (check-unsat? (verify (assert (=> (bveq rs2 (bv #xfffdfffe 32)) (bveq val (bext_rkt rs1 rs2))))))
-
-    (define sol (verify (assert (apply && asserted))))
-    (check-unsat? sol)))
+    (assert (=> (bveq rs2 (bv #xfffdfffe 32)) (bveq val (bext_rkt rs1 rs2))))))
 
 (define bext-tests
   (test-suite+
@@ -37,5 +34,5 @@
     (test-case+ "bext check" (check-bext))
   ))
 
-; (module+ test
-;   (time (run-tests bext-tests)))
+;;;  (module+ test
+;;;    (time (run-tests bext-tests)))

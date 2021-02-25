@@ -25,7 +25,7 @@
 (define (check-global-concrete)
   (check-global-val 42)
   (check-global-val 0)
-  (check-equal? (asserts) null))
+  (check-true (vc-true? (vc))))
 
 (define (check-global-symbolic)
   (define-symbolic v64 (bitvector 64))
@@ -33,26 +33,19 @@
   ; @val i64
   (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (@set_value v64)
-    (check-equal? (asserts) null)
+    (check-true (vc-true? (vc)))
     (check-equal? (@get_value) v64))
   ; @vals [10 x i32]
   ; constant index
   (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (@set_value_i (bv 1 64) v32)
-    (check-equal? (asserts) null)
+    (check-true (vc-true? (vc)))
     (check-equal? (@get_value_i (bv 1 64)) v32))
   ; symbolic index
   (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
-    (define pre (bvult v64 (bv N 64)))
-    (define-values (cond asserted)
-      (with-asserts
-        (begin
-          (@set_value_i v64 v32)
-          (equal? (@get_value_i v64) v32))))
-    (check-equal? (asserts) null)
-    (for-each (lambda (x) (check-unsat? (verify (assert x)))) asserted)
-    (check-sat (solve (assert cond)))
-    (check-unsat? (verify (assert (=> pre cond))))))
+    (assume (bvult v64 (bv N 64)))
+    (@set_value_i v64 v32)
+    (assert (equal? (@get_value_i v64) v32))))
 
 (define-symbolic spec-vals (~> i64 i32))
 
@@ -70,16 +63,10 @@
   (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (define-symbolic i i64)
     (define-symbolic v i32)
-    (define pre (vals-eqv?))
+    (assume (vals-eqv?))
     (spec-set_value_i i v)
-    (define asserted
-      (with-asserts-only (@set_value_i i v)))
-    (define post (vals-eqv?))
-    ; no UB triggered
-    (check-equal? (asserts) null)
-    (for-each (lambda (x) (check-unsat? (verify (assert x)))) asserted)
-    ; verify spec against impl
-    (check-unsat? (verify (assert (=> pre post))))))
+    (@set_value_i i v)
+    (assert (vals-eqv?))))
 
 (define global-tests
   (test-suite+
