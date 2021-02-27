@@ -43,8 +43,8 @@
   (define data1 (cpu-gpr-ref cpu t))
   (define data2 (cpu-gpr-ref cpu t2))
 
-  (core:memmgr-store! mm address (bv 0 64) data1 dbytes #:dbg #f)
-  (core:memmgr-store! mm (bvadd address dbytes) (bv 0 64) data2 dbytes #:dbg #f)
+  (core:memmgr-store! mm address (bv 0 64) data1 dbytes)
+  (core:memmgr-store! mm (bvadd address dbytes) (bv 0 64) data2 dbytes)
 
   (when wback
     (when postindex
@@ -98,8 +98,8 @@
   (when (! postindex)
     (set! address (bvadd address offset)))
 
-  (define data1 (core:memmgr-load mm address (bv 0 64) dbytes #:dbg #f))
-  (define data2 (core:memmgr-load mm (bvadd address dbytes) (bv 0 64) dbytes #:dbg #f))
+  (define data1 (core:memmgr-load mm address (bv 0 64) dbytes))
+  (define data2 (core:memmgr-load mm (bvadd address dbytes) (bv 0 64) dbytes))
 
   (cond
     [signed

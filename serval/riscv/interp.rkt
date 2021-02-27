@@ -46,5 +46,4 @@
           (interpret-insn cpu (hash-ref instructions pc))
           (interpret-program cpu program))]
 
-      [else (core:bug #:dbg current-pc-debug
-                      #:msg (format "interpret-program: Unknown insn for pc: ~v" pc))])))
+      [else (core:bug #:msg (format "interpret-program: Unknown insn for pc: ~v" pc))])))

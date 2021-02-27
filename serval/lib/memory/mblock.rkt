@@ -30,11 +30,11 @@
   (mblock-size mblock)
   (mblock-init! mblock name [domain])
   (mblock-fini! mblock)
-  (mblock-path mblock offset size #:dbg dbg)
+  (mblock-path mblock offset size)
   (mblock-resolve mblock path [indices])
   (mblock-load mblock offset size indices)
   (mblock-store! mblock value offset indices)
-  (mblock-memset! mblock c offset size [preds] #:dbg dbg)
+  (mblock-memset! mblock c offset size [preds])
   (mblock-copy mblock))
 
 (define (mblock-inbounds? mblock offset size)
@@ -55,14 +55,14 @@
 (define (marray-fini! mblock)
   (mblock-fini! (marray-elements mblock)))
 
-(define (marray-path mblock offset size #:dbg dbg)
+(define (marray-path mblock offset size)
   (bug-on (! (mblock-inbounds? mblock offset size))
-    #:msg (format "marray-path: offset ~e not in bounds ~e" offset size) #:dbg dbg)
+    #:msg (format "marray-path: offset ~e not in bounds ~e" offset size))
   (define element-size (bvpointer (mblock-size (marray-elements mblock))))
   (define element-index (bvudiv offset element-size))
   (define element-offset (bvurem offset element-size))
   (cons element-index
-        (mblock-path (marray-elements mblock) element-offset size #:dbg dbg)))
+        (mblock-path (marray-elements mblock) element-offset size)))
 
 (define (marray-resolve mblock path [indices null])
   (mblock-resolve (marray-elements mblock)
@@ -73,8 +73,8 @@
 ; - memset within one element
 ; - memset over multiple (full) elements
 ; It doesn't allow memset over partial elements.
-(define (marray-memset! mblock c offset size [preds null] #:dbg dbg)
-  (bug-on (! (mblock-inbounds? mblock offset size)) #:dbg dbg
+(define (marray-memset! mblock c offset size [preds null])
+  (bug-on (! (mblock-inbounds? mblock offset size))
     #:msg "marray-memset!: [offset, offset + size) not in bounds")
   (define element-size (bvpointer (mblock-size (marray-elements mblock))))
   (define element-index (bvudiv offset element-size))
@@ -88,20 +88,20 @@
         ; predicate: idx == element-index
         (define pred (lambda (idx) (equal? idx element-index)))
         (mblock-memset! (marray-elements mblock) c element-offset size
-                        (cons pred preds) #:dbg dbg))
+                        (cons pred preds)))
       ; memset across multiple full elements
       (begin
         ; alignment checks for offset and size
-        (bug-on (! (bvzero? element-offset)) #:dbg dbg
+        (bug-on (! (bvzero? element-offset))
                 #:msg "marray-memset!: offset not aligned")
-        (bug-on (! (bvzero? (bvurem size element-size))) #:dbg dbg
+        (bug-on (! (bvzero? (bvurem size element-size)))
                 #:msg "marray-memset!: size not aligned")
         ; predicate: element-index <= idx < element-index + size / element-size
         (define pred (lambda (idx)
                          (&& (bvule element-index idx)
                              (bvult idx (bvadd element-index (bvudiv size element-size))))))
         (mblock-memset! (marray-elements mblock) c (bvpointer 0) element-size
-                        (cons pred preds) #:dbg dbg))))
+                        (cons pred preds)))))
 
 (define (marray-copy mblock)
   (struct-copy marray mblock
@@ -166,16 +166,16 @@
                       (reverse (mstruct-fields mblock))))
   (findf (lambda (x) (bvuge offset (mfield-offset x))) fields))
 
-(define (mstruct-path mblock offset size #:dbg dbg)
+(define (mstruct-path mblock offset size)
   (define offset2 (crunch-struct-offset offset))
-  (bug-on (not (bveq offset offset2)) #:dbg dbg #:msg "mstruct-path: rewriting failed")
+  (bug-on (not (bveq offset offset2)) #:msg "mstruct-path: rewriting failed")
 
   (bug-on (not (mblock-inbounds? mblock offset2 size))
-    #:dbg dbg #:msg "mstruct-path: offset not in bounds")
+    #:msg "mstruct-path: offset not in bounds")
 
   (define f (mstruct-field-by-offset mblock offset2))
   (cons (mfield-name f)
-        (mblock-path (mfield-element f) (bvsub offset2 (mfield-offset f)) size #:dbg dbg)))
+        (mblock-path (mfield-element f) (bvsub offset2 (mfield-offset f)) size)))
 
 (define (mstruct-resolve mblock path [indices null])
   (define f (mstruct-field-by-name mblock (car path)))
@@ -185,11 +185,11 @@
 ; - memset within a single field
 ; - memset over the entire struct
 ; It doesn't allow memset over partial fields.
-(define (mstruct-memset! mblock c offset size [preds null] #:dbg dbg)
+(define (mstruct-memset! mblock c offset size [preds null])
   (define offset2 (crunch-struct-offset offset))
-  (bug-on (! (bveq offset offset2)) #:dbg dbg #:msg "mstruct-memset!: rewriting failed")
+  (bug-on (! (bveq offset offset2)) #:msg "mstruct-memset!: rewriting failed")
 
-  (bug-on (! (mblock-inbounds? mblock offset2 size)) #:dbg dbg
+  (bug-on (! (mblock-inbounds? mblock offset2 size))
     #:msg "mstruct-memset!: [offset, offset + size) not in bounds")
 
   (define block-size (bvpointer (mblock-size mblock)))
@@ -202,14 +202,14 @@
         (define (recur f)
           (define element (mfield-element f))
           (mblock-memset! element c (bvpointer 0) (bvpointer (mblock-size element))
-                          preds #:dbg dbg))
+                          preds))
         (for-each recur (mstruct-fields mblock)))
       ; memset within one element
       (begin
         ; no need to check size: the next level will check
         (define f (mstruct-field-by-offset mblock offset2))
         (mblock-memset! (mfield-element f) c (bvsub offset2 (mfield-offset f)) size
-                          preds #:dbg dbg))))
+                          preds))))
 
 (define (mstruct-copy mblock)
   (define (copy-field f)
@@ -248,16 +248,16 @@
 
 ; returns a pair (offset, size) in the end for load/store to
 ; extract a smaller value
-(define (mcell-path mblock offset size #:dbg dbg)
+(define (mcell-path mblock offset size)
   (define block-size (bvpointer (mblock-size mblock)))
   ; block size must be a multiple of size - this check should be constant
-  (bug-on (! (bvzero? (bvurem block-size size))) #:dbg dbg
+  (bug-on (! (bvzero? (bvurem block-size size)))
           #:msg (format "mcell-path: block size ~a must be a multiple of size ~a\n" block-size size))
   ; offset must be a multiple of size
-  (bug-on (! (bvzero? (bvurem offset size))) #:dbg dbg
+  (bug-on (! (bvzero? (bvurem offset size)))
           #:msg (format "mcell-path: offset ~a must be a multiple of size ~a\n" offset size))
   ; offset must be smaller than block size
-  (bug-on (! (bvult offset block-size)) #:dbg dbg
+  (bug-on (! (bvult offset block-size))
           #:msg (format "mcell-path: offset ~a must be smaller than block size ~a\n" offset block-size))
   (cons offset size))
 
@@ -280,17 +280,17 @@
                  (if (andmap equal? args indices) value (apply oldf args))))
   (set-mcell-func! mblock newf))
 
-(define (mcell-memset! mblock c offset size [preds null] #:dbg dbg)
+(define (mcell-memset! mblock c offset size [preds null])
   (bug-on (! (bvzero? offset))
-          #:msg "mcell-memset!: offset non-zero" #:dbg dbg)
+          #:msg "mcell-memset!: offset non-zero")
   (bug-on (! (equal? (bv-size c) 8))
-          #:msg "mcell-memset!: not (bitvector 8)" #:dbg dbg)
+          #:msg "mcell-memset!: not (bitvector 8)")
   ; not required: just leave it here for sanity checks
   (bug-on (! (bvzero? c))
-          #:msg "mcell-memset!: must be 0" #:dbg dbg)
+          #:msg "mcell-memset!: must be 0")
   (unless (bvzero? size)
     (bug-on (! (equal? size (bvpointer (mcell-size mblock))))
-            #:msg "mcell-memset!: size incorrect" #:dbg dbg)
+            #:msg "mcell-memset!: size incorrect")
     (define value (apply concat (make-list (mcell-size mblock) c)))
     (define oldf (mcell-func mblock))
     (define newf (lambda args

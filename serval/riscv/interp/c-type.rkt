@@ -88,8 +88,7 @@
       (bitvector xlen)))
 
   (define addr (bvadd (gpr-ref cpu 'sp) off))
-  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)
-                                  #:dbg current-pc-debug))
+  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)))
 
   ; Always sign-extend.
   (set! value (sign-extend value (bitvector xlen)))
@@ -118,8 +117,7 @@
 
 (define (interpret-c.lui cpu insn nzimm17 c.lui-rd nzimm16:12)
   (define imm (concat nzimm17 nzimm16:12 (bv 0 12)))
-  (core:bug-on (bvzero? imm) #:msg "c.lui: imm cannot be zero"
-                             #:dbg current-pc-debug)
+  (core:bug-on (bvzero? imm) #:msg "c.lui: imm cannot be zero")
   (define op (lambda (a b) b))
   (define rd (decode-gpr c.lui-rd))
   (reg-imm-op op cpu insn imm rd rd))
@@ -142,8 +140,7 @@
               (bv 0 4))
       (bitvector xlen)))
 
-  (core:bug-on (bvzero? imm) #:msg "c.addi16sp: imm cannot be zero"
-                             #:dbg current-pc-debug)
+  (core:bug-on (bvzero? imm) #:msg "c.addi16sp: imm cannot be zero")
 
   (gpr-set! cpu 'sp (bvadd (gpr-ref cpu 'sp) imm))
 
@@ -186,7 +183,7 @@
   (define addr (bvadd (gpr-ref cpu 'sp) off))
   (define value (trunc (* 8 size) (gpr-ref cpu rs2)))
 
-  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen) #:dbg current-pc-debug)
+  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen))
   (cpu-next! cpu insn))
 
 (define-insn (uimm5:2&7:6 rs2)
@@ -246,8 +243,7 @@
       (bitvector xlen)))
 
   (define addr (bvadd (gpr-ref cpu rs) off))
-  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)
-                                  #:dbg current-pc-debug))
+  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)))
 
   ; Always sign-extend.
   (set! value (sign-extend value (bitvector xlen)))
@@ -291,7 +287,7 @@
   (define addr (bvadd (gpr-ref cpu rs1) off))
   (define value (trunc (* 8 size) (gpr-ref cpu rs2)))
 
-  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen) #:dbg current-pc-debug)
+  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen))
 
   (cpu-next! cpu insn))
 

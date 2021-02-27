@@ -14,7 +14,7 @@
 
   ; Use memmgr to implement memset.
   (define memmgr (cpu-memmgr cpu))
-  (memmgr-memset! memmgr ptr c len #:dbg current-pc-debug)
+  (memmgr-memset! memmgr ptr c len)
 
   ; Fake a 'ret' instruction to return control to calling function.
   (set-cpu-pc! cpu (gpr-ref cpu 'x1))

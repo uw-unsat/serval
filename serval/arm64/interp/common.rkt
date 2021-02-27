@@ -126,7 +126,7 @@
   (core:memmgr-atomic-begin mm)
 
   (define oldvalue
-    (core:memmgr-load mm address offset (bv (quotient size 8) 64) #:dbg (cpu-pc-ref cpu)))
+    (core:memmgr-load mm address offset (bv (quotient size 8) 64)))
 
   (define newvalue
     (case op
@@ -140,7 +140,7 @@
       [(UMIN) (if (bvugt oldvalue value) value oldvalue)]
       [(SWP)  value]))
 
-  (core:memmgr-store! mm address offset newvalue (bv (quotient size 8) 64) #:dbg (cpu-pc-ref cpu))
+  (core:memmgr-store! mm address offset newvalue (bv (quotient size 8) 64))
 
   (core:memmgr-atomic-end mm)
 

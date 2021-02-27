@@ -12,7 +12,7 @@
                       (sign-extend (concat imm11:5 imm4:0) (bitvector xlen))))
   (define value (trunc (* 8 size) (gpr-ref cpu (decode-gpr rs2))))
 
-  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen) #:dbg current-pc-debug)
+  (core:memmgr-store! mm addr (bv 0 xlen) value (bv size xlen))
   (cpu-next! cpu insn))
 
 (define-insn (imm11:5 rs2 rs1 imm4:0)

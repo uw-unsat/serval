@@ -17,7 +17,7 @@
 (define unicorn-lib
   (ffi-lib "libunicorn"
    #:get-lib-dirs (lambda () (append (get-lib-search-dirs)
-                                     (list "/usr/local/lib" "/usr/lib")))))
+                                     (list "/usr/local/lib" "/usr/lib" "/opt/homebrew/lib")))))
 
 (define-ffi-definer define-unicorn unicorn-lib
   #:make-c-id convention:hyphen->underscore)

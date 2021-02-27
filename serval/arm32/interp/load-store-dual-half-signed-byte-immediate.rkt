@@ -32,8 +32,8 @@
   (define address (if index offset_addr (cpu-gpr-ref cpu n)))
   (define mm (cpu-memmgr cpu))
   (define pc (cpu-pc cpu))
-  (cpu-gpr-set! cpu t (core:memmgr-load mm address (bv 0 32) (bv 4 32) #:dbg pc))
-  (cpu-gpr-set! cpu t2 (core:memmgr-load mm address (bv 4 32) (bv 4 32) #:dbg pc))
+  (cpu-gpr-set! cpu t (core:memmgr-load mm address (bv 0 32) (bv 4 32)))
+  (cpu-gpr-set! cpu t2 (core:memmgr-load mm address (bv 4 32) (bv 4 32)))
   (when wback
     (cpu-gpr-set! cpu n offset_addr)))
 
@@ -57,7 +57,7 @@
   (define-values (t n imm32 index add wback) (decode-ldrh P U W Rn Rt imm4H imm4L))
   (define offset_addr ((if add bvadd bvsub) (cpu-gpr-ref cpu n) imm32))
   (define address (if index offset_addr (cpu-gpr-ref cpu n)))
-  (define data (core:memmgr-load (cpu-memmgr cpu) address (bv 0 32) (bv 2 32) #:dbg (cpu-pc cpu)))
+  (define data (core:memmgr-load (cpu-memmgr cpu) address (bv 0 32) (bv 2 32)))
   (when wback
     (cpu-gpr-set! cpu n offset_addr))
   (cpu-gpr-set! cpu t (zero-extend data (bitvector 32))))
@@ -85,8 +85,8 @@
   (define address (if index offset_addr (cpu-gpr-ref cpu n)))
   (define mm (cpu-memmgr cpu))
   (define pc (cpu-pc cpu))
-  (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu t) (bv 4 32) #:dbg pc)
-  (core:memmgr-store! mm address (bv 4 32) (cpu-gpr-ref cpu t2) (bv 4 32) #:dbg pc)
+  (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu t) (bv 4 32))
+  (core:memmgr-store! mm address (bv 4 32) (cpu-gpr-ref cpu t2) (bv 4 32))
   (when wback
     (cpu-gpr-set! cpu n offset_addr)))
 
@@ -111,7 +111,7 @@
   (define offset_addr ((if add bvadd bvsub) (cpu-gpr-ref cpu n) imm32))
   (define address (if index offset_addr (cpu-gpr-ref cpu n)))
   (define data (extract 15 0 (cpu-gpr-ref cpu t)))
-  (core:memmgr-store! (cpu-memmgr cpu) address (bv 0 32) data (bv 2 32) #:dbg (cpu-pc cpu))
+  (core:memmgr-store! (cpu-memmgr cpu) address (bv 0 32) data (bv 2 32))
   (when wback
     (cpu-gpr-set! cpu n offset_addr)))
 

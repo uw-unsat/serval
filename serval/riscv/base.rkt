@@ -120,7 +120,7 @@
   (typed-bv-memmgr-regions (cpu-memmgr cpu)))
 
 (define (cpu-add-shim! cpu addr shim)
-  (core:bug-on (! (vc-true? (vc))) #:msg "cpu-add-shim!: VC not true" #:dbg current-pc-debug)
+  (core:bug-on (! (vc-true? (vc))) #:msg "cpu-add-shim!: VC not true")
   (hash-set! (cpu-shims cpu) addr shim))
 
 (define (init-cpu [symbols null] [globals null] [make-memmgr make-typed-bv-memmgr] #:xlen [xlen #f])
@@ -240,7 +240,7 @@
   ))
 
 (define (csr-set! cpu csr val)
-  (core:bug-on (term? csr) #:msg (format "csr-set!: symbolic csr ~e" csr) #:dbg current-pc-debug)
+  (core:bug-on (term? csr) #:msg (format "csr-set!: symbolic csr ~e" csr))
   (case csr
     [(sstatus) (set-csrs-mstatus! (cpu-csrs cpu) (bvand val sstatus-mask))]
     [(sedeleg) (set-csrs-sedeleg! (cpu-csrs cpu) val)]
@@ -290,10 +290,10 @@
     [(pmpaddr14) (set-csrs-pmpaddr14! (cpu-csrs cpu) val)]
     [(pmpaddr15) (set-csrs-pmpaddr15! (cpu-csrs cpu) val)]
 
-    [else (core:bug #:msg (format "csr-set!: unknown csr ~e" csr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "csr-set!: unknown csr ~e" csr))]))
 
 (define (csr-ref cpu csr)
-  (core:bug-on (term? csr) #:msg (format "csr-ref: symbolic csr ~e" csr) #:dbg current-pc-debug)
+  (core:bug-on (term? csr) #:msg (format "csr-ref: symbolic csr ~e" csr))
   (case csr
     [(sstatus) (bvand sstatus-mask (csrs-mstatus (cpu-csrs cpu)))]
     [(sedeleg) (csrs-sedeleg (cpu-csrs cpu))]
@@ -347,7 +347,7 @@
     [(pmpaddr14) (csrs-pmpaddr14 (cpu-csrs cpu))]
     [(pmpaddr15) (csrs-pmpaddr15 (cpu-csrs cpu))]
 
-    [else (core:bug #:msg (format "csr-ref: unknown csr ~e" csr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "csr-ref: unknown csr ~e" csr))]))
 
 ; Convert GPR name to integer index.
 ; Useful for encoding RISC-V instructions.
@@ -388,7 +388,7 @@
     [else
       (if (and (integer? gpr) (&& (>= gpr 0) (< gpr 32)))
           gpr
-          (core:bug #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr)))]))
+          (core:bug #:msg (format "No such GPR ~e\n" gpr)))]))
 
 ; gpr->idx is an alias for encode-gpr
 (define gpr->idx encode-gpr)
@@ -430,7 +430,7 @@
       [(bveq gpr (bv 30 5)) 't5]
       [(bveq gpr (bv 31 5)) 't6]
       [else
-        (core:bug #:dbg current-pc-debug #:msg (format "No such GPR ~e\n" gpr))])))
+        (core:bug #:msg (format "No such GPR ~e\n" gpr))])))
 
 (define (encode-compressed-gpr gpr)
   (case gpr
@@ -442,7 +442,7 @@
     [(a3 x13)   (bv #b101 3)]
     [(a4 x14)   (bv #b110 3)]
     [(a5 x15)   (bv #b111 3)]
-    [else (core:bug #:dbg current-pc-debug
+    [else (core:bug
                     #:msg (format "cannot encode ~v as compressed gpr" gpr))]))
 
 (define (decode-compressed-gpr gpr)
@@ -457,11 +457,11 @@
       [(bveq gpr (bv #b110 3)) 'a4]
       [(bveq gpr (bv #b111 3)) 'a5]
       [else
-        (core:bug #:dbg current-pc-debug
+        (core:bug
                   #:msg (format "No such compressed GPR ~e\n" gpr))])))
 
 (define (@gpr-set! gprs gpr val)
-  (core:bug-on (! (bv? val)) #:msg (format "gpr-set!: not a bitvector: ~e" val) #:dbg current-pc-debug)
+  (core:bug-on (! (bv? val)) #:msg (format "gpr-set!: not a bitvector: ~e" val))
   (case gpr
     [(x0 zero) (void)] ; Drop writes to x0
     [(x1 ra) (set-gprs-x1! gprs val)]
@@ -495,7 +495,7 @@
     [(x29 t4) (set-gprs-x29! gprs val)]
     [(x30 t5) (set-gprs-x30! gprs val)]
     [(x31 t6) (set-gprs-x31! gprs val)]
-    [else (core:bug #:msg (format "@gpr-set!: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "@gpr-set!: unknown gpr ~e" gpr))]))
 
 (define (gpr-set! cpu gpr val)
   (@gpr-set! (cpu-gprs cpu) gpr val))
@@ -543,7 +543,7 @@
     [(x29 t4) (gprs-x29 gprs)]
     [(x30 t5) (gprs-x30 gprs)]
     [(x31 t6) (gprs-x31 gprs)]
-    [else (core:bug #:msg (format "gpr-ref: unknown gpr ~e" gpr) #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "gpr-ref: unknown gpr ~e" gpr))]))
 
 (define (gpr-ref cpu gpr)
   (@gpr-ref (cpu-gprs cpu) gpr))

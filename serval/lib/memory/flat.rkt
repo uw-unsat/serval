@@ -7,14 +7,13 @@
 
 (require "manager.rkt" "../bvarith.rkt" "../uf.rkt" "../debug.rkt")
 
-(define (check-addr-off addr off #:dbg dbg)
+(define (check-addr-off addr off)
   (bug-on (! (equal? (bv-size (bvadd addr off)) (target-pointer-bitwidth)))
-          #:msg "flat memory model: addr size wrong"
-          #:dbg dbg))
+          #:msg "flat memory model: addr size wrong"))
 
-(define (flat-memmgr-store! memmgr addr off data size #:dbg dbg)
+(define (flat-memmgr-store! memmgr addr off data size)
   (define N (bitvector->natural size))
-  (check-addr-off addr off #:dbg dbg)
+  (check-addr-off addr off)
   (for ([i (in-range N)])
     (define oldf (flat-memmgr-memory memmgr))
     (define newf (lambda (p)
@@ -23,9 +22,9 @@
         (oldf p))))
     (set-flat-memmgr-memory! memmgr newf)))
 
-(define (flat-memmgr-load memmgr addr off size #:dbg dbg)
+(define (flat-memmgr-load memmgr addr off size)
   (define N (bitvector->natural size))
-  (check-addr-off addr off #:dbg dbg)
+  (check-addr-off addr off)
   (define Bytes (for/list ([i (in-range N)])
     ((flat-memmgr-memory memmgr) (bvadd addr off (bv i (type-of addr))))))
 

@@ -28,12 +28,12 @@
     (when (equal? (bit i registers) (bv 1 1))
       (if (&& (equal? (integer->gpr i) n) wback (! (equal? (bv i (type-of registers)) (lowest-set-bit registers))))
           (unpredictable)
-          (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu (integer->gpr i)) (bv 4 32) #:dbg #f))
+          (core:memmgr-store! mm address (bv 0 32) (cpu-gpr-ref cpu (integer->gpr i)) (bv 4 32)))
 
       (set! address (bvadd address (bv 4 (type-of address))))))
 
   (when (equal? (bit 15 registers) (bv 1 1))
-    (core:memmgr-store! mm address (bv 0 32) (pc-store-value cpu) (bv 4 32) #:dbg #f))
+    (core:memmgr-store! mm address (bv 0 32) (pc-store-value cpu) (bv 4 32)))
 
   (when wback
     (cpu-gpr-set! cpu Rn
@@ -58,11 +58,11 @@
   (for ([i (in-range 15)])
     (when (equal? (bit i registers) (bv 1 1))
       (cpu-gpr-set! cpu (integer->gpr i)
-                    (core:memmgr-load mm address (bv 0 32) (bv 4 32) #:dbg #f))
+                    (core:memmgr-load mm address (bv 0 32) (bv 4 32)))
       (set! address (bvadd address (bv 4 (type-of address))))))
 
   (when (equal? (bit 15 registers) (bv 1 1))
-    (load-write-pc cpu (core:memmgr-load mm address (bv 0 32) (bv 4 32) #:dbg #f)))
+    (load-write-pc cpu (core:memmgr-load mm address (bv 0 32) (bv 4 32))))
 
   (cond
     [(&& wback (equal? (bit 13 registers) (bv 0 1)))

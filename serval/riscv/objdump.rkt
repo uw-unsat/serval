@@ -128,7 +128,7 @@
           [(list i ...) #:when (riscv-default-size)
             (parse-objdump-instr i #:addr addr #:size (riscv-default-size))]
           [_
-            (core:bug #:dbg current-pc-debug #:msg (format "Bad objdump ~e" instr))]))
+            (core:bug #:msg (format "Bad objdump ~e" instr))]))
       (values addr instr)))
   (program base insn-hash))
 

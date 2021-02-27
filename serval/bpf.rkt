@@ -247,8 +247,7 @@
     [(r9) 9]
     [(r10 fp) 10]
     [(ax) 11]
-    [else (core:bug #:msg (format "reg->idx: Unknown reg ~v" reg)
-                    #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "reg->idx: Unknown reg ~v" reg))]))
 
 (define (idx->reg idx)
   (case idx
@@ -264,8 +263,7 @@
     [(9) 'r9]
     [(10) 'r10]
     [(11) 'ax]
-    [else (core:bug #:msg (format "idx->reg: Unknown idx ~v" idx)
-                    #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "idx->reg: Unknown idx ~v" idx))]))
 
 (define (make-regs [value #f])
   (apply regs (make-list MAX_BPF_JIT_REG value)))
@@ -297,19 +295,16 @@
     [(r7) (set-regs-r7! regs val)]
     [(r8) (set-regs-r8! regs val)]
     [(r9) (set-regs-r9! regs val)]
-    [(r10 fp) (core:bug #:msg "reg-set!: R10/FP is read-only"
-                        #:dbg current-pc-debug)]
+    [(r10 fp) (core:bug #:msg "reg-set!: R10/FP is read-only")]
     [(ax) (set-regs-ax! regs val)]
-    [else (core:bug #:msg (format "reg-set!: Unknown register ~v" reg)
-                    #:dbg current-pc-debug)]))
+    [else (core:bug #:msg (format "reg-set!: Unknown register ~v" reg))]))
 
 (define (reg-set! cpu reg val)
   (@reg-set! (cpu-regs cpu) reg val))
 
 (define (reg-havoc! cpu reg)
   (core:bug-on (equal? reg BPF_REG_10)
-               #:msg (format "reg-havoc!: R10 is read-only")
-               #:dbg current-pc-debug)
+               #:msg (format "reg-havoc!: R10 is read-only"))
   (define-symbolic* havoc (bitvector 64))
   (reg-set! cpu reg havoc))
 
@@ -328,8 +323,7 @@
       [(r9) (regs-r9 regs)]
       [(r10 fp) (regs-r10 regs)]
       [(ax) (regs-ax regs)]
-      [else (core:bug #:msg (format "reg-ref: unknown reg ~v" reg)
-                      #:dbg current-pc-debug)]))
+      [else (core:bug #:msg (lambda (sol) (format "reg-ref: unknown reg ~v" (evaluate reg sol))))]))
   val)
 
 (define (reg-ref cpu reg)
@@ -342,12 +336,10 @@
     [(BPF_MUL) ((core:bvmul-proc) v1 v2)]
     [(BPF_DIV)
      (core:bug-on (bvzero? v2)
-                  #:dbg current-pc-debug
                   #:msg (format "evaluate-alu64: div by zero, dividend: ~v" v2))
      ((core:bvudiv-proc) v1 v2)]
     [(BPF_MOD)
      (core:bug-on (bvzero? v2)
-                  #:dbg current-pc-debug
                   #:msg (format "evaluate-alu64: mod by zero, dividend: ~v" v2))
      ((core:bvurem-proc) v1 v2)]
     [(BPF_OR) (bvor v1 v2)]
@@ -356,8 +348,7 @@
     [(BPF_LSH) (bvshl v1 v2)]
     [(BPF_RSH) (bvlshr v1 v2)]
     [(BPF_ARSH) (bvashr v1 v2)]
-    [else (core:bug #:dbg current-pc-debug
-                    #:msg (format "evaluate-alu64: no such ALU op: ~e\n" op))]))
+    [else (core:bug #:msg (format "evaluate-alu64: no such ALU op: ~e\n" op))]))
 
 (define (evaluate-alu32 op v1 v2)
   (zero-extend (evaluate-alu64 op (extract 31 0 v1) (extract 31 0 v2)) (bitvector 64)))
@@ -376,8 +367,7 @@
     [(BPF_JSLT) (bvslt v1 v2)]
     [(BPF_JSGE) (bvsge v1 v2)]
     [(BPF_JSLE) (bvsle v1 v2)]
-    [else (core:bug #:dbg current-pc-debug
-                    #:msg (format "no such comparison op: ~e\n" op))]))
+    [else (core:bug #:msg (format "no such comparison op: ~e\n" op))]))
 
 (define (bpf-size->integer size)
   (case size
@@ -385,8 +375,7 @@
     [(BPF_H) 2]
     [(BPF_W) 4]
     [(BPF_DW) 8]
-    [else (core:bug #:dbg current-pc-debug
-                    #:msg (format "unknown BPF_SIZE: ~e\n" size))]))
+    [else (core:bug #:msg (format "unknown BPF_SIZE: ~e\n" size))]))
 
 ; assume little-endian
 (define bitvector->list core:bitvector->list/le)
@@ -398,16 +387,14 @@
   (set! addr (extract (- (core:memmgr-bitwidth memmgr) 1) 0 addr))
   (set! data (extract (- (* 8 sizen) 1) 0 data))
   (set! off (sign-extend off (type-of addr)))
-  (core:memmgr-store! memmgr addr off data (integer->bitvector sizen (type-of addr))
-                      #:dbg current-pc-debug))
+  (core:memmgr-store! memmgr addr off data (integer->bitvector sizen (type-of addr))))
 
 (define (load-bytes cpu addr off sizen)
   (define memmgr (cpu-memmgr cpu))
   ; Truncate addr to underlying memory model bitwidth.
   (set! addr (extract (- (core:memmgr-bitwidth memmgr) 1) 0 addr))
   (set! off (sign-extend off (type-of addr)))
-  (define value (core:memmgr-load memmgr addr off (integer->bitvector sizen (type-of addr))
-                #:dbg current-pc-debug))
+  (define value (core:memmgr-load memmgr addr off (integer->bitvector sizen (type-of addr))))
   value)
 
 (define (cpu-next! cpu [size (bv 1 64)])
@@ -431,8 +418,7 @@
     [(equal? imm (bv 16 32)) 2]
     [(equal? imm (bv 32 32)) 4]
     [(equal? imm (bv 64 32)) 8]
-    [else (core:bug #:dbg current-pc-debug
-                    #:msg (format "endian-size: unknown endian size ~e\n" imm))]))
+    [else (core:bug #:msg (format "endian-size: unknown endian size ~e\n" imm))]))
 
 ; The static "size" of a BPF instruction. This is the amount the PC must be incremented by to point
 ; to the next instruction in the program. It is 1 for all instructions except ld64, which is unique.
@@ -457,8 +443,7 @@
     [(list 'BPF_LD 'BPF_IMM 'BPF_DW)
       ; Use this instruction for imm[31:0], next instruction for imm[63:32]
       (core:bug-on (! (insn? next-insn))
-                   #:msg "interpret-insn: must pass next instruction for BPF_LD BPF_IMM BPF_DW"
-                   #:dbg current-pc-debug)
+                   #:msg "interpret-insn: must pass next instruction for BPF_LD BPF_IMM BPF_DW")
       (define lower imm)
       (define upper (insn-imm next-insn))
       (reg-set! cpu dst (imm64-dw lower upper))]
@@ -589,8 +574,7 @@
               (concat (extract 7 0 old) (extract 15 8 old) (extract 23 16 old) (extract 31 24 old)
                       (extract 39 32 old) (extract 47 40 old) (extract 55 48 old) (extract 63 56 old))
               (bitvector 64))]
-          [else (core:bug #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
-                          #:dbg current-pc-debug)]))
+          [else (core:bug #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm))]))
         (reg-set! cpu dst new)]
 
     [(list 'BPF_ALU 'BPF_END 'BPF_FROM_LE)
@@ -603,13 +587,11 @@
             (zero-extend (extract 31 0 old) (bitvector 64))]
           [(equal? imm (bv 64 32))
             old]
-          [else (core:bug #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm)
-                          #:dbg current-pc-debug)]))
+          [else (core:bug #:msg (format "BPF_ALU: imm must be one of {16,32,64}, got ~v" imm))]))
       (reg-set! cpu dst new)]
 
     ; default
-    [_ (core:bug #:dbg current-pc-debug
-                 #:msg (format "interpret-insn: no semantics for instruction ~e\n" code))])
+    [_ (core:bug #:msg (format "interpret-insn: no semantics for instruction ~e\n" code))])
 
   ; size == (bv 1 64) for all instructions except ld64.
   (when (cpu-pc cpu)
@@ -629,16 +611,14 @@
         [(hash-has-key? instructions pc)
           (define this-insn (hash-ref instructions pc))
           (core:bug-on (! (insn? this-insn))
-                       #:msg (format "interpret-program: need insn?, got ~v" this-insn)
-                       #:dbg current-pc-debug)
+                       #:msg (format "interpret-program: need insn?, got ~v" this-insn))
           (case (insn-code this-insn)
             ; Handle ld64 specially because it requires fetching the next instruction.
             [((BPF_LD BPF_IMM BPF_DW))
               ; Fetch next instruction.
               (define pc2 (bvadd1 pc))
               (core:bug-on (! (hash-has-key? instructions pc2))
-                          #:msg (format "no instruction after LD64 @ ~e\n" pc)
-                          #:dbg current-pc-debug)
+                          #:msg (format "no instruction after LD64 @ ~e\n" pc))
               (define next-insn (hash-ref instructions pc2))
               (interpret-insn cpu this-insn #:next next-insn)
               (interpret-program cpu instructions)]
@@ -647,5 +627,4 @@
               (interpret-insn cpu this-insn)
               (interpret-program cpu instructions)])]
 
-        [else (core:bug #:dbg current-pc-debug
-                        #:msg (format "no instruction @ ~e\n" pc))]))))
+        [else (core:bug #:msg (format "no instruction @ ~e\n" pc))]))))

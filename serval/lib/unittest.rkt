@@ -18,11 +18,20 @@
 
 (define (run-test+ proc)
   (parameterize ([current-bitwidth (current-bitwidth)]
-                 [current-solver (current-solver)]
-                 [assert-db (hash-copy (assert-db))])
-    (define result (with-vc vc-true (verify (proc))))
-    (check-true (normal? result))
-    (check-unsat? (result-value result))))
+                 [current-solver (current-solver)])
+    (clear-bug-info!)
+    (clear-vc!)
+    (define model (verify (proc)))
+    (when (sat? model)
+      (parameterize ([error-print-width 10000])
+        (define result (parameterize ([bug-db (bug-db)]) (with-vc (proc))))
+        (cond
+          [(failed? result) (printf "Test exited abnormally: ~e\n" (result-value result))]
+          [else
+            (printf "Failed assertions:\n")
+            (for ([bug (get-bug-info model)])
+              (displayln (bug-format bug model)))])))
+    (check-unsat? model)))
 
 (define-syntax-rule (test-case+ name body ...)
   (test-case name (begin
@@ -31,18 +40,12 @@
     (define-values (result cpu-time real-time gc-time) (time-apply run-test+ (list proc)))
     (printf "~a ~v (~v ms)\n" (color-succ "[       OK ]") name real-time))))
 
-(define (run-failure-test+ proc)
-  (parameterize ([current-bitwidth (current-bitwidth)]
-                 [current-solver (current-solver)]
-                 [assert-db (hash-copy (assert-db))])
-    (define result (with-vc vc-true (verify (proc))))
-    (check-false (unsat? (result-value result)))))
-
 (define-syntax-rule (test-failure-case+ name body ...)
   (test-case name (begin
     (printf "~a ~v\n" (color-succ "[ RUN      ]") name)
     (define (proc) (begin body ...))
-    (define-values (result cpu-time real-time gc-time) (time-apply run-failure-test+ (list proc)))
+    (define-values (result cpu-time real-time gc-time)
+      (time-apply (thunk* (check-exn exn:fail? (thunk (run-test+ proc)))) null))
     (printf "~a ~v (~v ms)\n" (color-succ "[       OK ]") name real-time))))
 
 ; random testing
@@ -65,7 +68,7 @@
     (let ([result (with-vc expr)])
       (check-true (normal? result))
       (let ([v (result-state result)])
-        (check-unsat? (verify (begin (assume (vc-assumes v)) (assert (vc-asserts v)))))
+        (check-unsat? (verify (assert (vc-asserts v))))
         (result-value result)))))
 
 (define-syntax-rule (quickcheck body ...)

@@ -81,10 +81,7 @@
             (if (type-is-signed? type) "signed" "unsigned")
             lhs-str op rhs-str
             (type-descriptor-name type)))
-  (core:bug
-   #:key 'ubsan
-   #:dbg (overflow-data-location data)
-   #:msg msg))
+  (core:bug #:msg (lambda (sol) (format "~v ~v ~v" "ubsan" (overflow-data-location data) (msg sol)))))
 
 (define __ubsan_handle_add_overflow (curryr handle-integer-overflow "+"))
 (define __ubsan_handle_sub_overflow (curryr handle-integer-overflow "-"))
@@ -101,10 +98,7 @@
        (format "division of ~a by -1 cannot be represented in type ~a"
                (bitvector->integer lhs)
                (type-descriptor-name type))]))
-  (core:bug
-   #:key 'ubsan
-   #:dbg (overflow-data-location data)
-   #:msg msg))
+  (core:bug #:msg (lambda (sol) (format "~v ~v ~v" "ubsan" (overflow-data-location data) (msg sol)))))
 
 (define (__ubsan_handle_out_of_bounds lst index)
   (define data (make-out-of-bounds-data lst))
@@ -114,10 +108,7 @@
     (format "index ~a is out of range for type ~a"
             (val->string index-type index)
             (type-descriptor-name array-type)))
-  (core:bug
-   #:key 'ubsan
-   #:dbg (out-of-bounds-data-location data)
-   #:msg msg))
+  (core:bug #:msg (lambda (sol) (format "~v ~v ~v" "ubsan" (out-of-bounds-data-location data) (msg sol)))))
 
 (define (__ubsan_handle_shift_out_of_bounds lst lhs rhs)
   (define data (make-shift-out-of-bounds-data lst))
@@ -137,7 +128,4 @@
       [else
        (format "left shift of ~a by ~a places cannot be represented in type ~a"
                lhs-str rhs-str (type-descriptor-name lhs-type))]))
-  (core:bug
-   #:key 'ubsan
-   #:dbg (shift-out-of-bounds-data-location data)
-   #:msg msg))
+  (core:bug #:msg (lambda (sol) (format "~v ~v ~v" "ubsan" (shift-out-of-bounds-data-location data) (msg sol)))))

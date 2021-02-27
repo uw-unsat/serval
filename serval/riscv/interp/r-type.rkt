@@ -15,15 +15,15 @@
 (define ((interpret-amo-insn op size) cpu insn aq rl rs2 rs1 rd)
   (define mm (cpu-memmgr cpu))
   (define xlen (cpu-xlen cpu))
-  (core:bug-on (&& (= size 8) (= xlen 32)) #:msg "no amo*.d on rv32" #:dbg current-pc-debug)
+  (core:bug-on (&& (= size 8) (= xlen 32)) #:msg "no amo*.d on rv32")
 
   (core:memmgr-atomic-begin mm)
 
   (define addr (gpr-ref cpu (decode-gpr rs1)))
-  (define oldvalue (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen) #:dbg current-pc-debug))
+  (define oldvalue (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)))
   (gpr-set! cpu (decode-gpr rd) (sign-extend oldvalue (bitvector xlen)))
   (define newvalue (op oldvalue (trunc (* 8 size) (gpr-ref cpu (decode-gpr rs2)))))
-  (core:memmgr-store! mm addr (bv 0 xlen) (trunc (* 8 size) newvalue) (bv size xlen) #:dbg current-pc-debug)
+  (core:memmgr-store! mm addr (bv 0 xlen) (trunc (* 8 size) newvalue) (bv size xlen))
 
   (core:memmgr-atomic-end mm)
   (cpu-next! cpu insn))

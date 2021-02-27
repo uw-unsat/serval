@@ -115,8 +115,7 @@
   (define emu-pred (if uc-faulted? exn:fail? (lambda (x) #f)))
 
   ; run the interpreter
-  ;(with-handlers ([emu-pred (lambda (exn) (clear-asserts!))])
-  (begin
+  (with-handlers ([emu-pred (lambda (exn) (clear-vc!))])
     (arm32:interpret-insn cpu insn))
 
   ; check if R[] matches

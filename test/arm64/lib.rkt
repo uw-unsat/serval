@@ -101,7 +101,7 @@
   (define nzcv (bv (uc-reg-read uc 'nzcv) 32))
   (define data (core:list->bitvector/le (map (lambda (x) (bv x 8)) (bytes->list (uc-mem-read uc DATA-ADDR DATA-SIZE)))))
   (define mm (make-memmgr))
-  (core:memmgr-store! mm (bv DATA-ADDR 64) (bv 0 64) data (bv DATA-SIZE 64) #:dbg #f)
+  (core:memmgr-store! mm (bv DATA-ADDR 64) (bv 0 64) data (bv DATA-SIZE 64))
   (arm64:cpu pc sp xn (arm64:bitvector->nzcv nzcv) mm))
 
 (define (check-insn ctor generators)
@@ -124,7 +124,7 @@
   (arm64:cpu-sp-set! cpu data-addr)
 
   ; initial data
-  (define data-bytes (core:memmgr-load mm data-addr (bv 0 64) data-size #:dbg #f))
+  (define data-bytes (core:memmgr-load mm data-addr (bv 0 64) data-size))
 
   (define insn-bits (arm64:instruction-encode insn))
   ; each instruction is 32-bit
@@ -161,8 +161,8 @@
   (check-equal? (arm64:cpu-nzcv-ref cpu) (arm64:cpu-nzcv-ref uc-cpu) "nzcv mismatch")
 
   (for ([i (range DATA-SIZE)])
-    (check-equal? (core:memmgr-load (arm64:cpu-memmgr cpu) data-addr (bv i 64) (bv 1 64) #:dbg #f)
-                  (core:memmgr-load uc-mm data-addr (bv i 64) (bv 1 64) #:dbg #f)
+    (check-equal? (core:memmgr-load (arm64:cpu-memmgr cpu) data-addr (bv i 64) (bv 1 64))
+                  (core:memmgr-load uc-mm data-addr (bv i 64) (bv 1 64))
                   (format "memory mismatch at offset ~a" i))))
 
 

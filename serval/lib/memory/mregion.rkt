@@ -31,23 +31,23 @@
   (findf (match-lambda [(list _ _ _ nm) (equal? nm name)]) ls))
 
 ; Find an mregion by its name
-(define (find-mregion-by-name ls name #:dbg [dbg #f])
+(define (find-mregion-by-name ls name)
   (define result (findf (lambda (mr) (equal? name (mregion-name mr))) ls))
-  (bug-on (equal? result #f) #:msg (format "find-mregion-by-name: No such mregion ~e" name) #:dbg dbg)
+  (bug-on (equal? result #f) #:msg (format "find-mregion-by-name: No such mregion ~e" name))
   result)
 
 (define (find-block-by-name mregions name)
   (mregion-block (find-mregion-by-name mregions name)))
 
-(define (find-mregion-by-addr ls addr #:dbg [dbg #f])
-  (bug-on (term? addr) #:msg "find-mregion-by-addr: symbolic addr" #:dbg dbg)
+(define (find-mregion-by-addr ls addr)
+  (bug-on (term? addr) #:msg "find-mregion-by-addr: symbolic addr")
   (findf (lambda (mr)
     (&& (bvule (bvpointer (mregion-start mr)) addr)
         (bvult addr (bvpointer (mregion-end mr)))))
     ls))
 
 ; Guess which mregion corressponds to a given address.
-(define (guess-mregion-from-addr ls addr off #:dbg [dbg #f])
+(define (guess-mregion-from-addr ls addr off)
   (match addr
 
     ; If it's a constant, we don't know where it could point
@@ -64,11 +64,11 @@
     [(term _ _ ) #f]
 
     [(? bv? literal)
-      (let ([x (find-mregion-by-addr #:dbg dbg ls (bvadd (sign-extend off (bitvector (target-pointer-bitwidth))) literal))])
+      (let ([x (find-mregion-by-addr ls (bvadd (sign-extend off (bitvector (target-pointer-bitwidth))) literal))])
         (if x x
-          (find-mregion-by-addr #:dbg dbg ls literal)))]
+          (find-mregion-by-addr ls literal)))]
 
-    [_ (bug #:dbg dbg #:msg "guess-mregion-from-addr: unknown term")]))
+    [_ (bug #:msg "guess-mregion-from-addr: unknown term")]))
 
 ; check if [addr, add + size) falls in region mr
 (define (mregion-inbounds? mr addr size)
