@@ -77,7 +77,7 @@ void test_buggy_too_large_a(void)
     memset(a, 0, sizeof(a) + sizeof(struct A));
 }
 
-void test_buggy_too_large_b(size_t i)
+void test_buggy_too_large_b(void)
 {
     memset(&a[0].b.z, 0, sizeof(struct B));
 }
