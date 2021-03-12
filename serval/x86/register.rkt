@@ -276,7 +276,7 @@
   (define addr (sign-cast n (register-ref cpu gpr)))
   (define disp (sign-cast n (register-indirect-disp r)))
   (define size (bv (quotient (register-indirect-size r) 8) n))
-  (core:memmgr-load mm addr disp size #:dbg (cpu-pc-ref cpu)))
+  (core:memmgr-load mm addr disp size))
 
 (define (register-indirect-set! cpu r v)
   (define mm (cpu-memmgr cpu))
@@ -285,7 +285,7 @@
   (define addr (sign-cast n (register-ref cpu gpr)))
   (define disp (sign-cast n (register-indirect-disp r)))
   (define size (bv (quotient (register-indirect-size r) 8) n))
-  (core:memmgr-store! mm addr disp v size #:dbg (cpu-pc-ref cpu)))
+  (core:memmgr-store! mm addr disp v size))
 
 (struct register-indirect (gpr disp size)
   #:transparent

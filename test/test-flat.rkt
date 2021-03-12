@@ -11,9 +11,9 @@
   (define-symbolic* off (bitvector 64))
   (define-symbolic* data (bitvector 64))
 
-  (core:memmgr-store! memmgr addr off data (bv 8 64) #:dbg #f)
+  (core:memmgr-store! memmgr addr off data (bv 8 64))
 
-  (define readdata (core:memmgr-load memmgr addr off (bv 8 64) #:dbg #f))
+  (define readdata (core:memmgr-load memmgr addr off (bv 8 64)))
 
   (core:check-unsat? (verify (assert (bveq data readdata)))))
 

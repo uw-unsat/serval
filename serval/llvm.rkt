@@ -44,7 +44,7 @@
   (machine-merge-point (current-machine)))
 
 (define (@bug-on v msg)
-  (core:bug-on v #:key 'llvm #:dbg (current-pc) #:msg msg))
+  (core:bug-on v #:msg msg))
 
 ; control flow
 
@@ -344,9 +344,7 @@
   (define mblock (pointer-block ptr))
   (define offset (pointer-offset ptr))
   (define size (core:bvpointer bvsize))
-  (define path (core:mblock-path mblock offset size #:dbg (current-pc)))
-  (core:spectre-bug-on (! (core:mblock-inbounds? mblock offset size)) #:dbg (current-pc)
-   #:msg (format "spectre: load @ ~a\n" ptr))
+  (define path (core:mblock-path mblock offset size))
   (define value (core:mblock-iload mblock path))
 
   ; If the type of load is pointer, convert back using inttoptr.
@@ -362,7 +360,7 @@
   (define mblock (pointer-block ptr))
   (define offset (pointer-offset ptr))
   (define size (core:bvpointer (/ (bitvector-size type) 8)))
-  (define path (core:mblock-path mblock offset size #:dbg (current-pc)))
+  (define path (core:mblock-path mblock offset size))
   (core:mblock-istore! mblock value path))
 
 ; alloca allocates a stack pointer; mblock is uninitialized.
@@ -375,7 +373,7 @@
 (define (memset ptr c size)
   (define mblock (pointer-block ptr))
   (define offset (pointer-offset ptr))
-  (core:mblock-memset! mblock (extract 7 0 c) offset size #:dbg (current-pc))
+  (core:mblock-memset! mblock (extract 7 0 c) offset size)
   ptr)
 
 ; builtin calls
@@ -459,7 +457,7 @@
 
 ; Linux
 (define (__assert_fail expr filename line func)
-  (core:bug-on #t #:key 'assert #:dbg (ubsan:source-location filename line #f) #:msg expr))
+  (core:bug #:msg (format "~v ~v ~v" "assert" (ubsan:source-location filename line #f) expr)))
 
 ; unknown
 (define (__assert_func filename line func expr)

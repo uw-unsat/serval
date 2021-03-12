@@ -13,7 +13,7 @@
   (define v (trunc n (cpu-gpr-ref cpu src)))
   (define sp (bvsub (trunc n (cpu-gpr-ref cpu rsp)) size))
   (cpu-gpr-set! cpu rsp (zero-extend sp (bitvector 64)))
-  (core:memmgr-store! mm sp (bv 0 n) v size #:dbg (cpu-pc-ref cpu)))
+  (core:memmgr-store! mm sp (bv 0 n) v size))
 
 ; 50+rd
 (define-insn push-r (src)

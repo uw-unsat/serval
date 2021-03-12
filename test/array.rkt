@@ -25,20 +25,13 @@
 (define (check-array-spec)
   (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
     (define-symbolic x (bitvector 32))
-    (define pre (inv))
-    (define asserted
-      (with-asserts-only (@test x)))
-    (define post (inv))
-    ; no UB triggered
-    (check-equal? (asserts) null)
-    (for-each (lambda (x) (check-unsat? (verify (assert x)))) asserted)
-    ; check if the invariant holds
-    (check-unsat? (verify (assert (implies pre post))))))
+    (assume (inv))
+    (@test x)
+    (assert (inv))))
 
 (define array-tests
   (test-suite+
    "Tests for array.c"
-
    (test-case+ "check-array-spec" (check-array-spec))))
 
 (module+ test

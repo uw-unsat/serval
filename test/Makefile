@@ -26,6 +26,7 @@ BASE_CFLAGS     += -fno-jump-tables
 BASE_CFLAGS     += -mstrict-align
 BASE_CFLAGS     += -g -O$(OLEVEL)
 BASE_CFLAGS     += -Wall -MD -MP
+BASE_CFLAGS     += -mno-relax
 
 CONFIG_CFLAGS   += -DCONFIG_DRAM_START=$(CONFIG_DRAM_START)
 

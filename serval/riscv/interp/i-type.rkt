@@ -12,14 +12,14 @@
 
 (define ((interpret-ishift-type op) cpu insn shamt rs1 rd)
   ; shamt is 6 bits: top bit must be 0 if rv32
-  (core:bug-on (&& (= (cpu-xlen cpu) 32) (bvuge shamt (bv 32 6))) #:msg "32-bit shift immediate must be < 32" #:dbg current-pc-debug)
+  (core:bug-on (&& (= (cpu-xlen cpu) 32) (bvuge shamt (bv 32 6))) #:msg "32-bit shift immediate must be < 32")
   (define a (gpr-ref cpu (decode-gpr rs1)))
   (define b (zero-extend shamt (bitvector (cpu-xlen cpu))))
   (gpr-set! cpu (decode-gpr rd) (op a b))
   (cpu-next! cpu insn))
 
 (define ((interpret-iwshift-type op) cpu insn shamt rs1 rd)
-  (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64" #:dbg current-pc-debug)
+  (core:bug-on (! (= (cpu-xlen cpu) 64)) #:msg "*w: (cpu-xlen cpu) != 64")
   (define a (extract 31 0 (gpr-ref cpu (decode-gpr rs1))))
   (define b (zero-extend shamt (bitvector 32)))
   (gpr-set! cpu (decode-gpr rd) (sign-extend (op a b) (bitvector 64)))
@@ -41,12 +41,12 @@
   (define mm (cpu-memmgr cpu))
   (define xlen (cpu-xlen cpu))
 
-  (core:bug-on (&& (= xlen 32) (! signed?) (= size 4)) #:msg "no lwu on rv32" #:dbg current-pc-debug)
+  (core:bug-on (&& (= xlen 32) (! signed?) (= size 4)) #:msg "no lwu on rv32")
 
   (define addr (bvadd (gpr-ref cpu (decode-gpr rs1))
                       (sign-extend imm11:0 (bitvector xlen))))
 
-  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen) #:dbg current-pc-debug))
+  (define value (core:memmgr-load mm addr (bv 0 xlen) (bv size xlen)))
 
   (set! value ((if signed? sign-extend zero-extend) value (bitvector xlen)))
 

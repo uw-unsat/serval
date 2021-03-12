@@ -14,11 +14,8 @@
 
 (define (check-test test-fn)
   (parameterize ([llvm:current-machine (llvm:make-machine symbols globals)])
-    (define-values (ret as) (with-asserts (test-fn)))
-
-    (check-unsat? (verify (assert (apply && as))))
+    (define ret (test-fn))
     (check-true (bvzero? ret))
-
   ))
 
 (define inttoptr-tests

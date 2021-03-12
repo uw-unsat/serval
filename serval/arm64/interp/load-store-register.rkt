@@ -39,7 +39,7 @@
         (cpu-gpr-ref cpu n)))
 
   (define data (trunc datasize (cpu-gpr-ref cpu t)))
-  (core:memmgr-store! (cpu-memmgr cpu) address offset data (bv (quotient datasize 8) 64) #:dbg (cpu-pc-ref cpu)))
+  (core:memmgr-store! (cpu-memmgr cpu) address offset data (bv (quotient datasize 8) 64)))
 
 
 (define (interpret-load-register cpu size Rm option S Rn Rt)
@@ -53,7 +53,7 @@
           (cpu-sp-ref cpu))
         (cpu-gpr-ref cpu n)))
 
-  (define data (core:memmgr-load (cpu-memmgr cpu) address offset (bv (quotient datasize 8) 64) #:dbg (cpu-pc-ref cpu)))
+  (define data (core:memmgr-load (cpu-memmgr cpu) address offset (bv (quotient datasize 8) 64)))
   (cpu-gpr-set! cpu t (zero-extend data (bitvector regsize))))
 
 
