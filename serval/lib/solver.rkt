@@ -3,7 +3,6 @@
 (require
   rosette/solver/smt/boolector
   rosette/solver/smt/cvc4
-  rosette/solver/smt/yices
   rosette/solver/smt/z3)
 
 ; Utility for controlling solver / solver path
@@ -46,8 +45,6 @@
       (get-boolector)]
     [(equal? solver "cvc4")
       (get-cvc4)]
-    [(equal? solver "yices")
-      (get-yices)]
     [(equal? solver "z3")
       (get-z3)]
     [else
@@ -79,16 +76,6 @@
       [path (cvc4 #:path path #:logic (if logic logic (solver-logic)) #:options options)]
       [(cvc4-available?) (cvc4 #:logic (if logic logic (solver-logic)) #:options options)]
       [required (error "cvc4 not in PATH and CVC4 environment variable not set!")]
-      [else #f])))
-
-(define (get-yices #:logic [logic #f]
-                   #:options [options (hash)]
-                   #:required [required #t])
-  (let ([path (getenv "YICES")])
-    (cond
-      [path (yices #:path path #:logic (if logic logic (solver-logic)) #:options options)]
-      [(yices-available?) (yices #:logic (if logic logic (solver-logic)) #:options options)]
-      [required (error "yices-smt2 not in PATH and YICES environment variable not set!")]
       [else #f])))
 
 (define (get-prefer-boolector)
