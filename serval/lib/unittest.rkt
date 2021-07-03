@@ -52,7 +52,7 @@
     (printf "~a ~v\n" (color-succ "[ RUN      ]") name)
     (define (proc) (begin body ...))
     (define-values (result cpu-time real-time gc-time) (time-apply verify/debug-proc (list proc)))
-    (printf "~a ~v (~v ms) (~v terms)\n" (color-succ "[       OK ]") name real-time (terms-count)))))
+    (printf "~a ~v (~vms cpu) (~vms real) (~v terms)\n" (color-succ "[       OK ]") name cpu-time real-time (terms-count)))))
 
 (define-syntax-rule (test-failure-case+ name body ...)
   (test-case name (begin
