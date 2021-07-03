@@ -48,10 +48,11 @@
 
 (define-syntax-rule (test-case+ name body ...)
   (test-case name (begin
+    (clear-terms!)
     (printf "~a ~v\n" (color-succ "[ RUN      ]") name)
     (define (proc) (begin body ...))
     (define-values (result cpu-time real-time gc-time) (time-apply verify/debug-proc (list proc)))
-    (printf "~a ~v (~v ms)\n" (color-succ "[       OK ]") name real-time))))
+    (printf "~a ~v (~v ms) (~v terms)\n" (color-succ "[       OK ]") name real-time (terms-count)))))
 
 (define-syntax-rule (test-failure-case+ name body ...)
   (test-case name (begin
