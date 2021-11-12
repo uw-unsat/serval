@@ -6,10 +6,14 @@
 
 (provide (all-defined-out))
 
-
 ; locate libLLVM
 
-(define llvm-config-path (ormap find-executable-path (list "llvm-config" "/usr/local/opt/llvm/bin/llvm-config")))
+(define LLVM_CONFIG (getenv "LLVM_CONFIG"))
+
+(define llvm-config-path
+  (cond
+    [LLVM_CONFIG (find-executable-path LLVM_CONFIG)]
+    [else (ormap find-executable-path (list "llvm-config" "/usr/local/opt/llvm/bin/llvm-config"))]))
 
 (unless llvm-config-path
   (raise-user-error "ffi-lib: cannot locate \"llvm-config\" (LLVM is requied)"))
