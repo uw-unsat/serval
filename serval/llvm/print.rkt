@@ -46,18 +46,22 @@
   (define blocks
     (for/list ([bb (function-blocks f)])
       (block->string bb)))
-  (define prologue
-    (cond
-      [(null? blocks) (list "  (unreachable)")]
-      [else
-       (define vars
-         (flatten (for/list ([bb (function-blocks f)])
-                    (filter value-type (basic-block-instructions bb)))))
+
+  (cond
+    ; If there are no basic blocks, treat the definition as an "extern" declaration
+    ; and emit no Racket code. NB: is there a better way of determining if a function is not
+    ; defined from the C API?
+    [(null? blocks) ""]
+    [else
+     (define vars
+       (flatten (for/list ([bb (function-blocks f)])
+                  (filter value-type (basic-block-instructions bb)))))
+     (define prologue
        (append (list "\n")
                (for/list ([v vars])
                  (format "  (define-value ~a)" (value-name v)))
-               (list (format "  (enter! ~a)" (value-name (first (function-blocks f))))))]))
-  (string-append hd (string-join blocks "\n\n") (string-join prologue "\n") ")"))
+               (list (format "  (enter! ~a)" (value-name (first (function-blocks f)))))))
+     (string-append hd (string-join blocks "\n\n") (string-join prologue "\n") ")")]))
 
 (define (block->string bb)
   (define name (value-name bb))
