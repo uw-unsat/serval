@@ -8,20 +8,23 @@
 
 (provide print-module)
 
-(define (print-module m [out (current-output-port)])
-  (displayln (string-join (list
-    "; DO NOT MODIFY."
-    ";"
-    "; This file was automatically generated."
-    ""
-    "#lang rosette"
-    ""
-    "(provide (all-defined-out))"
-    ""
-    "(require (prefix-in core: serval/lib/core)"
-    "         serval/llvm"
-    "         serval/ubsan)"
-    "") "\n") out)
+(define (print-module m [out (current-output-port)] #:extra-requires [extra-requires null])
+  (displayln (string-join
+              (list "; DO NOT MODIFY."
+                    ";"
+                    "; This file was automatically generated."
+                    ""
+                    "#lang rosette"
+                    ""
+                    "(provide (all-defined-out))"
+                    ""
+                    "(require (prefix-in core: serval/lib/core)"
+                    (string-join extra-requires "\n         " #:before-first "         ")
+                    "         serval/llvm"
+                    "         serval/ubsan)"
+                    "")
+              "\n")
+             out)
 
   (define globals
     (for/list ([gv (module-globals m)])
@@ -29,10 +32,8 @@
   (define functions
     (for/list ([f (module-functions m)])
       (function->string f)))
-  (displayln (string-join
-    (list (string-join globals "\n")
-          (string-join functions "\n\n"))
-    "\n\n") out))
+  (displayln (string-join (list (string-join globals "\n") (string-join functions "\n\n")) "\n\n")
+             out))
 
 (define (global->string gv)
   (format "(define-global ~a)" gv))
@@ -47,21 +48,16 @@
       (block->string bb)))
   (define prologue
     (cond
-      [(null? blocks)
-       (list "  (unreachable)")]
+      [(null? blocks) (list "  (unreachable)")]
       [else
-        (define vars (flatten
-          (for/list ([bb (function-blocks f)])
-            (filter value-type (basic-block-instructions bb)))))
-        (append
-          (list "\n")
-          (for/list ([v vars])
-            (format "  (define-value ~a)" (value-name v)))
-          (list (format "  (enter! ~a)" (value-name (first (function-blocks f))))))]))
-  (string-append hd
-                 (string-join blocks "\n\n")
-                 (string-join prologue "\n")
-                 ")"))
+       (define vars
+         (flatten (for/list ([bb (function-blocks f)])
+                    (filter value-type (basic-block-instructions bb)))))
+       (append (list "\n")
+               (for/list ([v vars])
+                 (format "  (define-value ~a)" (value-name v)))
+               (list (format "  (enter! ~a)" (value-name (first (function-blocks f))))))]))
+  (string-append hd (string-join blocks "\n\n") (string-join prologue "\n") ")"))
 
 (define (block->string bb)
   (define name (value-name bb))
@@ -72,84 +68,65 @@
   (string-append hd (string-join insns "\n") ")"))
 
 (define (instruction-is-dbg? insn)
-  (and
-    (string=? (opcode->string (instruction-opcode insn)) "call")
-    (string-prefix? (symbol->string (list-ref (instruction-operands insn) 0)) "@llvm.dbg.")))
+  (and (string=? (opcode->string (instruction-opcode insn)) "call")
+       (string-prefix? (symbol->string (list-ref (instruction-operands insn) 0)) "@llvm.dbg.")))
 
 (define (instruction->string insn)
   (define body
-    (string-append
-      "("
-      (opcode->string (instruction-opcode insn))
-      (apply string-append
-             (map (lambda (x) (string-append " " (operand->string x insn)))
-                  (instruction-operands insn)))
-      (apply string-append
-             (map (lambda (x) (format " #:~a ~a" (car x) (cdr x)))
-                  (instruction-attributes insn)))
-      ")"))
-  (if (value-type insn)
-      (format "(set! ~a ~a)" (value-name insn) body)
-      body))
+    (string-append "("
+                   (opcode->string (instruction-opcode insn))
+                   (apply string-append
+                          (map (lambda (x) (string-append " " (operand->string x insn)))
+                               (instruction-operands insn)))
+                   (apply string-append
+                          (map (lambda (x) (format " #:~a ~a" (car x) (cdr x)))
+                               (instruction-attributes insn)))
+                   ")"))
+  (if (value-type insn) (format "(set! ~a ~a)" (value-name insn) body) body))
 
 (define (opcode->string opcode)
-  (if (list? opcode)
-      (string-join (map ~a opcode) "/")
-      (~a opcode)))
+  (if (list? opcode) (string-join (map ~a opcode) "/") (~a opcode)))
 
 (define (type->string type)
   (cond
-    [(list? type)
-     (format "(list ~a~a)"
-       (type->string (car type))
-       (string-join
-         (for/list ([subtype (cdr type)])
-           (string-append " " (type->string subtype)))))]
-    [else
-     (format "~a" type)]))
+    [(list? type) (format "(list ~a~a)"
+                          (type->string (car type))
+                          (string-join (for/list ([subtype (cdr type)])
+                                         (string-append " " (type->string subtype)))))]
+    [else (format "~a" type)]))
 
 (define (operand->string v insn)
   (define opcode (instruction-opcode insn))
   (cond
     [(and (or (equal? opcode 'phi) (equal? opcode 'switch)) (pair? v))
      (format "[~a ~a]" (car v) (cdr v))]
-    [(list? v)
-     (string-join
-       (for/list ([op v])
-         (string-append " " (operand->string op insn)))
-       ""
-       #:before-first "(list"
-       #:after-last ")")]
-    [(array-offset? v)
-     (format "(array-offset ~a ~a)" (array-offset-index v) (array-offset-size v))]
-    [(struct-offset? v)
-     (format "(struct-offset ~a)" (struct-offset-value v))]
-    [(nullptr? v)
-     "nullptr"]
-    [(undef? v)
-     (format "(undef ~a)" (type->string (undef-type v)))]
-    [(core:marray? v)
-     (format "(core:marray ~a ~a)" (core:marray-length v) (operand->string (core:marray-elements v) insn))]
+    [(list? v) (string-join (for/list ([op v])
+                              (string-append " " (operand->string op insn)))
+                            ""
+                            #:before-first "(list"
+                            #:after-last ")")]
+    [(array-offset? v) (format "(array-offset ~a ~a)" (array-offset-index v) (array-offset-size v))]
+    [(struct-offset? v) (format "(struct-offset ~a)" (struct-offset-value v))]
+    [(nullptr? v) "nullptr"]
+    [(undef? v) (format "(undef ~a)" (type->string (undef-type v)))]
+    [(core:marray? v) (format "(core:marray ~a ~a)"
+                              (core:marray-length v)
+                              (operand->string (core:marray-elements v) insn))]
     [(core:mstruct? v)
      (format "(core:mstruct ~a (list~a))"
              (core:mstruct-size v)
-             (string-join
-               (for/list ([f (core:mstruct-fields v)])
-                 (format " (core:mfield ~a ~a ~a)" (core:mfield-name f) (core:mfield-offset f) (operand->string (core:mfield-element f) insn)))
-               ""))]
-    [(core:mcell? v)
-     (format "(core:mcell ~a)" (core:mcell-size v))]
-    [(asm? v)
-     (let ([template (asm-template v)])
-       (cond
-         [(equal? template "")
-          "'nop"]
-         [(not (string-contains? template " "))
-          (string-append "'" template)]
-         [else
-          (~s template)]))]
+             (string-join (for/list ([f (core:mstruct-fields v)])
+                            (format " (core:mfield ~a ~a ~a)"
+                                    (core:mfield-name f)
+                                    (core:mfield-offset f)
+                                    (operand->string (core:mfield-element f) insn)))
+                          ""))]
+    [(core:mcell? v) (format "(core:mcell ~a)" (core:mcell-size v))]
+    [(asm? v) (let ([template (asm-template v)])
+                (cond
+                  [(equal? template "") "'nop"]
+                  [(not (string-contains? template " ")) (string-append "'" template)]
+                  [else (~s template)]))]
     ; constant expr
-    [(instruction? v)
-     (instruction->string v)]
-    [else
-     (~s v)]))
+    [(instruction? v) (instruction->string v)]
+    [else (~s v)]))
