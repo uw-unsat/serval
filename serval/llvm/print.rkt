@@ -9,21 +9,22 @@
 (provide print-module)
 
 (define (print-module m [out (current-output-port)] #:extra-requires [extra-requires null])
-  (displayln (string-join
-              (list "; DO NOT MODIFY."
-                    ";"
-                    "; This file was automatically generated."
-                    ""
-                    "#lang rosette"
-                    ""
-                    "(provide (all-defined-out))"
-                    ""
-                    "(require (prefix-in core: serval/lib/core)"
-                    (string-join extra-requires "\n         " #:before-first "         ")
-                    "         serval/llvm"
-                    "         serval/ubsan)"
-                    "")
-              "\n")
+  (displayln (string-join (list "; DO NOT MODIFY."
+                                ";"
+                                "; This file was automatically generated."
+                                ""
+                                "#lang rosette"
+                                ""
+                                "(provide (all-defined-out))"
+                                ""
+                                "(require (prefix-in core: serval/lib/core)"
+                                (string-join (map (lambda (r) (format "~s" r)) extra-requires)
+                                             "\n         "
+                                             #:before-first "         ")
+                                "         serval/llvm"
+                                "         serval/ubsan)"
+                                "")
+                          "\n")
              out)
 
   (define globals

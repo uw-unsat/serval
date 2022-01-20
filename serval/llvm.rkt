@@ -8,7 +8,6 @@
 
 (provide (except-out (all-defined-out) @bug-on))
 
-
 ; machine
 
 (struct frame (pc label predecessor allocas) #:mutable #:transparent)
@@ -48,7 +47,8 @@
 
 ; control flow
 
-(define (unreachable) (@bug-on #t "unreachable"))
+(define (unreachable)
+  (@bug-on #t "unreachable"))
 
 (define (enter! label)
   (define frame (current-frame))
@@ -56,9 +56,7 @@
   (set-frame-label! frame label)
   (label))
 
-(struct function (proc args dbg)
-  #:transparent
-  #:property prop:procedure (struct-field-index proc))
+(struct function (proc args dbg) #:transparent #:property prop:procedure (struct-field-index proc))
 
 ; Use lambda to delay the evaluation of dbg.
 (define-syntax (define-function stx)
@@ -66,33 +64,33 @@
     [(_ (name [arg-id : arg-type] ...) body ...)
      (syntax/loc stx
        (define name
-         (function (lambda (arg-id ...) body ...)
+         (function (lambda (arg-id ...)
+                     body ...)
                    (list (cons (substring (symbol->string 'arg-id) 1) arg-type) ...)
                    'name)))]))
 
 (define-syntax (define-label stx)
   (syntax-case stx ()
     [(_ (x) #:merge y instr ...)
-      #'(define (x)
-        (define name (quote x))
-        (define stack (current-merge-stack))
-        (if (base:and (not (null? stack)) (equal? (car stack) name))
-          (begin (set-machine-merge-stack! (current-machine) (cdr stack)))
-          (begin
-            (set-machine-merge-point! (current-machine) (cons y (quote y)))
-            (begin
-              (set-frame-pc! (current-frame) 'instr)
-              instr) ...)))]))
+     #'(define (x)
+         (define name (quote x))
+         (define stack (current-merge-stack))
+         (if (base:and (not (null? stack)) (equal? (car stack) name))
+             (begin
+               (set-machine-merge-stack! (current-machine) (cdr stack)))
+             (begin
+               (set-machine-merge-point! (current-machine) (cons y (quote y)))
+               (begin
+                 (set-frame-pc! (current-frame) 'instr)
+                 instr) ...)))]))
 
-(define-syntax-rule (define-value x)
-  (define x #f))
+(define-syntax-rule (define-value x) (define x #f))
 
 (define-syntax (phi stx)
   (syntax-case stx ()
-    [(_ [val label] ...)
-     (syntax/loc stx
-       (cond
-         [(equal? label (frame-predecessor (current-frame))) val] ...))]))
+    [(_ [val label] ...) (syntax/loc stx
+                           (cond
+                             [(equal? label (frame-predecessor (current-frame))) val] ...))]))
 
 (define-syntax (switch stx)
   (syntax-case stx ()
@@ -106,11 +104,10 @@
 (define asm
   (lambda (opcode . args)
     (case opcode
-      [(nop)
-       (match args
-         [(list) (void)]  ; for unreachable
-         [(list val) val] ; for array_size_nospec
-         [_ (core:bug-on #t #:msg "asm: unknown nop")])]
+      [(nop) (match args
+               [(list) (void)] ; for unreachable
+               [(list val) val] ; for array_size_nospec
+               [_ (core:bug-on #t #:msg "asm: unknown nop")])]
       [else (core:bug-on #t #:msg "asm: not supported")])))
 
 (define (call func . args)
@@ -136,27 +133,23 @@
   (case-lambda
     [(succ) (enter! succ)]
     [(test succ-true succ-false)
-      (define mergepoint (current-merge-point))
-      (define stack (current-merge-stack))
+     (define mergepoint (current-merge-point))
+     (define stack (current-merge-stack))
 
-      (if (car mergepoint)
-        (begin
-          (set-machine-merge-stack! (current-machine) (cons (cdr mergepoint) stack))
-          (if (bitvector->bool test)
-            (enter! succ-true)
-            (enter! succ-false))
-          ((car mergepoint)))
-        (begin
-          (enter! (if (bitvector->bool test) succ-true succ-false))))]))
+     (if (car mergepoint)
+         (begin
+           (set-machine-merge-stack! (current-machine) (cons (cdr mergepoint) stack))
+           (if (bitvector->bool test) (enter! succ-true) (enter! succ-false))
+           ((car mergepoint)))
+         (begin
+           (enter! (if (bitvector->bool test) succ-true succ-false))))]))
 
 ; undef
 
 (define (undef type)
   (cond
-    [(list? type)
-     (map undef type)]
-    [(vector? type)
-     (list->vector (map undef (vector->list type)))]
+    [(list? type) (map undef type)]
+    [(vector? type) (list->vector (map undef (vector->list type)))]
     [else
      (define-symbolic* symbolic-undef type)
      symbolic-undef]))
@@ -229,18 +222,15 @@
 ; logical operations
 
 (define (shl x y)
-  (@bug-on (bvuge y (bv (core:bv-size x) (type-of y)))
-           "shl: shift too large")
+  (@bug-on (bvuge y (bv (core:bv-size x) (type-of y))) "shl: shift too large")
   (bvshl x y))
 
 (define (lshr x y)
-  (@bug-on (bvuge y (bv (core:bv-size x) (type-of y)))
-           "lshr: shift too large")
+  (@bug-on (bvuge y (bv (core:bv-size x) (type-of y))) "lshr: shift too large")
   (bvlshr x y))
 
 (define (ashr x y)
-  (@bug-on (bvuge y (bv (core:bv-size x) (type-of y)))
-           "ashr: shift too large")
+  (@bug-on (bvuge y (bv (core:bv-size x) (type-of y))) "ashr: shift too large")
   (bvashr x y))
 
 (define and bvand)
@@ -259,7 +249,8 @@
   (extract (sub1 (bitvector-size type)) 0 x))
 
 ; ignore pointer casts
-(define (bitcast x) x)
+(define (bitcast x)
+  x)
 
 (define (inttoptr addr)
   (define mr (core:guess-mregion-from-addr (current-mregions) addr (bv 0 (type-of addr))))
@@ -290,9 +281,7 @@
         (append lhs (cons (apply insertvalue (car rhs) elt (cdr indices)) (cdr rhs))))))
 
 (define (extractvalue val . indices)
-  (if (empty? indices)
-      val
-      (apply extractvalue (list-ref val (car indices)) (cdr indices))))
+  (if (empty? indices) val (apply extractvalue (list-ref val (car indices)) (cdr indices))))
 
 ; memory operations
 
@@ -308,20 +297,16 @@
 
 (define (pointer-block ptr)
   (define base (pointer-base ptr))
-  (if (core:mblock? base)
-      base
-      (symbol->block base)))
+  (if (core:mblock? base) base (symbol->block base)))
 
 (define (symbol->block sym)
-  (core:mregion-block
-    (core:find-mregion-by-name (current-mregions) sym)))
+  (core:mregion-block (core:find-mregion-by-name (current-mregions) sym)))
 
 ; LLVM prefixes global names with '@'
 (define (global->symbol s)
   (string->symbol (substring (symbol->string s) 1)))
 
-(define-syntax-rule (define-global x)
-  (define x (pointer (global->symbol 'x) (core:bvpointer 0))))
+(define-syntax-rule (define-global x) (define x (pointer (global->symbol 'x) (core:bvpointer 0))))
 
 (define (array-offset index size)
   ; sign-extend index as it may be 32-bit
@@ -378,49 +363,49 @@
 
 ; builtin calls
 
+(define (llvm.trap)
+  (unreachable))
+
+(define (@snprintf)
+  (unreachable))
+
 (define (llvm.sadd.with.overflow x y)
-  (list (bvadd x y)
-        (bool->bitvector (core:bvsadd-overflow? x y))))
+  (list (bvadd x y) (bool->bitvector (core:bvsadd-overflow? x y))))
 
 (define llvm.sadd.with.overflow.i16 llvm.sadd.with.overflow)
 (define llvm.sadd.with.overflow.i32 llvm.sadd.with.overflow)
 (define llvm.sadd.with.overflow.i64 llvm.sadd.with.overflow)
 
 (define (llvm.uadd.with.overflow x y)
-  (list (bvadd x y)
-        (bool->bitvector (core:bvuadd-overflow? x y))))
+  (list (bvadd x y) (bool->bitvector (core:bvuadd-overflow? x y))))
 
 (define llvm.uadd.with.overflow.i16 llvm.uadd.with.overflow)
 (define llvm.uadd.with.overflow.i32 llvm.uadd.with.overflow)
 (define llvm.uadd.with.overflow.i64 llvm.uadd.with.overflow)
 
 (define (llvm.ssub.with.overflow x y)
-  (list (bvsub x y)
-        (bool->bitvector (core:bvssub-overflow? x y))))
+  (list (bvsub x y) (bool->bitvector (core:bvssub-overflow? x y))))
 
 (define llvm.ssub.with.overflow.i16 llvm.ssub.with.overflow)
 (define llvm.ssub.with.overflow.i32 llvm.ssub.with.overflow)
 (define llvm.ssub.with.overflow.i64 llvm.ssub.with.overflow)
 
 (define (llvm.usub.with.overflow x y)
-  (list (bvsub x y)
-        (bool->bitvector (core:bvusub-overflow? x y))))
+  (list (bvsub x y) (bool->bitvector (core:bvusub-overflow? x y))))
 
 (define llvm.usub.with.overflow.i16 llvm.usub.with.overflow)
 (define llvm.usub.with.overflow.i32 llvm.usub.with.overflow)
 (define llvm.usub.with.overflow.i64 llvm.usub.with.overflow)
 
 (define (llvm.smul.with.overflow x y)
-  (list (bvmul x y)
-        (bool->bitvector (core:bvsmul-overflow? x y))))
+  (list (bvmul x y) (bool->bitvector (core:bvsmul-overflow? x y))))
 
 (define llvm.smul.with.overflow.i16 llvm.smul.with.overflow)
 (define llvm.smul.with.overflow.i32 llvm.smul.with.overflow)
 (define llvm.smul.with.overflow.i64 llvm.smul.with.overflow)
 
 (define (llvm.umul.with.overflow x y)
-  (list (bvmul x y)
-        (bool->bitvector (core:bvumul-overflow? x y))))
+  (list (bvmul x y) (bool->bitvector (core:bvumul-overflow? x y))))
 
 (define llvm.umul.with.overflow.i16 llvm.umul.with.overflow)
 (define llvm.umul.with.overflow.i32 llvm.umul.with.overflow)

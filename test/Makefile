@@ -59,7 +59,7 @@ RACKET_TEST_S_SRCS      := $(wildcard *.S)
 all: check-racket check-arm32 check-arm64 check-bpf check-riscv-tests check-x86
 
 %.ll.rkt: %.ll
-	$(QUIET_GEN)$(SERVAL_LLVM) < $< > $@~
+	$(QUIET_GEN)$(SERVAL_LLVM) -- $< > $@~
 	$(Q)mv $@~ $@
 
 %.globals.rkt: %.elf
