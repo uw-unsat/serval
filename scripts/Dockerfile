@@ -1,10 +1,11 @@
-FROM ubuntu:20.10
+FROM ubuntu:21.10
 
 ARG RACKET_VERSION=8.1
 ARG ROSETTE_VERSION=9f6322c9da5761da63126c7ef936bd77c210aeec
 ARG Z3_VERSION=4.8.9
 ARG BOOLECTOR_VERSION=3.2.1
-ARG UNICORN_VERSION=1.0.2-rc3
+# 2.0.0-rc6-43-g4f0be88f
+ARG UNICORN_VERSION=4f0be88f
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     autoconf \
@@ -46,8 +47,8 @@ RUN wget "https://mirror.racket-lang.org/installers/${RACKET_VERSION}/racket-${R
 # Install Unicorn
 RUN git clone 'https://github.com/unicorn-engine/unicorn.git' && \
     cd unicorn && git checkout ${UNICORN_VERSION} && \
-    env UNICORN_ARCHS="x86,arm,aarch64" ./make.sh && \
-    env UNICORN_ARCHS="x86,arm,aarch64" ./make.sh install && \
+    cmake -DUNICORN_ARCH="x86;arm;aarch64;s390x" . && \
+    make -j $(nproc) && make install && \
     cd /code && rm -rfv unicorn
 
 # Install Boolector twice with CaDiCal and Lingeling backends
